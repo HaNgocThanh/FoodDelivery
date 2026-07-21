@@ -1,0 +1,89 @@
+# =========================================================================
+# GITIGNORE FOR FOODDELIVERY SYSTEM (.NET 8 + ORACLE EF CORE & REACT VITE)
+# =========================================================================
+
+# -------------------------------------------------------------------------
+# 1. BẢO MẬT & CẤU HÌNH NHẠY CẢM (SECRETS & ENV FILES)
+# -------------------------------------------------------------------------
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# File cấu hình chứa chuỗi kết nối DB / Secret Key
+Backend_API/FoodDelivery.API/appsettings.Development.json
+Backend_API/FoodDelivery.API/appsettings.Local.json
+Backend_API/FoodDelivery.API/appsettings.Production.json
+
+# -------------------------------------------------------------------------
+# 2. BACK-END (.NET 8 / C# / VISUAL STUDIO / RIDER)
+# -------------------------------------------------------------------------
+# Thư mục biên dịch
+bin/
+obj/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio & VS Code files
+.vs/
+.vscode/
+*.user
+*.userosscache
+*.sln.docstates
+*.suo
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userhost
+*.sln.docstates
+
+# Rider / JetBrains
+.idea/
+
+# NuGet Packages
+*.nupkg
+packages/
+
+# -------------------------------------------------------------------------
+# 3. FRONT-END (NODE.JS / REACT / VITE / TYPESCRIPT)
+# -------------------------------------------------------------------------
+# Dependencies
+Frontend_UI/node_modules/
+node_modules/
+
+# Production Build Output
+Frontend_UI/dist/
+Frontend_UI/build/
+dist/
+build/
+
+# Vite Cache
+.vite/
+Frontend_UI/.vite/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Diagnostic reports
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# -------------------------------------------------------------------------
+# 4. THƯ MỤC HỆ ĐIỀU HÀNH & TEMPORARY FILES
+# -------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*.tmp
+*.bak

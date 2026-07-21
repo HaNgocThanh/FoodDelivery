@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Swagger / OpenAPI -->
+    <PackageReference Include="Mapster.DependencyInjection" Version="1.0.1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+    <!-- JWT Bearer Authentication -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.3" />
+    <!-- FluentValidation ASP.NET Core integration -->
+    <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.0" />
+    <!-- EF Core Tools cho migration commands -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.3">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\FoodDelivery.Application\FoodDelivery.Application.csproj" />
+    <ProjectReference Include="..\FoodDelivery.Infrastructure\FoodDelivery.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
