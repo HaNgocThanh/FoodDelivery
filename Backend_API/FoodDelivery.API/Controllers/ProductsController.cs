@@ -1,5 +1,8 @@
+using System.Security.Claims;
 using FoodDelivery.Application.DTOs.Product;
+using FoodDelivery.Application.DTOs.Review;
 using FoodDelivery.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FoodDelivery.API.Controllers;
@@ -16,7 +19,7 @@ public class ProductsController : ControllerBase
     }
 
     /// <summary>
-    /// Lấy danh sách tất cả sản phẩm (Có hỗ trợ lọc theo categoryId)
+    /// Lấy danh sách tất cả sản phẩm (Public cho Khách hàng)
     /// GET /api/products?categoryId=1
     /// </summary>
     [HttpGet]
@@ -28,7 +31,7 @@ public class ProductsController : ControllerBase
     }
 
     /// <summary>
-    /// Lấy chi tiết sản phẩm theo ID
+    /// Lấy chi tiết sản phẩm theo ID (kèm danh sách Reviews)
     /// GET /api/products/{id}
     /// </summary>
     [HttpGet("{id:int}")]
@@ -48,10 +51,11 @@ public class ProductsController : ControllerBase
     }
 
     /// <summary>
-    /// Thêm mới sản phẩm
+    /// Thêm mới sản phẩm (Dành riêng cho Admin)
     /// POST /api/products
     /// </summary>
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(ProductResponseDTO), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateProduct([FromBody] CreateProductDTO request, CancellationToken ct)
@@ -61,10 +65,11 @@ public class ProductsController : ControllerBase
     }
 
     /// <summary>
-    /// Cập nhật thông tin sản phẩm
+    /// Cập nhật thông tin sản phẩm (Dành riêng cho Admin)
     /// PUT /api/products/{id}
     /// </summary>
     [HttpPut("{id:int}")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(ProductResponseDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -75,10 +80,11 @@ public class ProductsController : ControllerBase
     }
 
     /// <summary>
-    /// Nhập kho sản phẩm (Cộng dồn số lượng tồn kho)
+    /// Nhập kho sản phẩm (Dành riêng cho Admin)
     /// PATCH /api/products/{id}/restock
     /// </summary>
     [HttpPatch("{id:int}/restock")]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(ProductResponseDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
@@ -86,5 +92,59 @@ public class ProductsController : ControllerBase
     {
         var result = await _productService.RestockAsync(id, request.Quantity, ct);
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Đánh giá sản phẩm (Dành cho Khách hàng đã mua sản phẩm này)
+    /// POST /api/products/{id}/reviews
+    /// </summary>
+    [HttpPost("{id:int}/reviews")]
+    [Authorize]
+    [ProducesResponseType(typeof(ReviewResponseDTO), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateReview(int id, [FromBody] CreateReviewDTO request, CancellationToken ct)
+    {
+        var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdClaim) || !int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Status = 401,
+                Title = "Chưa xác thực",
+                Detail = "Vui lòng đăng nhập để gửi đánh giá sản phẩm."
+            });
+        }
+
+        try
+        {
+            var review = await _productService.CreateReviewAsync(id, userId, request, ct);
+            return Ok(review);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(new ProblemDetails
+            {
+                Status = 400,
+                Title = "Không thể gửi đánh giá",
+                Detail = ex.Message
+            });
+        }
+    }
+
+    /// <summary>
+    /// Tìm kiếm sản phẩm nâng cao (Public - Khách hàng)
+    /// GET /api/products/search?keyword=thịt&categoryId=1&minPrice=50000&maxPrice=500000
+    /// </summary>
+    [HttpGet("search")]
+    [ProducesResponseType(typeof(IEnumerable<ProductResponseDTO>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> SearchProducts(
+        [FromQuery] string? keyword,
+        [FromQuery] int? categoryId,
+        [FromQuery] decimal? minPrice,
+        [FromQuery] decimal? maxPrice,
+        CancellationToken ct)
+    {
+        var results = await _productService.SearchProductsAsync(keyword, categoryId, minPrice, maxPrice, ct);
+        return Ok(results);
     }
 }

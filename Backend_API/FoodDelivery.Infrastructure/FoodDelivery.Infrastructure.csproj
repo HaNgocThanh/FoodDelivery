@@ -18,6 +18,9 @@
     <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.6.0" />
     <!-- Micro-ORM cho query tối ưu -->
     <PackageReference Include="Dapper" Version="2.1.35" />
+    <!-- JWT Bearer & IdentityModel Tokens -->
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.3" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.3" />
     <!-- EF Core Design Tools – chỉ dùng lúc build/migration, không ship runtime -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.3">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>

@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { useCreateOrder, type OrderItemPayload } from '../hooks/useCreateOrder';
 import { useCartStore } from '../stores/useCartStore';
+import { useAuthStore } from '../stores/useAuthStore';
 import axiosClient from '../api/axiosClient';
-import { ShoppingBag, CreditCard, CheckCircle2, AlertCircle, Loader2, Tag, Check, Trash2, Plus, Minus, ArrowLeft } from 'lucide-react';
+import { ShoppingBag, CreditCard, CheckCircle2, AlertCircle, Loader2, Tag, Check, Trash2, Plus, Minus, ArrowLeft, LogIn } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export interface ValidateResponse {
@@ -19,6 +20,7 @@ export const CheckoutForm: React.FC = () => {
 
   // Đọc giỏ hàng thực tế từ Zustand Store
   const { items: cartItems, updateQuantity, removeFromCart, clearCart, getTotalOriginalPrice } = useCartStore();
+  const token = useAuthStore((state) => state.token);
 
   // Mã khuyến mãi state
   const [couponCode, setCouponCode] = useState<string>('');
@@ -322,21 +324,31 @@ export const CheckoutForm: React.FC = () => {
           </div>
         </div>
 
-        {/* Nút Xác nhận đặt hàng */}
-        <button
-          type="submit"
-          disabled={isPending || cartItems.length === 0}
-          className="w-full py-4 px-6 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/20 disabled:opacity-60 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-        >
-          {isPending ? (
-            <>
-              <Loader2 className="w-5 h-5 animate-spin" />
-              <span>Đang xử lý đặt hàng...</span>
-            </>
-          ) : (
-            <span>Xác nhận đặt hàng ({cartItems.length} món)</span>
-          )}
-        </button>
+        {/* Nút Đăng nhập / Xác nhận đặt hàng */}
+        {!token ? (
+          <Link
+            to="/login"
+            className="w-full py-4 px-6 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/20 transition-all flex items-center justify-center gap-2 text-center font-bold"
+          >
+            <LogIn className="w-5 h-5" />
+            <span>Đăng nhập để thanh toán ({cartItems.length} món)</span>
+          </Link>
+        ) : (
+          <button
+            type="submit"
+            disabled={isPending || cartItems.length === 0}
+            className="w-full py-4 px-6 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/20 disabled:opacity-60 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+          >
+            {isPending ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Đang xử lý đặt hàng...</span>
+              </>
+            ) : (
+              <span>Xác nhận đặt hàng ({cartItems.length} món)</span>
+            )}
+          </button>
+        )}
       </form>
     </div>
   );

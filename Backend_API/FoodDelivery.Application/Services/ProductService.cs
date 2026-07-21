@@ -1,4 +1,5 @@
 using FoodDelivery.Application.DTOs.Product;
+using FoodDelivery.Application.DTOs.Review;
 using FoodDelivery.Application.Interfaces;
 using FoodDelivery.Domain.Entities;
 using FoodDelivery.Domain.Exceptions;
@@ -24,7 +25,37 @@ public class ProductService : IProductService
             ? await _unitOfWork.Products.FindAsync(p => p.CategoryId == categoryId.Value, ct)
             : await _unitOfWork.Products.GetAllAsync(ct);
 
-        return products.Select(p => MapToDTO(p, categoryMap.TryGetValue(p.CategoryId, out var name) ? name : null));
+        var result = new List<ProductResponseDTO>();
+        foreach (var p in products)
+        {
+            var reviews = await _unitOfWork.Reviews.GetProductReviewsAsync(p.Id, ct);
+            var avgRating = reviews.Count > 0 ? Math.Round(reviews.Average(r => r.Rating), 1) : 0;
+            var reviewDtos = reviews.Select(r => new ReviewResponseDTO(
+                r.Id,
+                r.UserId,
+                r.User?.FullName ?? "Khách hàng",
+                r.Rating,
+                r.Comment,
+                r.CreatedAt
+            ));
+
+            result.Add(new ProductResponseDTO(
+                p.Id,
+                p.CategoryId,
+                categoryMap.TryGetValue(p.CategoryId, out var name) ? name : null,
+                p.Name,
+                p.Description,
+                p.Price,
+                p.StockQuantity,
+                p.Origin,
+                p.IsHot,
+                p.IsAvailable,
+                avgRating,
+                reviewDtos
+            ));
+        }
+
+        return result;
     }
 
     public async Task<ProductResponseDTO?> GetProductByIdAsync(int id, CancellationToken ct = default)
@@ -33,7 +64,31 @@ public class ProductService : IProductService
         if (product == null) return null;
 
         var category = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId, ct);
-        return MapToDTO(product, category?.Name);
+        var reviews = await _unitOfWork.Reviews.GetProductReviewsAsync(id, ct);
+        var avgRating = reviews.Count > 0 ? Math.Round(reviews.Average(r => r.Rating), 1) : 0;
+        var reviewDtos = reviews.Select(r => new ReviewResponseDTO(
+            r.Id,
+            r.UserId,
+            r.User?.FullName ?? "Khách hàng",
+            r.Rating,
+            r.Comment,
+            r.CreatedAt
+        ));
+
+        return new ProductResponseDTO(
+            product.Id,
+            product.CategoryId,
+            category?.Name,
+            product.Name,
+            product.Description,
+            product.Price,
+            product.StockQuantity,
+            product.Origin,
+            product.IsHot,
+            product.IsAvailable,
+            avgRating,
+            reviewDtos
+        );
     }
 
     public async Task<ProductResponseDTO> CreateProductAsync(CreateProductDTO dto, CancellationToken ct = default)
@@ -58,7 +113,20 @@ public class ProductService : IProductService
         await _unitOfWork.Products.AddAsync(product, ct);
         await _unitOfWork.SaveChangesAsync(ct);
 
-        return MapToDTO(product, category?.Name);
+        return new ProductResponseDTO(
+            product.Id,
+            product.CategoryId,
+            category?.Name,
+            product.Name,
+            product.Description,
+            product.Price,
+            product.StockQuantity,
+            product.Origin,
+            product.IsHot,
+            product.IsAvailable,
+            0,
+            Enumerable.Empty<ReviewResponseDTO>()
+        );
     }
 
     public async Task<ProductResponseDTO> UpdateProductAsync(int id, UpdateProductDTO dto, CancellationToken ct = default)
@@ -83,7 +151,31 @@ public class ProductService : IProductService
         _unitOfWork.Products.Update(product);
         await _unitOfWork.SaveChangesAsync(ct);
 
-        return MapToDTO(product, category?.Name);
+        var reviews = await _unitOfWork.Reviews.GetProductReviewsAsync(id, ct);
+        var avgRating = reviews.Count > 0 ? Math.Round(reviews.Average(r => r.Rating), 1) : 0;
+        var reviewDtos = reviews.Select(r => new ReviewResponseDTO(
+            r.Id,
+            r.UserId,
+            r.User?.FullName ?? "Khách hàng",
+            r.Rating,
+            r.Comment,
+            r.CreatedAt
+        ));
+
+        return new ProductResponseDTO(
+            product.Id,
+            product.CategoryId,
+            category?.Name,
+            product.Name,
+            product.Description,
+            product.Price,
+            product.StockQuantity,
+            product.Origin,
+            product.IsHot,
+            product.IsAvailable,
+            avgRating,
+            reviewDtos
+        );
     }
 
     public async Task<ProductResponseDTO> RestockAsync(int productId, int additionalQuantity, CancellationToken ct = default)
@@ -110,19 +202,123 @@ public class ProductService : IProductService
         _unitOfWork.Products.Update(product);
         await _unitOfWork.SaveChangesAsync(ct);
 
-        return MapToDTO(product, category?.Name);
+        return new ProductResponseDTO(
+            product.Id,
+            product.CategoryId,
+            category?.Name,
+            product.Name,
+            product.Description,
+            product.Price,
+            product.StockQuantity,
+            product.Origin,
+            product.IsHot,
+            product.IsAvailable,
+            0,
+            Enumerable.Empty<ReviewResponseDTO>()
+        );
     }
 
-    private static ProductResponseDTO MapToDTO(Product p, string? categoryName = null) => new(
-        p.Id,
-        p.CategoryId,
-        categoryName,
-        p.Name,
-        p.Description,
-        p.Price,
-        p.StockQuantity,
-        p.Origin,
-        p.IsHot,
-        p.IsAvailable
-    );
+    public async Task<ReviewResponseDTO> CreateReviewAsync(int productId, int userId, CreateReviewDTO dto, CancellationToken ct = default)
+    {
+        if (dto.Rating < 1 || dto.Rating > 5)
+        {
+            throw new ArgumentException("Điểm đánh giá phải từ 1 đến 5 sao.");
+        }
+        if (string.IsNullOrWhiteSpace(dto.Comment))
+        {
+            throw new ArgumentException("Nội dung đánh giá không được để trống.");
+        }
+
+        var product = await _unitOfWork.Products.GetByIdAsync(productId, ct);
+        if (product == null)
+        {
+            throw new NotFoundException($"Sản phẩm với ID {productId} không tồn tại.");
+        }
+
+        // Ràng buộc: Chỉ cho phép đánh giá nếu khách đã từng mua sản phẩm này trong lịch sử đơn hàng
+        var hasPurchased = await _unitOfWork.Reviews.HasUserPurchasedProductAsync(userId, productId, ct);
+        if (!hasPurchased)
+        {
+            throw new ArgumentException("Bạn chỉ có thể đánh giá sản phẩm sau khi đã mua hàng.");
+        }
+
+        var user = await _unitOfWork.Users.GetByIdAsync(userId, ct);
+        if (user == null)
+        {
+            throw new NotFoundException("Không tìm thấy thông tin người dùng.");
+        }
+
+        var review = new Review
+        {
+            ProductId = productId,
+            UserId = userId,
+            Rating = dto.Rating,
+            Comment = dto.Comment.Trim(),
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _unitOfWork.Reviews.AddAsync(review, ct);
+        await _unitOfWork.SaveChangesAsync(ct);
+
+        return new ReviewResponseDTO(
+            review.Id,
+            user.Id,
+            user.FullName,
+            review.Rating,
+            review.Comment,
+            review.CreatedAt
+        );
+    }
+
+    public async Task<IEnumerable<ProductResponseDTO>> SearchProductsAsync(
+        string? keyword, int? categoryId, decimal? minPrice, decimal? maxPrice,
+        CancellationToken ct = default)
+    {
+        var allCategories = await _unitOfWork.Categories.GetAllAsync(ct);
+        var categoryMap = allCategories.ToDictionary(c => c.Id, c => c.Name);
+
+        // Lấy tất cả sản phẩm rồi lọc trong bộ nhớ (LINQ + Contains)
+        var products = await _unitOfWork.Products.GetAllAsync(ct);
+
+        var filtered = products.AsEnumerable();
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+            filtered = filtered.Where(p => p.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                                        || (p.Description != null && p.Description.Contains(keyword, StringComparison.OrdinalIgnoreCase)));
+
+        if (categoryId.HasValue && categoryId.Value > 0)
+            filtered = filtered.Where(p => p.CategoryId == categoryId.Value);
+
+        if (minPrice.HasValue)
+            filtered = filtered.Where(p => p.Price >= minPrice.Value);
+
+        if (maxPrice.HasValue)
+            filtered = filtered.Where(p => p.Price <= maxPrice.Value);
+
+        var result = new List<ProductResponseDTO>();
+        foreach (var p in filtered)
+        {
+            var reviews = await _unitOfWork.Reviews.GetProductReviewsAsync(p.Id, ct);
+            var avgRating = reviews.Count > 0 ? Math.Round(reviews.Average(r => r.Rating), 1) : 0;
+            var reviewDtos = reviews.Select(r => new ReviewResponseDTO(
+                r.Id, r.UserId, r.User?.FullName ?? "Khách hàng", r.Rating, r.Comment, r.CreatedAt));
+
+            result.Add(new ProductResponseDTO(
+                p.Id,
+                p.CategoryId,
+                categoryMap.TryGetValue(p.CategoryId, out var name) ? name : null,
+                p.Name,
+                p.Description,
+                p.Price,
+                p.StockQuantity,
+                p.Origin,
+                p.IsHot,
+                p.IsAvailable,
+                avgRating,
+                reviewDtos
+            ));
+        }
+
+        return result;
+    }
 }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axiosClient from '../api/axiosClient';
 import { useCartStore } from '../stores/useCartStore';
+import { useAuthStore } from '../stores/useAuthStore';
 import { CheckoutForm } from '../components/CheckoutForm';
 import {
   ShoppingBag,
@@ -15,9 +16,16 @@ import {
   Globe,
   Sparkles,
   RefreshCw,
-  Utensils
+  Utensils,
+  ShieldCheck,
+  UserCheck,
+  LogIn,
+  LogOut,
+  Users,
+  Search,
+  LayoutDashboard
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import type { ProductItem } from './ProductManagementPage';
 
 export interface CategoryItem {
@@ -29,10 +37,20 @@ export interface CategoryItem {
 export default function HomePage() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [addedProductId, setAddedProductId] = useState<number | null>(null);
+  const [searchInput, setSearchInput] = useState('');
+  const navigate = useNavigate();
 
-  // Cart store
+  // Cart & Auth store
   const { addToCart, getTotalItemsCount, items: cartItems } = useCartStore();
+  const { user, logout, isAdmin } = useAuthStore();
   const totalCartCount = getTotalItemsCount();
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchInput.trim()) {
+      navigate(`/search?keyword=${encodeURIComponent(searchInput.trim())}`);
+    }
+  };
 
   // Fetch Categories
   const { data: categories = [], isLoading: isCategoriesLoading } = useQuery<CategoryItem[]>({
@@ -94,27 +112,111 @@ export default function HomePage() {
 
           {/* ADMIN & CLIENT NAVIGATION LINKS */}
           <nav className="hidden md:flex items-center gap-2">
-            <Link
-              to="/admin/orders"
-              className="px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition flex items-center gap-2 border border-slate-800"
-            >
-              <ClipboardList className="w-4 h-4 text-orange-400" />
-              Đơn hàng (Admin)
-            </Link>
-            <Link
-              to="/admin/products"
-              className="px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition flex items-center gap-2 border border-slate-800"
-            >
-              <Boxes className="w-4 h-4 text-emerald-400" />
-              Nhập kho (Admin)
-            </Link>
-            <Link
-              to="/admin/promotions"
-              className="px-3.5 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition flex items-center gap-2 border border-slate-800"
-            >
-              <Ticket className="w-4 h-4 text-amber-400" />
-              Voucher (Admin)
-            </Link>
+            {isAdmin() && (
+              <>
+                <Link
+                  to="/admin/dashboard"
+                  className="px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition flex items-center gap-1.5 border border-slate-800"
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5 text-orange-500" />
+                  Dashboard
+                </Link>
+                <Link
+                  to="/admin/orders"
+                  className="px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition flex items-center gap-1.5 border border-slate-800"
+                >
+                  <ClipboardList className="w-3.5 h-3.5 text-orange-400" />
+                  Đơn hàng
+                </Link>
+                <Link
+                  to="/admin/products"
+                  className="px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition flex items-center gap-1.5 border border-slate-800"
+                >
+                  <Boxes className="w-3.5 h-3.5 text-emerald-400" />
+                  Kho
+                </Link>
+                <Link
+                  to="/admin/promotions"
+                  className="px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition flex items-center gap-1.5 border border-slate-800"
+                >
+                  <Ticket className="w-3.5 h-3.5 text-amber-400" />
+                  Voucher
+                </Link>
+                <Link
+                  to="/admin/users"
+                  className="px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition flex items-center gap-1.5 border border-slate-800"
+                >
+                  <Users className="w-3.5 h-3.5 text-indigo-400" />
+                  Khách hàng
+                </Link>
+              </>
+            )}
+
+            {/* SEARCH BAR */}
+            {!isAdmin() && (
+              <form onSubmit={handleSearch} className="relative hidden lg:flex items-center">
+                <Search className="absolute left-3 w-3.5 h-3.5 text-slate-500" />
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={e => setSearchInput(e.target.value)}
+                  placeholder="Tìm sản phẩm…"
+                  className="pl-8 pr-4 py-1.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500 w-52 transition"
+                />
+              </form>
+            )}
+
+            {/* USER LOGIN STATUS BADGE */}
+            {user ? (
+              <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
+                <Link
+                  to="/my-orders"
+                  className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 rounded-xl flex items-center gap-1.5 text-xs text-slate-300 hover:text-white transition"
+                >
+                  <ShoppingBag className="w-3.5 h-3.5 text-orange-400" />
+                  Đơn hàng của tôi
+                </Link>
+
+                <Link
+                  to="/account/profile"
+                  className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl flex items-center gap-2 text-xs transition group"
+                >
+                  {isAdmin() ? (
+                    <ShieldCheck className="w-4 h-4 text-orange-400" />
+                  ) : (
+                    <UserCheck className="w-4 h-4 text-emerald-400" />
+                  )}
+                  <span className="font-bold text-white max-w-[100px] truncate group-hover:text-orange-300">{user.fullName}</span>
+                  <span className={`px-1.5 py-0.5 text-[10px] font-extrabold uppercase rounded ${isAdmin() ? 'bg-orange-500/20 text-orange-300' : 'bg-emerald-500/20 text-emerald-300'}`}>
+                    {user.role}
+                  </span>
+                </Link>
+
+                <button
+                  onClick={logout}
+                  title="Đăng xuất"
+                  className="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-xl transition"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 pl-2 border-l border-slate-800">
+                <Link
+                  to="/login"
+                  className="px-3.5 py-2 text-xs font-semibold text-slate-200 hover:text-white hover:bg-slate-800 rounded-xl transition flex items-center gap-1.5 border border-slate-800"
+                >
+                  <LogIn className="w-4 h-4 text-orange-400" />
+                  Đăng nhập
+                </Link>
+                <Link
+                  to="/register"
+                  className="px-3.5 py-2 text-xs font-semibold bg-orange-500/10 hover:bg-orange-500/20 text-orange-300 border border-orange-500/30 rounded-xl transition"
+                >
+                  Đăng ký
+                </Link>
+              </div>
+            )}
           </nav>
 
           {/* GIỎ HÀNG FLOATING BUTTON */}
@@ -286,9 +388,11 @@ export default function HomePage() {
                             {product.categoryName}
                           </span>
                         )}
-                        <h3 className="font-bold text-slate-100 text-base line-clamp-2 leading-snug">
-                          {product.name}
-                        </h3>
+                        <Link to={`/products/${product.id}`} className="group-hover/card:text-orange-400 transition">
+                          <h3 className="font-bold text-slate-100 text-base line-clamp-2 leading-snug">
+                            {product.name}
+                          </h3>
+                        </Link>
                         {product.description && (
                           <p className="text-xs text-slate-400 line-clamp-2 mt-1">
                             {product.description}

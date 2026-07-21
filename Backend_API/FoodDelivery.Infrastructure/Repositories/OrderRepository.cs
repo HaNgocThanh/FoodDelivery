@@ -35,4 +35,41 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
         _dbSet.Update(order);
         return true;
     }
+
+    public async Task<List<Order>> GetUserOrdersAsync(int userId, CancellationToken ct = default)
+    {
+        return await _dbSet
+            .Include(o => o.OrderDetails!)
+                .ThenInclude(od => od.Product)
+            .Where(o => o.UserId == userId)
+            .OrderByDescending(o => o.OrderDate)
+            .AsNoTracking()
+            .ToListAsync(ct);
+    }
+
+    public async Task<Order?> GetOrderWithDetailsAsync(int orderId, CancellationToken ct = default)
+    {
+        return await _dbSet
+            .Include(o => o.OrderDetails!)
+                .ThenInclude(od => od.Product)
+            .FirstOrDefaultAsync(o => o.Id == orderId, ct);
+    }
+
+    public async Task<List<Order>> GetCompletedOrdersInRangeAsync(DateTime startDate, DateTime endDate, CancellationToken ct = default)
+    {
+        return await _dbSet
+            .Where(o => o.Status == OrderStatus.Completed
+                     && o.OrderDate >= startDate
+                     && o.OrderDate <= endDate)
+            .AsNoTracking()
+            .ToListAsync(ct);
+    }
+
+    public async Task<List<Order>> GetAllOrdersForStatusStatsAsync(CancellationToken ct = default)
+    {
+        return await _dbSet
+            .Select(o => new Order { Status = o.Status })
+            .AsNoTracking()
+            .ToListAsync(ct);
+    }
 }

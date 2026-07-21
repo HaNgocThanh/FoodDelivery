@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../api/axiosClient';
+import { Link } from 'react-router-dom';
 import {
   Truck,
   CheckCircle,
@@ -81,7 +82,7 @@ export default function OrderManagementPage() {
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Fetch orders from API
-  const { data: orders = [], isLoading, isError, refetch } = useQuery<OrderItem[]>({
+  const { data: orders = [], isLoading, isError, error, refetch } = useQuery<OrderItem[]>({
     queryKey: ['admin-orders', filterStatus],
     queryFn: async () => {
       const url = filterStatus ? `/api/orders?status=${filterStatus}` : '/api/orders';
@@ -199,9 +200,23 @@ export default function OrderManagementPage() {
               <span>Đang tải danh sách đơn hàng...</span>
             </div>
           ) : isError ? (
-            <div className="p-12 text-center text-red-400 flex flex-col items-center gap-2">
-              <AlertCircle className="w-8 h-8" />
-              <span>Không thể kết nối danh sách đơn hàng từ server.</span>
+            <div className="p-12 text-center text-red-400 flex flex-col items-center gap-3">
+              <AlertCircle className="w-10 h-10 text-red-400" />
+              <p className="font-semibold text-sm">{(error as any)?.message || 'Không thể kết nối danh sách đơn hàng từ server.'}</p>
+              <div className="flex gap-2 pt-2">
+                <button
+                  onClick={() => refetch()}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition border border-slate-700"
+                >
+                  Thử lại
+                </button>
+                <Link
+                  to="/login"
+                  className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-orange-500/20"
+                >
+                  Đăng nhập Admin
+                </Link>
+              </div>
             </div>
           ) : orders.length === 0 ? (
             <div className="p-12 text-center text-slate-400 flex flex-col items-center gap-2">

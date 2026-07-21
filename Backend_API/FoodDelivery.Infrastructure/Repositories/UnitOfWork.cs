@@ -13,19 +13,25 @@ public class UnitOfWork : IUnitOfWork
     public IOrderRepository Orders { get; }
     public IPromotionRepository Promotions { get; }
     public ICategoryRepository Categories { get; }
+    public IUserRepository Users { get; }
+    public IReviewRepository Reviews { get; }
 
     public UnitOfWork(
         AppDbContext context,
         IProductRepository products,
         IOrderRepository orders,
         IPromotionRepository promotions,
-        ICategoryRepository categories)
+        ICategoryRepository categories,
+        IUserRepository users,
+        IReviewRepository reviews)
     {
         _context = context;
         Products = products;
         Orders = orders;
         Promotions = promotions;
         Categories = categories;
+        Users = users;
+        Reviews = reviews;
     }
 
     public async Task<int> SaveChangesAsync(CancellationToken ct = default)

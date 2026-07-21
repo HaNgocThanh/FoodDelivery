@@ -1,3 +1,5 @@
+using FoodDelivery.Application.DTOs.Review;
+
 namespace FoodDelivery.Application.DTOs.Product;
 
 public record ProductResponseDTO(
@@ -10,5 +12,7 @@ public record ProductResponseDTO(
     int StockQuantity,
     string? Origin,
     bool IsHot,
-    bool IsAvailable
+    bool IsAvailable,
+    double AverageRating = 0,
+    IEnumerable<ReviewResponseDTO>? Reviews = null
 );

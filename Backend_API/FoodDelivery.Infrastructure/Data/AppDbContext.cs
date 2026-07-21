@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using FoodDelivery.Domain.Entities;
+using FoodDelivery.Domain.Enums;
 
 namespace FoodDelivery.Infrastructure.Data
 {
@@ -15,6 +16,7 @@ namespace FoodDelivery.Infrastructure.Data
         public DbSet<Promotion> Promotions { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderDetail> OrderDetails { get; set; }
+        public DbSet<Review> Reviews { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -52,6 +54,10 @@ namespace FoodDelivery.Infrastructure.Data
                 entity.Property(u => u.FullName).IsRequired().HasMaxLength(150);
                 entity.Property(u => u.PhoneNumber).HasMaxLength(20);
                 entity.Property(u => u.Email).HasMaxLength(100);
+                entity.Property(u => u.PasswordHash).HasMaxLength(256).IsRequired(false);
+                entity.Property(u => u.Role).HasMaxLength(50).HasDefaultValue("Customer").IsRequired(false);
+                entity.Property(u => u.Tier).HasConversion<string>().HasDefaultValue(MembershipTier.Standard);
+                entity.HasIndex(u => u.Email).IsUnique();
             });
 
             // 4. Cấu hình Fluent API cho Promotion
@@ -107,6 +113,24 @@ namespace FoodDelivery.Infrastructure.Data
                       .WithMany(p => p.OrderDetails)
                       .HasForeignKey(od => od.ProductId)
                       .OnDelete(DeleteBehavior.Restrict); // Không cho xóa Product nếu đã có trong OrderDetail
+            });
+
+            // 7. Cấu hình Fluent API cho Review
+            modelBuilder.Entity<Review>(entity =>
+            {
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.Rating).IsRequired();
+                entity.Property(r => r.Comment).HasMaxLength(1000);
+
+                entity.HasOne(r => r.Product)
+                      .WithMany(p => p.Reviews)
+                      .HasForeignKey(r => r.ProductId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(r => r.User)
+                      .WithMany(u => u.Reviews)
+                      .HasForeignKey(r => r.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
         }
     }

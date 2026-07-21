@@ -1,5 +1,6 @@
 using FoodDelivery.Application.DTOs.Promotion;
 using FoodDelivery.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FoodDelivery.API.Controllers;
@@ -16,10 +17,11 @@ public class PromotionsController : ControllerBase
     }
 
     /// <summary>
-    /// Lấy danh sách tất cả mã khuyến mãi (cho Admin)
+    /// Lấy danh sách tất cả mã khuyến mãi (Dành riêng cho Admin)
     /// GET /api/promotions
     /// </summary>
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(IEnumerable<PromotionResponseDTO>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAllPromotions(CancellationToken ct)
     {
@@ -28,10 +30,11 @@ public class PromotionsController : ControllerBase
     }
 
     /// <summary>
-    /// Tạo mã khuyến mãi mới
+    /// Tạo mã khuyến mãi mới (Dành riêng cho Admin)
     /// POST /api/promotions
     /// </summary>
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(typeof(PromotionResponseDTO), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreatePromotion([FromBody] CreatePromotionDTO request, CancellationToken ct)
@@ -41,7 +44,7 @@ public class PromotionsController : ControllerBase
     }
 
     /// <summary>
-    /// Kiểm tra tính hợp lệ của Mã khuyến mãi (dành cho Khách hàng khi Checkout)
+    /// Kiểm tra tính hợp lệ của Mã khuyến mãi (Public cho Khách hàng khi Checkout)
     /// POST /api/promotions/validate
     /// </summary>
     [HttpPost("validate")]

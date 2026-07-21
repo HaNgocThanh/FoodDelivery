@@ -8,6 +8,7 @@ using FoodDelivery.Domain.Interfaces;
 using FoodDelivery.Infrastructure.Data;
 using FoodDelivery.Infrastructure.Data.Seeds;
 using FoodDelivery.Infrastructure.Repositories;
+using FoodDelivery.Infrastructure.Services;
 using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -99,10 +100,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // =============================================
 // 5. DEPENDENCY INJECTION – Application Services
 // =============================================
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
+builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 
 // =============================================
 // 6. DEPENDENCY INJECTION – Infrastructure Repositories
@@ -111,6 +116,8 @@ builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IPromotionRepository, PromotionRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IReviewRepository, ReviewRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 

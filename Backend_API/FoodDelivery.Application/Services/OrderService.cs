@@ -33,13 +33,14 @@ public class OrderService : IOrderService
 
             // Khóa các dòng sản phẩm trong Oracle DB bằng SELECT ... FOR UPDATE NOWAIT
             var lockedProducts = await _unitOfWork.Products.GetManyWithLockAsync(productIds, ct);
+
             var productMap = lockedProducts.ToDictionary(p => p.Id);
 
             decimal totalAmount = 0;
             var orderDetails = new List<OrderDetail>();
             var responseDetails = new List<OrderDetailResponseDTO>();
 
-            // BƯỚC 3: Duyệt từng sản phẩm trong DTO, kiểm tra tồn kho và trừ kho
+            // BƯỚC 3: Trừ hàng trong kho và tính tổng giá trị đơn hàng
             foreach (var item in request.Items)
             {
                 if (!productMap.TryGetValue(item.ProductId, out var product))
@@ -49,21 +50,19 @@ public class OrderService : IOrderService
 
                 if (!product.IsAvailable || product.StockQuantity < item.Quantity)
                 {
-                    throw new InsufficientStockException(
-                        $"Sản phẩm '{product.Name}' (ID: {product.Id}) chỉ còn {product.StockQuantity} trong kho, không đủ số lượng yêu cầu: {item.Quantity}.");
+                    throw new InvalidOperationException($"Sản phẩm '{product.Name}' không đủ số lượng tồn kho (Hiện có: {product.StockQuantity}, Yêu cầu: {item.Quantity}).");
                 }
 
-                // Trừ số lượng tồn kho (bảo vệ chuẩn ACID)
+                // Trừ kho ngay lập tức
                 product.StockQuantity -= item.Quantity;
                 if (product.StockQuantity == 0)
                 {
                     product.IsAvailable = false;
                 }
-
                 _unitOfWork.Products.Update(product);
 
-                decimal subtotal = product.Price * item.Quantity;
-                totalAmount += subtotal;
+                var lineTotal = product.Price * item.Quantity;
+                totalAmount += lineTotal;
 
                 orderDetails.Add(new OrderDetail
                 {
@@ -77,44 +76,11 @@ public class OrderService : IOrderService
                     product.Name,
                     item.Quantity,
                     product.Price,
-                    subtotal
+                    lineTotal
                 ));
             }
 
-            // BƯỚC 3.5: Áp dụng Mã khuyến mãi (nếu có)
-            if (request.PromotionId.HasValue && request.PromotionId.Value > 0)
-            {
-                var promotion = await _unitOfWork.Promotions.GetByIdAsync(request.PromotionId.Value, ct);
-                if (promotion == null)
-                {
-                    throw new NotFoundException($"Mã khuyến mãi với ID {request.PromotionId} không tồn tại.");
-                }
-
-                if (!promotion.IsActive)
-                {
-                    throw new ArgumentException("Mã khuyến mãi này đã bị vô hiệu hóa.");
-                }
-
-                if (DateTime.UtcNow > promotion.ExpiryDate)
-                {
-                    throw new ArgumentException("Mã khuyến mãi này đã hết hạn sử dụng.");
-                }
-
-                if (promotion.CurrentUsage >= promotion.MaxUsage)
-                {
-                    throw new ArgumentException("Mã khuyến mãi này đã hết lượt sử dụng.");
-                }
-
-                // Trừ tiền tổng đơn dựa trên phần trăm giảm giá
-                decimal discountAmount = totalAmount * (promotion.DiscountPercentage / 100m);
-                totalAmount = Math.Max(0, totalAmount - discountAmount);
-
-                // Tăng lượt sử dụng của Mã khuyến mãi lên 1
-                promotion.CurrentUsage += 1;
-                _unitOfWork.Promotions.Update(promotion);
-            }
-
-            // BƯỚC 4: Tạo thực thể Đơn hàng (Order Aggregate)
+            // BƯỚC 4: Tạo đối tượng Đơn hàng
             var order = new Order
             {
                 UserId = request.UserId,
@@ -165,14 +131,60 @@ public class OrderService : IOrderService
 
     public async Task<bool> UpdateOrderStatusAsync(int orderId, OrderStatus status, CancellationToken ct = default)
     {
-        var result = await _unitOfWork.Orders.UpdateOrderStatusAsync(orderId, status, ct);
-        if (!result)
-        {
-            throw new NotFoundException($"Đơn hàng với ID {orderId} không tồn tại.");
-        }
+        await _unitOfWork.BeginTransactionAsync(ct);
 
-        await _unitOfWork.SaveChangesAsync(ct);
-        return true;
+        try
+        {
+            var order = await _unitOfWork.Orders.GetByIdAsync(orderId, ct);
+            if (order == null)
+            {
+                throw new NotFoundException($"Đơn hàng với ID {orderId} không tồn tại.");
+            }
+
+            var previousStatus = order.Status;
+            order.Status = status;
+            _unitOfWork.Orders.Update(order);
+
+            // Khi đơn hàng chuyển sang trạng thái Completed (và chưa từng Completed trước đó)
+            if (status == OrderStatus.Completed && previousStatus != OrderStatus.Completed)
+            {
+                var user = await _unitOfWork.Users.GetByIdAsync(order.UserId, ct);
+                if (user != null)
+                {
+                    // Tính điểm tích lũy: TotalAmount / 10,000
+                    int pointsEarned = (int)(order.TotalAmount / 10000m);
+                    user.LoyaltyPoints += pointsEarned;
+
+                    // Đánh giá lại Hạng thẻ (MembershipTier)
+                    if (user.LoyaltyPoints >= 1000)
+                    {
+                        user.Tier = MembershipTier.Platinum;
+                    }
+                    else if (user.LoyaltyPoints >= 500)
+                    {
+                        user.Tier = MembershipTier.Gold;
+                    }
+                    else if (user.LoyaltyPoints >= 100)
+                    {
+                        user.Tier = MembershipTier.Silver;
+                    }
+                    else
+                    {
+                        user.Tier = MembershipTier.Standard;
+                    }
+
+                    _unitOfWork.Users.Update(user);
+                }
+            }
+
+            await _unitOfWork.CommitTransactionAsync(ct);
+            return true;
+        }
+        catch
+        {
+            await _unitOfWork.RollbackTransactionAsync(ct);
+            throw;
+        }
     }
 
     public async Task<IEnumerable<OrderResponseDTO>> GetOrdersByStatusAsync(OrderStatus? status = null, CancellationToken ct = default)
@@ -208,5 +220,90 @@ public class OrderService : IOrderService
         }
 
         return result;
+    }
+
+    public async Task<IEnumerable<OrderResponseDTO>> GetUserOrdersAsync(int userId, CancellationToken ct = default)
+    {
+        var orders = await _unitOfWork.Orders.GetUserOrdersAsync(userId, ct);
+
+        var result = new List<OrderResponseDTO>();
+        foreach (var order in orders)
+        {
+            var details = order.OrderDetails != null
+                ? order.OrderDetails.Select(od => new OrderDetailResponseDTO(
+                    od.ProductId,
+                    od.Product?.Name ?? $"Sản phẩm #{od.ProductId}",
+                    od.Quantity,
+                    od.UnitPrice,
+                    od.Quantity * od.UnitPrice
+                )).ToList()
+                : new List<OrderDetailResponseDTO>();
+
+            result.Add(new OrderResponseDTO(
+                order.Id,
+                order.UserId,
+                order.OrderDate,
+                order.TotalAmount,
+                order.PaymentMethod,
+                order.Status,
+                order.PromotionId,
+                order.ShipperId,
+                details
+            ));
+        }
+
+        return result;
+    }
+
+    public async Task<bool> CancelUserOrderAsync(int orderId, int userId, CancellationToken ct = default)
+    {
+        await _unitOfWork.BeginTransactionAsync(ct);
+
+        try
+        {
+            var order = await _unitOfWork.Orders.GetOrderWithDetailsAsync(orderId, ct);
+
+            if (order == null)
+            {
+                throw new NotFoundException($"Đơn hàng với ID #{orderId} không tồn tại.");
+            }
+
+            if (order.UserId != userId)
+            {
+                throw new InvalidOperationException("Bạn không có quyền hủy đơn hàng của người dùng khác.");
+            }
+
+            if (order.Status != OrderStatus.Pending)
+            {
+                throw new InvalidOperationException($"Chỉ có thể hủy đơn hàng khi ở trạng thái Chờ xử lý (Pending). Trạng thái hiện tại: {order.Status}.");
+            }
+
+            // Đổi trạng thái sang Cancelled
+            order.Status = OrderStatus.Cancelled;
+            _unitOfWork.Orders.Update(order);
+
+            // Hoàn số lượng tồn kho cho từng sản phẩm trong đơn hàng
+            if (order.OrderDetails != null)
+            {
+                foreach (var detail in order.OrderDetails)
+                {
+                    var product = await _unitOfWork.Products.GetByIdAsync(detail.ProductId, ct);
+                    if (product != null)
+                    {
+                        product.StockQuantity += detail.Quantity;
+                        product.IsAvailable = true;
+                        _unitOfWork.Products.Update(product);
+                    }
+                }
+            }
+
+            await _unitOfWork.CommitTransactionAsync(ct);
+            return true;
+        }
+        catch
+        {
+            await _unitOfWork.RollbackTransactionAsync(ct);
+            throw;
+        }
     }
 }

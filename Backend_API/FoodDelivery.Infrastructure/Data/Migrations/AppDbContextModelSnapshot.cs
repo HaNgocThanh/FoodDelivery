@@ -50,12 +50,31 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
                     b.Property<int>("LoyaltyPoints")
                         .HasColumnType("NUMBER(10)");
 
+                    b.Property<string>("PasswordHash")
+                        .HasMaxLength(256)
+                        .HasColumnType("NVARCHAR2(256)");
+
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("NVARCHAR2(20)");
 
+                    b.Property<string>("Role")
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("NVARCHAR2(50)")
+                        .HasDefaultValue("Customer");
+
+                    b.Property<string>("Tier")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("NVARCHAR2(2000)")
+                        .HasDefaultValue("Standard");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("Email")
+                        .IsUnique();
 
                     b.ToTable("AppUsers");
                 });
@@ -224,6 +243,40 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
                     b.ToTable("Promotions");
                 });
 
+            modelBuilder.Entity("FoodDelivery.Domain.Entities.Review", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("NUMBER(10)");
+
+                    OraclePropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("NVARCHAR2(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TIMESTAMP(7)");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("NUMBER(10)");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("NUMBER(10)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("NUMBER(10)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Reviews");
+                });
+
             modelBuilder.Entity("FoodDelivery.Domain.Entities.Order", b =>
                 {
                     b.HasOne("FoodDelivery.Domain.Entities.Promotion", "Promotion")
@@ -279,8 +332,29 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
                     b.Navigation("Category");
                 });
 
+            modelBuilder.Entity("FoodDelivery.Domain.Entities.Review", b =>
+                {
+                    b.HasOne("FoodDelivery.Domain.Entities.Product", "Product")
+                        .WithMany("Reviews")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FoodDelivery.Domain.Entities.AppUser", "User")
+                        .WithMany("Reviews")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("FoodDelivery.Domain.Entities.AppUser", b =>
                 {
+                    b.Navigation("Reviews");
+
                     b.Navigation("ShipperOrders");
 
                     b.Navigation("UserOrders");
@@ -299,6 +373,8 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
             modelBuilder.Entity("FoodDelivery.Domain.Entities.Product", b =>
                 {
                     b.Navigation("OrderDetails");
+
+                    b.Navigation("Reviews");
                 });
 
             modelBuilder.Entity("FoodDelivery.Domain.Entities.Promotion", b =>

@@ -1,23 +1,26 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Suspense, lazy } from 'react';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 
-// Direct import cho HomePage để hiển thị ngay lập tức
+// Direct import cho HomePage, LoginPage, RegisterPage để hiển thị mượt mà
 import HomePage from '@/pages/HomePage';
+import LoginPage from '@/pages/LoginPage';
+import RegisterPage from '@/pages/RegisterPage';
 
 // Lazy load các trang khác
-const ProductListPage    = lazy(() => import('@/pages/ProductListPage'));
-const ProductDetailPage  = lazy(() => import('@/pages/ProductDetailPage'));
-const CartPage           = lazy(() => import('@/pages/CartPage'));
-const CheckoutPage       = lazy(() => import('@/pages/CheckoutPage'));
-const LoginPage          = lazy(() => import('@/pages/LoginPage'));
-const RegisterPage       = lazy(() => import('@/pages/RegisterPage'));
-const ProfilePage        = lazy(() => import('@/pages/ProfilePage'));
-const OrdersPage         = lazy(() => import('@/pages/OrdersPage'));
-const AdminDashboard     = lazy(() => import('@/pages/admin/DashboardPage'));
-const OrderManagementPage = lazy(() => import('@/pages/OrderManagementPage'));
-const ProductManagementPage = lazy(() => import('@/pages/ProductManagementPage'));
-const PromotionManagementPage = lazy(() => import('@/pages/PromotionManagementPage'));
+const ProductListPage          = lazy(() => import('@/pages/ProductListPage'));
+const ProductDetailPage        = lazy(() => import('@/pages/ProductDetailPage'));
+const CartPage                 = lazy(() => import('@/pages/CartPage'));
+const CheckoutPage             = lazy(() => import('@/pages/CheckoutPage'));
+const ProfilePage              = lazy(() => import('@/pages/ProfilePage'));
+const OrdersPage               = lazy(() => import('@/pages/OrdersPage'));
+const SearchPage               = lazy(() => import('@/pages/SearchPage'));
+const AdminDashboard           = lazy(() => import('@/pages/admin/DashboardPage'));
+const OrderManagementPage       = lazy(() => import('@/pages/OrderManagementPage'));
+const ProductManagementPage     = lazy(() => import('@/pages/ProductManagementPage'));
+const PromotionManagementPage   = lazy(() => import('@/pages/PromotionManagementPage'));
+const UserManagementPage        = lazy(() => import('@/pages/UserManagementPage'));
 
 // Loading fallback
 function PageLoader() {
@@ -61,17 +64,22 @@ export default function App() {
           <Route path="/cart"              element={<CartPage />} />
           <Route path="/login"             element={<LoginPage />} />
           <Route path="/register"          element={<RegisterPage />} />
+          <Route path="/search"            element={<SearchPage />} />
 
-          {/* Protected routes */}
+          {/* Protected routes cho Khách hàng */}
           <Route path="/checkout"          element={<CheckoutPage />} />
           <Route path="/account/profile"   element={<ProfilePage />} />
           <Route path="/account/orders"    element={<OrdersPage />} />
+          <Route path="/my-orders"         element={<OrdersPage />} />
 
-          {/* Admin routes */}
-          <Route path="/admin/dashboard"   element={<AdminDashboard />} />
-          <Route path="/admin/orders"      element={<OrderManagementPage />} />
-          <Route path="/admin/products"    element={<ProductManagementPage />} />
-          <Route path="/admin/promotions"  element={<PromotionManagementPage />} />
+          {/* BẢO VỆ TẤT CẢ ROUTE ADMIN NGUYÊN TẮC (ROLES = ADMIN) */}
+          <Route element={<ProtectedRoute requiredRole="Admin" />}>
+            <Route path="/admin/dashboard"   element={<AdminDashboard />} />
+            <Route path="/admin/orders"      element={<OrderManagementPage />} />
+            <Route path="/admin/products"    element={<ProductManagementPage />} />
+            <Route path="/admin/promotions"  element={<PromotionManagementPage />} />
+            <Route path="/admin/users"       element={<UserManagementPage />} />
+          </Route>
 
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />

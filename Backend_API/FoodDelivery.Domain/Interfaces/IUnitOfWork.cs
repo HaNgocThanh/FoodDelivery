@@ -6,6 +6,8 @@ public interface IUnitOfWork : IDisposable
     IOrderRepository Orders { get; }
     IPromotionRepository Promotions { get; }
     ICategoryRepository Categories { get; }
+    IUserRepository Users { get; }
+    IReviewRepository Reviews { get; }
 
     Task<int> SaveChangesAsync(CancellationToken ct = default);
     Task BeginTransactionAsync(CancellationToken ct = default);
