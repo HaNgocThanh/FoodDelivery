@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../api/axiosClient';
+import AdminLayout from '@/components/AdminLayout';
 import {
   Boxes,
   Plus,
@@ -132,8 +133,8 @@ export default function ProductManagementPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 lg:p-8 font-sans">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <AdminLayout>
+      <div className="p-6 lg:p-8 space-y-6 min-h-screen">
 
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-slate-800">
@@ -520,6 +521,6 @@ export default function ProductManagementPage() {
           </div>
         </div>
       )}
-    </div>
+    </AdminLayout>
   );
 }

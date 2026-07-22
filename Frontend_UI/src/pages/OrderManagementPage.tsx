@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../api/axiosClient';
+import AdminLayout from '@/components/AdminLayout';
 import { Link } from 'react-router-dom';
 import {
   Truck,
@@ -10,7 +11,8 @@ import {
   RefreshCw,
   X,
   AlertCircle,
-  PackageCheck
+  PackageCheck,
+  Eye
 } from 'lucide-react';
 
 export interface OrderItemDetail {
@@ -78,6 +80,8 @@ export default function OrderManagementPage() {
 
   const [statusModalOrder, setStatusModalOrder] = useState<OrderItem | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<number>(3); // 3 = Shipping
+  
+  const [detailModalOrder, setDetailModalOrder] = useState<OrderItem | null>(null);
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -128,8 +132,8 @@ export default function OrderManagementPage() {
   });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 lg:p-8 font-sans">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <AdminLayout>
+      <div className="p-6 lg:p-8 space-y-6 min-h-screen">
 
         {/* HEADER */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-slate-800">
@@ -177,7 +181,7 @@ export default function OrderManagementPage() {
 
         {/* STATUS TABS / FILTERS */}
         <div className="flex flex-wrap gap-2">
-          {['Pending', 'Shipping', 'Completed', ''].map((st) => (
+          {['Pending', 'Approved', 'Shipping', 'Completed', 'Cancelled', ''].map((st) => (
             <button
               key={st}
               onClick={() => setFilterStatus(st)}
@@ -187,7 +191,12 @@ export default function OrderManagementPage() {
                   : 'bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800 hover:text-slate-200'
               }`}
             >
-              {st === '' ? 'Tất cả đơn hàng' : st === 'Pending' ? 'Chờ xử lý (Pending)' : st === 'Shipping' ? 'Đang giao (Shipping)' : 'Hoàn tất (Completed)'}
+              {st === '' ? 'Tất cả đơn hàng' 
+                : st === 'Pending' ? 'Chờ xử lý (Pending)' 
+                : st === 'Approved' ? 'Đã duyệt (Approved)' 
+                : st === 'Shipping' ? 'Đang giao (Shipping)' 
+                : st === 'Completed' ? 'Hoàn tất (Completed)' 
+                : 'Đã hủy (Cancelled)'}
             </button>
           ))}
         </div>
@@ -273,6 +282,15 @@ export default function OrderManagementPage() {
                         </td>
                         <td className="py-4 px-6">
                           <div className="flex items-center justify-center gap-2">
+                            {/* Nút Xem Chi tiết */}
+                            <button
+                              onClick={() => setDetailModalOrder(order)}
+                              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg transition text-xs font-semibold flex items-center gap-1.5"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                              Chi tiết
+                            </button>
+
                             {/* Nút Phân công Shipper */}
                             <button
                               onClick={() => {
@@ -416,6 +434,72 @@ export default function OrderManagementPage() {
           </div>
         </div>
       )}
-    </div>
+
+      {/* MODAL XEM CHI TIẾT ĐƠN HÀNG */}
+      {detailModalOrder && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 space-y-6 shadow-2xl overflow-y-auto max-h-[90vh]">
+            <div className="flex justify-between items-center pb-4 border-b border-slate-800">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <PackageCheck className="w-5 h-5 text-orange-400" />
+                Chi tiết Đơn hàng #{detailModalOrder.id}
+              </h3>
+              <button onClick={() => setDetailModalOrder(null)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-slate-300">
+              <div>
+                <p><span className="text-slate-500">Mã đơn hàng:</span> <strong className="text-white">#{detailModalOrder.id}</strong></p>
+                <p><span className="text-slate-500">Mã khách hàng:</span> <strong className="text-white">#{detailModalOrder.userId}</strong></p>
+                <p><span className="text-slate-500">Ngày đặt:</span> <span className="text-slate-200">{new Date(detailModalOrder.orderDate).toLocaleString('vi-VN')}</span></p>
+              </div>
+              <div>
+                <p><span className="text-slate-500">Trạng thái:</span> <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${statusNames[detailModalOrder.status]?.style || ''}`}>{statusNames[detailModalOrder.status]?.label || String(detailModalOrder.status)}</span></p>
+                <p><span className="text-slate-500">Thanh toán:</span> <strong className="text-white">{detailModalOrder.paymentMethod === 1 || detailModalOrder.paymentMethod === 'COD' ? 'COD (Tiền mặt)' : 'Online'}</strong></p>
+                <p><span className="text-slate-500">Shipper phụ trách:</span> <strong className="text-emerald-400">{detailModalOrder.shipperId ? `Shipper #${detailModalOrder.shipperId}` : 'Chưa phân công'}</strong></p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="font-bold text-slate-200 border-b border-slate-800 pb-2 text-sm uppercase tracking-wider">Danh sách món ăn</h4>
+              <div className="bg-slate-950 rounded-xl border border-slate-800 overflow-hidden divide-y divide-slate-900">
+                {detailModalOrder.details && detailModalOrder.details.length > 0 ? (
+                  detailModalOrder.details.map((item, idx) => (
+                    <div key={idx} className="p-3.5 flex justify-between items-center text-sm">
+                      <div className="space-y-1">
+                        <p className="font-semibold text-slate-200">{item.productName || `Sản phẩm #${item.productId}`}</p>
+                        <p className="text-xs text-slate-500">Mã món: #{item.productId}</p>
+                      </div>
+                      <div className="text-right space-y-1">
+                        <p className="font-mono font-bold text-slate-200">{item.subtotal?.toLocaleString('vi-VN') || (item.quantity * item.unitPrice).toLocaleString('vi-VN')} đ</p>
+                        <p className="text-xs text-slate-500">{item.quantity} x {item.unitPrice?.toLocaleString('vi-VN')} đ</p>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p className="p-4 text-center text-slate-500 italic text-xs">Không có dữ liệu chi tiết sản phẩm.</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center pt-4 border-t border-slate-800 font-bold">
+              <span className="text-slate-400 text-sm">Tổng cộng đơn hàng:</span>
+              <span className="text-xl text-orange-400">{detailModalOrder.totalAmount?.toLocaleString('vi-VN')} đ</span>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
+              <button
+                onClick={() => setDetailModalOrder(null)}
+                className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-semibold transition"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </AdminLayout>
   );
 }

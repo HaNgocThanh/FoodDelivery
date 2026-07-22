@@ -148,6 +148,12 @@ export default function LoginPage() {
             </div>
           </div>
 
+          <div className="text-right">
+            <Link to="/forgot-password" className="text-xs text-orange-400 font-medium hover:underline">
+              Quên mật khẩu?
+            </Link>
+          </div>
+
           <button
             type="submit"
             disabled={isPending}

@@ -108,6 +108,7 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();
+builder.Services.AddScoped<IEmailService, FoodDelivery.Infrastructure.Services.EmailService>();
 
 // =============================================
 // 6. DEPENDENCY INJECTION – Infrastructure Repositories

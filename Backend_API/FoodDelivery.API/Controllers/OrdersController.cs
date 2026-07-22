@@ -169,4 +169,28 @@ public class OrdersController : ControllerBase
         await _orderService.UpdateOrderStatusAsync(id, request.Status, ct);
         return Ok(new { message = $"Đã cập nhật đơn hàng #{id} sang trạng thái {request.Status}." });
     }
+
+    /// <summary>
+    /// Xác nhận thanh toán trực tuyến thành công (Client)
+    /// PUT /api/orders/{id}/pay-success
+    /// </summary>
+    [HttpPut("{id:int}/pay-success")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> PaySuccess(int id, CancellationToken ct)
+    {
+        var result = await _orderService.UpdateOrderStatusAsync(id, OrderStatus.Approved, ct);
+        if (!result)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Status = 404,
+                Title = "Không tìm thấy đơn hàng",
+                Detail = $"Không tìm thấy đơn hàng #{id}."
+            });
+        }
+        return Ok(new { message = $"Đơn hàng #{id} đã được xác nhận thanh toán thành công." });
+    }
 }
+

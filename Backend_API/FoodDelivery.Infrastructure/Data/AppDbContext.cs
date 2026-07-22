@@ -57,6 +57,8 @@ namespace FoodDelivery.Infrastructure.Data
                 entity.Property(u => u.PasswordHash).HasMaxLength(256).IsRequired(false);
                 entity.Property(u => u.Role).HasMaxLength(50).HasDefaultValue("Customer").IsRequired(false);
                 entity.Property(u => u.Tier).HasConversion<string>().HasDefaultValue(MembershipTier.Standard);
+                entity.Property(u => u.ResetPasswordToken).HasMaxLength(100).IsRequired(false);
+                entity.Property(u => u.ResetPasswordExpiry).IsRequired(false);
                 entity.HasIndex(u => u.Email).IsUnique();
             });
 

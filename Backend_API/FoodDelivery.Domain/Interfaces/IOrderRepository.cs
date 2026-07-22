@@ -19,4 +19,6 @@ public interface IOrderRepository : IGenericRepository<Order>
     /// Lấy tất cả đơn hàng kèm trạng thái để thống kê.
     /// </summary>
     Task<List<Order>> GetAllOrdersForStatusStatsAsync(CancellationToken ct = default);
+
+    Task<List<Order>> GetOrdersWithDetailsAsync(OrderStatus? status = null, CancellationToken ct = default);
 }

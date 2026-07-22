@@ -15,6 +15,9 @@ public class AppUser
     public int LoyaltyPoints { get; set; }
     public MembershipTier Tier { get; set; } = MembershipTier.Standard;
 
+    public string? ResetPasswordToken { get; set; }
+    public DateTime? ResetPasswordExpiry { get; set; }
+
     // Navigation properties
     public ICollection<Order> UserOrders { get; set; } = new List<Order>();
     public ICollection<Order> ShipperOrders { get; set; } = new List<Order>();

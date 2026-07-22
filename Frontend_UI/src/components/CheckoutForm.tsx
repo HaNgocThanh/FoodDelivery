@@ -87,15 +87,31 @@ export const CheckoutForm: React.FC = () => {
         items: itemsPayload,
       },
       {
-        onSuccess: () => {
-          // Xóa dọn giỏ hàng sau khi đặt hàng thành công
-          clearCart();
+        onSuccess: async (data) => {
+          if (paymentMethod === 2) {
+            try {
+              // Gọi API lấy URL thanh toán trực tuyến giả lập
+              const res = await axiosClient.post<{ payUrl: string }, { payUrl: string }>('/api/payments/mock-url', {
+                orderId: data.id,
+                amount: data.totalAmount,
+              });
+              if (res?.payUrl) {
+                window.location.href = res.payUrl;
+              }
+            } catch (err: any) {
+              console.error("Không thể lấy link thanh toán giả lập", err);
+              alert("Lỗi kết nối cổng thanh toán giả lập. Đơn hàng đã được tạo nhưng chưa thanh toán.");
+            }
+          } else {
+            // Thanh toán COD thành công thì xóa giỏ hàng ngay
+            clearCart();
+          }
         },
       }
     );
   };
 
-  if (isSuccess && orderResult) {
+  if (isSuccess && orderResult && paymentMethod === 1) {
     return (
       <div className="max-w-2xl mx-auto p-8 bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl text-slate-100 text-center space-y-6">
         <div className="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto border border-emerald-500/30">
@@ -232,8 +248,8 @@ export const CheckoutForm: React.FC = () => {
               <input type="radio" name="payment" value={1} checked={paymentMethod === 1} onChange={() => setPaymentMethod(1)} className="hidden" />
               <CreditCard className="w-5 h-5 text-orange-500" />
               <div>
-                <p className="font-medium text-sm">Thanh toán COD</p>
-                <p className="text-xs text-slate-400">Khi nhận hàng</p>
+                <p className="font-medium text-sm">Thanh toán khi nhận hàng (COD)</p>
+                <p className="text-xs text-slate-400">Trả tiền mặt khi shipper giao tới</p>
               </div>
             </label>
 
@@ -241,8 +257,8 @@ export const CheckoutForm: React.FC = () => {
               <input type="radio" name="payment" value={2} checked={paymentMethod === 2} onChange={() => setPaymentMethod(2)} className="hidden" />
               <CreditCard className="w-5 h-5 text-emerald-500" />
               <div>
-                <p className="font-medium text-sm">Chuyển khoản Online</p>
-                <p className="text-xs text-slate-400">Thẻ / Ví điện tử</p>
+                <p className="font-medium text-sm">Thanh toán trực tuyến (VNPay Mock)</p>
+                <p className="text-xs text-slate-400">Giả lập cổng thanh toán online</p>
               </div>
             </label>
           </div>

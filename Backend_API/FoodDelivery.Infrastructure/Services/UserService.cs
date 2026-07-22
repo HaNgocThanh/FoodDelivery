@@ -74,4 +74,26 @@ public class UserService : IUserService
             totalPages
         );
     }
+
+    public async Task<bool> UpdateUserByAdminAsync(int userId, UpdateUserByAdminDTO dto, CancellationToken ct = default)
+    {
+        var user = await _context.AppUsers.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user == null)
+        {
+            throw new NotFoundException($"Không tìm thấy người dùng với ID #{userId}.");
+        }
+
+        user.FullName = dto.FullName;
+        user.Email = dto.Email;
+        user.PhoneNumber = dto.PhoneNumber;
+        user.Address1 = dto.Address1;
+        user.Address2 = dto.Address2;
+        user.LoyaltyPoints = dto.LoyaltyPoints;
+        user.Tier = dto.Tier;
+        user.Role = dto.Role;
+
+        _context.AppUsers.Update(user);
+        await _context.SaveChangesAsync(ct);
+        return true;
+    }
 }

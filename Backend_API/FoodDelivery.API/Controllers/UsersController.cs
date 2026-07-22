@@ -56,4 +56,20 @@ public class UsersController : ControllerBase
         var users = await _userService.GetPaginatedUsersAsync(page, pageSize, ct);
         return Ok(users);
     }
+
+    /// <summary>
+    /// Cập nhật thông tin người dùng / khách hàng dành cho Admin
+    /// PUT /api/users/{id}
+    /// </summary>
+    [HttpPut("{id}")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateUser(int id, [FromBody] UpdateUserByAdminDTO request, CancellationToken ct)
+    {
+        await _userService.UpdateUserByAdminAsync(id, request, ct);
+        return Ok(new { message = $"Đã cập nhật thành công tài khoản người dùng #{id}." });
+    }
 }

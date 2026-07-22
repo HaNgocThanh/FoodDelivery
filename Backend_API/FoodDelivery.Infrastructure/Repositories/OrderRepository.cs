@@ -72,4 +72,19 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
             .AsNoTracking()
             .ToListAsync(ct);
     }
+
+    public async Task<List<Order>> GetOrdersWithDetailsAsync(OrderStatus? status = null, CancellationToken ct = default)
+    {
+        var query = _dbSet
+            .Include(o => o.OrderDetails!)
+                .ThenInclude(od => od.Product)
+            .AsNoTracking();
+
+        if (status.HasValue)
+        {
+            query = query.Where(o => o.Status == status.Value);
+        }
+
+        return await query.OrderByDescending(o => o.OrderDate).ToListAsync(ct);
+    }
 }

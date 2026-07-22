@@ -7,9 +7,6 @@ import { CheckoutForm } from '../components/CheckoutForm';
 import {
   ShoppingBag,
   ShoppingCart,
-  Boxes,
-  Ticket,
-  ClipboardList,
   Plus,
   Check,
   Flame,
@@ -21,9 +18,9 @@ import {
   UserCheck,
   LogIn,
   LogOut,
-  Users,
   Search,
-  LayoutDashboard
+  LayoutDashboard,
+  Boxes
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { ProductItem } from './ProductManagementPage';
@@ -111,60 +108,30 @@ export default function HomePage() {
           </Link>
 
           {/* ADMIN & CLIENT NAVIGATION LINKS */}
-          <nav className="hidden md:flex items-center gap-2">
+          <nav className="hidden md:flex items-center gap-3">
+
+            {/* Admin: single compact panel button */}
             {isAdmin() && (
-              <>
-                <Link
-                  to="/admin/dashboard"
-                  className="px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition flex items-center gap-1.5 border border-slate-800"
-                >
-                  <LayoutDashboard className="w-3.5 h-3.5 text-orange-500" />
-                  Dashboard
-                </Link>
-                <Link
-                  to="/admin/orders"
-                  className="px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition flex items-center gap-1.5 border border-slate-800"
-                >
-                  <ClipboardList className="w-3.5 h-3.5 text-orange-400" />
-                  Đơn hàng
-                </Link>
-                <Link
-                  to="/admin/products"
-                  className="px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition flex items-center gap-1.5 border border-slate-800"
-                >
-                  <Boxes className="w-3.5 h-3.5 text-emerald-400" />
-                  Kho
-                </Link>
-                <Link
-                  to="/admin/promotions"
-                  className="px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition flex items-center gap-1.5 border border-slate-800"
-                >
-                  <Ticket className="w-3.5 h-3.5 text-amber-400" />
-                  Voucher
-                </Link>
-                <Link
-                  to="/admin/users"
-                  className="px-3 py-2 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 rounded-xl transition flex items-center gap-1.5 border border-slate-800"
-                >
-                  <Users className="w-3.5 h-3.5 text-indigo-400" />
-                  Khách hàng
-                </Link>
-              </>
+              <Link
+                to="/admin/dashboard"
+                className="flex items-center gap-2 px-3.5 py-2 bg-orange-500/10 hover:bg-orange-500/20 border border-orange-500/30 text-orange-400 hover:text-orange-300 rounded-xl text-xs font-bold transition"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                Admin Panel
+              </Link>
             )}
 
-            {/* SEARCH BAR */}
-            {!isAdmin() && (
-              <form onSubmit={handleSearch} className="relative hidden lg:flex items-center">
-                <Search className="absolute left-3 w-3.5 h-3.5 text-slate-500" />
-                <input
-                  type="text"
-                  value={searchInput}
-                  onChange={e => setSearchInput(e.target.value)}
-                  placeholder="Tìm sản phẩm…"
-                  className="pl-8 pr-4 py-1.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500 w-52 transition"
-                />
-              </form>
-            )}
+            {/* SEARCH BAR (all users) */}
+            <form onSubmit={handleSearch} className="relative hidden lg:flex items-center">
+              <Search className="absolute left-3 w-3.5 h-3.5 text-slate-500" />
+              <input
+                type="text"
+                value={searchInput}
+                onChange={e => setSearchInput(e.target.value)}
+                placeholder="Tìm sản phẩm…"
+                className="pl-8 pr-4 py-1.5 bg-slate-800 border border-slate-700 rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-orange-500 w-52 transition"
+              />
+            </form>
 
             {/* USER LOGIN STATUS BADGE */}
             {user ? (

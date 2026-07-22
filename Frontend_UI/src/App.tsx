@@ -16,6 +16,9 @@ const CheckoutPage             = lazy(() => import('@/pages/CheckoutPage'));
 const ProfilePage              = lazy(() => import('@/pages/ProfilePage'));
 const OrdersPage               = lazy(() => import('@/pages/OrdersPage'));
 const SearchPage               = lazy(() => import('@/pages/SearchPage'));
+const PaymentResultPage        = lazy(() => import('@/pages/PaymentResultPage'));
+const ForgotPasswordPage       = lazy(() => import('@/pages/ForgotPasswordPage'));
+const ResetPasswordPage        = lazy(() => import('@/pages/ResetPasswordPage'));
 const AdminDashboard           = lazy(() => import('@/pages/admin/DashboardPage'));
 const OrderManagementPage       = lazy(() => import('@/pages/OrderManagementPage'));
 const ProductManagementPage     = lazy(() => import('@/pages/ProductManagementPage'));
@@ -65,6 +68,9 @@ export default function App() {
           <Route path="/login"             element={<LoginPage />} />
           <Route path="/register"          element={<RegisterPage />} />
           <Route path="/search"            element={<SearchPage />} />
+          <Route path="/payment-result"    element={<PaymentResultPage />} />
+          <Route path="/forgot-password"   element={<ForgotPasswordPage />} />
+          <Route path="/reset-password"    element={<ResetPasswordPage />} />
 
           {/* Protected routes cho Khách hàng */}
           <Route path="/checkout"          element={<CheckoutPage />} />
