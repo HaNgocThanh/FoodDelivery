@@ -55,6 +55,14 @@ public class GlobalExceptionMiddleware
                 _logger.LogWarning(ex, "Không tìm thấy: {Message}", ex.Message);
                 break;
 
+            case ForbiddenException ex:
+                context.Response.StatusCode = (int)HttpStatusCode.Forbidden; // HTTP 403
+                problemDetails.Status = (int)HttpStatusCode.Forbidden;
+                problemDetails.Title = "Bị từ chối truy cập";
+                problemDetails.Detail = ex.Message;
+                _logger.LogWarning(ex, "Từ chối truy cập: {Message}", ex.Message);
+                break;
+
             case ArgumentException ex:
                 context.Response.StatusCode = (int)HttpStatusCode.BadRequest; // HTTP 400
                 problemDetails.Status = (int)HttpStatusCode.BadRequest;

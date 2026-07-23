@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../api/axiosClient';
 import AdminLayout from '@/components/AdminLayout';
+import ImageUploader from '@/components/admin/ImageUploader';
 import {
   Boxes,
   Plus,
@@ -14,6 +15,15 @@ import {
   Flame
 } from 'lucide-react';
 
+interface ImageUploadResponse {
+  url: string;
+  publicId: string;
+  width?: number;
+  height?: number;
+  format?: string;
+  bytes?: number;
+}
+
 export interface ProductItem {
   id: number;
   categoryId: number;
@@ -25,6 +35,8 @@ export interface ProductItem {
   origin?: string;
   isHot: boolean;
   isAvailable: boolean;
+  imageUrl?: string | null;
+  imagePublicId?: string | null;
 }
 
 export default function ProductManagementPage() {
@@ -42,7 +54,11 @@ export default function ProductManagementPage() {
     origin: '',
     isHot: false,
     isAvailable: true,
+    imageUrl: '',
+    imagePublicId: '',
   });
+  // File user đã chọn nhưng CHƯA upload — chỉ upload khi bấm "Lưu thay đổi".
+  const [editPendingFile, setEditPendingFile] = useState<File | null>(null);
 
   const [isCreateOpen, setIsCreateOpen] = useState<boolean>(false);
   const [createForm, setCreateForm] = useState({
@@ -53,9 +69,35 @@ export default function ProductManagementPage() {
     stockQuantity: 10,
     origin: 'Việt Nam',
     isHot: false,
+    imageUrl: '',
+    imagePublicId: '',
   });
+  const [createPendingFile, setCreatePendingFile] = useState<File | null>(null);
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+
+  // ─── Helper: upload 1 file ảnh lên Cloudinary ──────────────────────────
+  // Trả về { url, publicId } hoặc throw Error nếu thất bại.
+  // Parent gọi hàm này trong submit handler SAU KHI user bấm "Lưu/Tạo".
+  const uploadImage = async (file: File): Promise<{ url: string; publicId: string }> => {
+    setIsUploadingImage(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await axiosClient.post<ImageUploadResponse, ImageUploadResponse>(
+        '/api/upload/image',
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      );
+      if (!response?.url || !response?.publicId) {
+        throw new Error('Phản hồi từ server không hợp lệ.');
+      }
+      return { url: response.url, publicId: response.publicId };
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
 
   // Query tất cả sản phẩm
   const { data: products = [], isLoading, isError, refetch } = useQuery<ProductItem[]>({
@@ -85,9 +127,23 @@ export default function ProductManagementPage() {
   });
 
   // Mutation Chỉnh sửa (PUT /api/products/{id})
-  const editMutation = useMutation<ProductItem, Error, { id: number; payload: typeof editForm }>({
-    mutationFn: async ({ id, payload }) => {
-      return await axiosClient.put<ProductItem, ProductItem>(`/api/products/${id}`, payload);
+  // Flow: nếu có editPendingFile → upload lên Cloudinary trước → lấy URL mới →
+  //       PUT product với URL mới. Backend service sẽ xoá ảnh cũ trên Cloudinary.
+  const editMutation = useMutation<ProductItem, Error, void>({
+    mutationFn: async () => {
+      if (!editProduct) throw new Error('Không có sản phẩm đang chỉnh sửa.');
+      let imageUrl = editForm.imageUrl;
+      let imagePublicId = editForm.imagePublicId;
+      if (editPendingFile) {
+        const uploaded = await uploadImage(editPendingFile);
+        imageUrl = uploaded.url;
+        imagePublicId = uploaded.publicId;
+      }
+      return await axiosClient.put<ProductItem, ProductItem>(`/api/products/${editProduct.id}`, {
+        ...editForm,
+        imageUrl,
+        imagePublicId,
+      });
     },
     onSuccess: (updatedProduct) => {
       setNotification({
@@ -95,6 +151,7 @@ export default function ProductManagementPage() {
         message: `Cập nhật thành công thông tin sản phẩm '${updatedProduct.name}'!`,
       });
       setEditProduct(null);
+      setEditPendingFile(null);
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
     },
     onError: (err: Error) => {
@@ -103,9 +160,21 @@ export default function ProductManagementPage() {
   });
 
   // Mutation Thêm mới (POST /api/products)
-  const createMutation = useMutation<ProductItem, Error, typeof createForm>({
-    mutationFn: async (payload) => {
-      return await axiosClient.post<ProductItem, ProductItem>('/api/products', payload);
+  // Flow: nếu có createPendingFile → upload trước → lấy URL → POST product.
+  const createMutation = useMutation<ProductItem, Error, void>({
+    mutationFn: async () => {
+      let imageUrl: string | null = createForm.imageUrl || null;
+      let imagePublicId: string | null = createForm.imagePublicId || null;
+      if (createPendingFile) {
+        const uploaded = await uploadImage(createPendingFile);
+        imageUrl = uploaded.url;
+        imagePublicId = uploaded.publicId;
+      }
+      return await axiosClient.post<ProductItem, ProductItem>('/api/products', {
+        ...createForm,
+        imageUrl,
+        imagePublicId,
+      });
     },
     onSuccess: (newProduct) => {
       setNotification({
@@ -113,6 +182,19 @@ export default function ProductManagementPage() {
         message: `Thêm mới sản phẩm '${newProduct.name}' thành công!`,
       });
       setIsCreateOpen(false);
+      // Reset form để lần mở sau sạch sẽ (đặc biệt là các field ảnh)
+      setCreateForm({
+        categoryId: 1,
+        name: '',
+        description: '',
+        price: 100000,
+        stockQuantity: 10,
+        origin: 'Việt Nam',
+        isHot: false,
+        imageUrl: '',
+        imagePublicId: '',
+      });
+      setCreatePendingFile(null);
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
     },
     onError: (err: Error) => {
@@ -129,7 +211,21 @@ export default function ProductManagementPage() {
       origin: p.origin || '',
       isHot: p.isHot,
       isAvailable: p.isAvailable,
+      imageUrl: p.imageUrl || '',
+      imagePublicId: p.imagePublicId || '',
     });
+    setEditPendingFile(null);
+  };
+
+  const handleCloseEdit = () => {
+    setEditProduct(null);
+    setEditPendingFile(null);
+    setEditForm((prev) => ({ ...prev, imageUrl: '', imagePublicId: '' }));
+  };
+
+  const handleCloseCreate = () => {
+    setIsCreateOpen(false);
+    setCreatePendingFile(null);
   };
 
   return (
@@ -356,7 +452,7 @@ export default function ProductManagementPage() {
       {/* MODAL CHỈNH SỬA SẢN PHẨM */}
       {editProduct && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-6 shadow-2xl">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-6 shadow-2xl">
             <div className="flex justify-between items-center pb-4 border-b border-slate-800">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <Edit className="w-5 h-5 text-orange-400" />
@@ -368,6 +464,21 @@ export default function ProductManagementPage() {
             </div>
 
             <div className="space-y-4 text-sm">
+              <ImageUploader
+                value={editForm.imageUrl || null}
+                disabled={editMutation.isPending || isUploadingImage}
+                onChange={(file) => {
+                  setEditPendingFile(file);
+                  // Nếu user bấm "Bỏ chọn ảnh" (file=null), clear URL trong form
+                  // để PUT payload không gửi ảnh cũ.
+                  if (!file) {
+                    setEditForm((prev) => ({ ...prev, imageUrl: '', imagePublicId: '' }));
+                  }
+                }}
+                onError={(message) =>
+                  setNotification({ type: 'error', message })
+                }
+              />
               <div>
                 <label className="block font-medium text-slate-300 mb-1">Tên sản phẩm:</label>
                 <input
@@ -421,22 +532,19 @@ export default function ProductManagementPage() {
 
             <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
               <button
-                onClick={() => setEditProduct(null)}
+                onClick={handleCloseEdit}
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-semibold transition"
               >
                 Hủy
               </button>
               <button
-                onClick={() =>
-                  editMutation.mutate({
-                    id: editProduct.id,
-                    payload: editForm,
-                  })
-                }
-                disabled={editMutation.isPending}
+                onClick={() => editMutation.mutate()}
+                disabled={editMutation.isPending || isUploadingImage}
                 className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-sm font-semibold shadow-lg shadow-orange-500/20 transition flex items-center gap-2 disabled:opacity-60"
               >
-                {editMutation.isPending ? 'Đang lưu...' : 'Lưu thay đổi'}
+                {editMutation.isPending || isUploadingImage
+                  ? 'Đang lưu...'
+                  : 'Lưu thay đổi'}
               </button>
             </div>
           </div>
@@ -446,7 +554,7 @@ export default function ProductManagementPage() {
       {/* MODAL THÊM SẢN PHẨM MỚI */}
       {isCreateOpen && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-6 shadow-2xl">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-6 shadow-2xl">
             <div className="flex justify-between items-center pb-4 border-b border-slate-800">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <Plus className="w-5 h-5 text-orange-400" />
@@ -458,6 +566,19 @@ export default function ProductManagementPage() {
             </div>
 
             <div className="space-y-4 text-sm">
+              <ImageUploader
+                value={createForm.imageUrl || null}
+                disabled={createMutation.isPending || isUploadingImage}
+                onChange={(file) => {
+                  setCreatePendingFile(file);
+                  if (!file) {
+                    setCreateForm((prev) => ({ ...prev, imageUrl: '', imagePublicId: '' }));
+                  }
+                }}
+                onError={(message) =>
+                  setNotification({ type: 'error', message })
+                }
+              />
               <div>
                 <label className="block font-medium text-slate-300 mb-1">Tên sản phẩm:</label>
                 <input
@@ -505,17 +626,23 @@ export default function ProductManagementPage() {
 
             <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
               <button
-                onClick={() => setIsCreateOpen(false)}
+                onClick={handleCloseCreate}
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-semibold transition"
               >
                 Hủy
               </button>
               <button
-                onClick={() => createMutation.mutate(createForm)}
-                disabled={createMutation.isPending || !createForm.name.trim()}
+                onClick={() => createMutation.mutate()}
+                disabled={
+                  createMutation.isPending ||
+                  isUploadingImage ||
+                  !createForm.name.trim()
+                }
                 className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-sm font-semibold shadow-lg shadow-orange-500/20 transition flex items-center gap-2 disabled:opacity-60"
               >
-                {createMutation.isPending ? 'Đang tạo...' : 'Tạo sản phẩm'}
+                {createMutation.isPending || isUploadingImage
+                  ? 'Đang tạo...'
+                  : 'Tạo sản phẩm'}
               </button>
             </div>
           </div>

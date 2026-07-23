@@ -7,5 +7,9 @@ public record CreateProductDTO(
     decimal Price,
     int StockQuantity,
     string? Origin,
-    bool IsHot
+    bool IsHot,
+    /// <summary>URL ảnh đã upload lên Cloudinary (FE gọi /api/upload/image trước).</summary>
+    string? ImageUrl = null,
+    /// <summary>PublicId Cloudinary để có thể xóa ảnh khi cần (tránh rác).</summary>
+    string? ImagePublicId = null
 );

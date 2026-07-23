@@ -1,5 +1,6 @@
 using FoodDelivery.Domain.Entities;
 using FoodDelivery.Domain.Interfaces;
+using FoodDelivery.Domain.Enums;
 using FoodDelivery.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -14,7 +15,9 @@ public class ReviewRepository : GenericRepository<Review>, IReviewRepository
     public async Task<bool> HasUserPurchasedProductAsync(int userId, int productId, CancellationToken ct = default)
     {
         return await _context.OrderDetails
-            .AnyAsync(od => od.ProductId == productId && od.Order.UserId == userId, ct);
+            .AnyAsync(od => od.ProductId == productId 
+                         && od.Order.UserId == userId 
+                         && od.Order.Status == OrderStatus.Completed, ct);
     }
 
     public async Task<List<Review>> GetProductReviewsAsync(int productId, CancellationToken ct = default)

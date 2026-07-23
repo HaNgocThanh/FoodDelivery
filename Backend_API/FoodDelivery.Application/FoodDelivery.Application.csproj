@@ -11,6 +11,16 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!--
+      FrameworkReference cho phép Application layer sử dụng các kiểu ASP.NET Core
+      (IFormFile, HttpContext, …) khi cần thiết mà vẫn giữ được pattern Clean Architecture.
+      Lưu ý: chỉ dùng cho các abstraction cần thiết – Application KHÔNG phụ thuộc
+      vào implementation cụ thể của Infrastructure hay Web SDK.
+    -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Business logic validation -->
     <PackageReference Include="FluentValidation" Version="11.9.2" />
     <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.9.2" />

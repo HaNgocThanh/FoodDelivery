@@ -95,6 +95,20 @@ public class ProductsController : ControllerBase
     }
 
     /// <summary>
+    /// Xóa sản phẩm và dọn ảnh trên Cloudinary (nếu có) — Dành riêng cho Admin.
+    /// DELETE /api/products/{id}
+    /// </summary>
+    [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteProduct(int id, CancellationToken ct)
+    {
+        await _productService.DeleteProductAsync(id, ct);
+        return NoContent();
+    }
+
+    /// <summary>
     /// Đánh giá sản phẩm (Dành cho Khách hàng đã mua sản phẩm này)
     /// POST /api/products/{id}/reviews
     /// </summary>

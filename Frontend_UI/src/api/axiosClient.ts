@@ -43,7 +43,19 @@ axiosClient.interceptors.response.use(
 
       if (error.response.data) {
         const problem = error.response.data;
-        const errorMessage = problem.detail || problem.title || `Lỗi máy chủ (Mã HTTP ${status}).`;
+
+        // ASP.NET Core trả về `errors: { field: ["msg1", "msg2"] }` khi ModelState fail.
+        // Mặc định chỉ title/detail là "One or more validation errors occurred." — quá chung chung.
+        // Ta gộp errors vào message để FE biết field nào bị sai.
+        let errorMessage = problem.detail || problem.title || `Lỗi máy chủ (Mã HTTP ${status}).`;
+        if (problem.errors && typeof problem.errors === 'object') {
+          const fieldErrors = Object.entries(problem.errors)
+            .map(([field, msgs]) => `${field}: ${(msgs as string[]).join(', ')}`)
+            .join(' | ');
+          if (fieldErrors) {
+            errorMessage = `${errorMessage} — ${fieldErrors}`;
+          }
+        }
         return Promise.reject(new Error(errorMessage));
       }
     }

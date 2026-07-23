@@ -13,10 +13,14 @@ public interface IProductService
     Task<ReviewResponseDTO> CreateReviewAsync(int productId, int userId, CreateReviewDTO dto, CancellationToken ct = default);
 
     /// <summary>
+    /// Xóa sản phẩm và dọn ảnh trên Cloudinary (nếu có) — lỗi xóa ảnh không chặn DB cleanup.
+    /// </summary>
+    Task DeleteProductAsync(int id, CancellationToken ct = default);
+
+    /// <summary>
     /// Tìm kiếm nâng cao theo keyword, danh mục, khoảng giá.
     /// </summary>
     Task<IEnumerable<ProductResponseDTO>> SearchProductsAsync(
         string? keyword, int? categoryId, decimal? minPrice, decimal? maxPrice,
         CancellationToken ct = default);
 }
-

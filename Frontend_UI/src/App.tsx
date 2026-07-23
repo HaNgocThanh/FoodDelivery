@@ -2,6 +2,8 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { Suspense, lazy } from 'react';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { PublicLayout } from '@/components/layout/PublicLayout';
+import { CheckoutFormPage } from '@/pages/CheckoutFormPage';
 
 // Direct import cho HomePage, LoginPage, RegisterPage để hiển thị mượt mà
 import HomePage from '@/pages/HomePage';
@@ -24,11 +26,12 @@ const OrderManagementPage       = lazy(() => import('@/pages/OrderManagementPage
 const ProductManagementPage     = lazy(() => import('@/pages/ProductManagementPage'));
 const PromotionManagementPage   = lazy(() => import('@/pages/PromotionManagementPage'));
 const UserManagementPage        = lazy(() => import('@/pages/UserManagementPage'));
+const AdminSupportPage          = lazy(() => import('@/pages/AdminSupportPage'));
 
 // Loading fallback
 function PageLoader() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-950">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50">
       <div className="flex flex-col items-center gap-4">
         <div
           className="w-12 h-12 rounded-full border-4 border-transparent animate-spin"
@@ -37,10 +40,16 @@ function PageLoader() {
             borderRightColor: 'var(--color-primary)',
           }}
         />
-        <p className="text-slate-400 text-sm">Đang tải...</p>
+        <p className="text-slate-500 text-sm">Đang tải...</p>
       </div>
     </div>
   );
+}
+
+// Helper: bọc các page public trong PublicLayout (Header + Footer).
+// Tuân thủ ui-design-system: page body màu bg-slate-50 (light mode).
+function publicPage(element: React.ReactNode) {
+  return <PublicLayout>{element}</PublicLayout>;
 }
 
 export default function App() {
@@ -60,23 +69,24 @@ export default function App() {
 
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          {/* Public routes */}
-          <Route path="/"                  element={<HomePage />} />
-          <Route path="/products"          element={<ProductListPage />} />
-          <Route path="/products/:slug"    element={<ProductDetailPage />} />
-          <Route path="/cart"              element={<CartPage />} />
-          <Route path="/login"             element={<LoginPage />} />
-          <Route path="/register"          element={<RegisterPage />} />
-          <Route path="/search"            element={<SearchPage />} />
-          <Route path="/payment-result"    element={<PaymentResultPage />} />
-          <Route path="/forgot-password"   element={<ForgotPasswordPage />} />
-          <Route path="/reset-password"    element={<ResetPasswordPage />} />
+          {/* Public routes – wrap trong PublicLayout (Header + Footer) */}
+          <Route path="/"                  element={publicPage(<HomePage />)} />
+          <Route path="/products"          element={publicPage(<ProductListPage />)} />
+          <Route path="/products/:slug"    element={publicPage(<ProductDetailPage />)} />
+          <Route path="/cart"              element={publicPage(<CartPage />)} />
+          <Route path="/checkout"          element={publicPage(<CheckoutPage />)} />
+          <Route path="/checkout-form"     element={publicPage(<CheckoutFormPage />)} />
+          <Route path="/login"             element={publicPage(<LoginPage />)} />
+          <Route path="/register"          element={publicPage(<RegisterPage />)} />
+          <Route path="/search"            element={publicPage(<SearchPage />)} />
+          <Route path="/payment-result"    element={publicPage(<PaymentResultPage />)} />
+          <Route path="/forgot-password"   element={publicPage(<ForgotPasswordPage />)} />
+          <Route path="/reset-password"    element={publicPage(<ResetPasswordPage />)} />
 
-          {/* Protected routes cho Khách hàng */}
-          <Route path="/checkout"          element={<CheckoutPage />} />
-          <Route path="/account/profile"   element={<ProfilePage />} />
-          <Route path="/account/orders"    element={<OrdersPage />} />
-          <Route path="/my-orders"         element={<OrdersPage />} />
+          {/* Protected routes cho Khách hàng – wrap trong PublicLayout & ProtectedRoute */}
+          <Route path="/account/profile"   element={publicPage(<ProtectedRoute><ProfilePage /></ProtectedRoute>)} />
+          <Route path="/account/orders"    element={publicPage(<ProtectedRoute><OrdersPage /></ProtectedRoute>)} />
+          <Route path="/my-orders"         element={publicPage(<ProtectedRoute><OrdersPage /></ProtectedRoute>)} />
 
           {/* BẢO VỆ TẤT CẢ ROUTE ADMIN NGUYÊN TẮC (ROLES = ADMIN) */}
           <Route element={<ProtectedRoute requiredRole="Admin" />}>
@@ -85,6 +95,7 @@ export default function App() {
             <Route path="/admin/products"    element={<ProductManagementPage />} />
             <Route path="/admin/promotions"  element={<PromotionManagementPage />} />
             <Route path="/admin/users"       element={<UserManagementPage />} />
+            <Route path="/admin/support"     element={<AdminSupportPage />} />
           </Route>
 
           {/* Fallback */}

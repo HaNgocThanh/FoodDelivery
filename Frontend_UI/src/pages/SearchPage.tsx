@@ -10,8 +10,11 @@ import {
   Globe, Star, ChevronRight, Utensils, Filter, Plus, Check
 } from 'lucide-react';
 
-// ─── Image helper (same as HomePage) ─────────────────────
-const getProductImage = (name: string, id: number) => {
+// ─── Image helper (same as HomePage, ưu tiên product.imageUrl từ Backend) ──
+const getProductImage = (product: ProductItem) => {
+  if (product.imageUrl) return product.imageUrl;
+  const name = product.name;
+  const id = product.id;
   if (name.includes('bò') || name.includes('thịt') || name.includes('Thịt'))
     return 'https://images.unsplash.com/photo-1544025162-d76694265947?w=600&auto=format&fit=crop&q=80';
   if (name.includes('rau') || name.includes('cải') || name.includes('Rau'))
@@ -347,7 +350,7 @@ export default function SearchPage() {
                       {/* Image */}
                       <div className="relative h-44 bg-slate-800 overflow-hidden">
                         <img
-                          src={getProductImage(product.name, product.id)}
+                          src={getProductImage(product)}
                           alt={product.name}
                           className="w-full h-full object-cover transition duration-500 hover:scale-105"
                         />

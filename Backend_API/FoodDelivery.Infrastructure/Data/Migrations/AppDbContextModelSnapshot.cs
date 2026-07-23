@@ -184,6 +184,14 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("NVARCHAR2(2000)");
 
+                    b.Property<string>("ImagePublicId")
+                        .HasMaxLength(255)
+                        .HasColumnType("NVARCHAR2(255)");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("NVARCHAR2(1000)");
+
                     b.Property<bool>("IsAvailable")
                         .HasColumnType("BOOLEAN");
 
@@ -212,6 +220,44 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
                         {
                             t.HasCheckConstraint("CK_Product_StockQuantity", "\"StockQuantity\" >= 0");
                         });
+                });
+
+            modelBuilder.Entity("FoodDelivery.Domain.Entities.ProductQuestion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("NUMBER(10)");
+
+                    OraclePropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AnswerText")
+                        .HasMaxLength(2000)
+                        .HasColumnType("NVARCHAR2(2000)");
+
+                    b.Property<DateTime?>("AnsweredAt")
+                        .HasColumnType("TIMESTAMP(7)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TIMESTAMP(7)");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("NUMBER(10)");
+
+                    b.Property<string>("QuestionText")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("NVARCHAR2(2000)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("NUMBER(10)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ProductQuestions");
                 });
 
             modelBuilder.Entity("FoodDelivery.Domain.Entities.Promotion", b =>
@@ -284,6 +330,56 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
                     b.ToTable("Reviews");
                 });
 
+            modelBuilder.Entity("FoodDelivery.Domain.Entities.SupportTicket", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("NUMBER(10)");
+
+                    OraclePropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AdminReply")
+                        .HasMaxLength(4000)
+                        .HasColumnType("NCLOB");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TIMESTAMP(7)");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("NCLOB");
+
+                    b.Property<int?>("OrderId")
+                        .HasColumnType("NUMBER(10)");
+
+                    b.Property<DateTime?>("RepliedAt")
+                        .HasColumnType("TIMESTAMP(7)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(50)
+                        .HasColumnType("NVARCHAR2(50)")
+                        .HasDefaultValue("Open");
+
+                    b.Property<string>("Subject")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("NVARCHAR2(200)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("NUMBER(10)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("SupportTickets");
+                });
+
             modelBuilder.Entity("FoodDelivery.Domain.Entities.Order", b =>
                 {
                     b.HasOne("FoodDelivery.Domain.Entities.Promotion", "Promotion")
@@ -339,6 +435,25 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
                     b.Navigation("Category");
                 });
 
+            modelBuilder.Entity("FoodDelivery.Domain.Entities.ProductQuestion", b =>
+                {
+                    b.HasOne("FoodDelivery.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FoodDelivery.Domain.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("FoodDelivery.Domain.Entities.Review", b =>
                 {
                     b.HasOne("FoodDelivery.Domain.Entities.Product", "Product")
@@ -354,6 +469,24 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Product");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FoodDelivery.Domain.Entities.SupportTicket", b =>
+                {
+                    b.HasOne("FoodDelivery.Domain.Entities.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("FoodDelivery.Domain.Entities.AppUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
 
                     b.Navigation("User");
                 });

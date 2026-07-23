@@ -17,6 +17,8 @@ namespace FoodDelivery.Infrastructure.Data
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderDetail> OrderDetails { get; set; }
         public DbSet<Review> Reviews { get; set; }
+        public DbSet<ProductQuestion> ProductQuestions { get; set; }
+        public DbSet<SupportTicket> SupportTickets { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -45,6 +47,10 @@ namespace FoodDelivery.Infrastructure.Data
                       .WithMany(c => c.Products)
                       .HasForeignKey(p => p.CategoryId)
                       .OnDelete(DeleteBehavior.Restrict);
+
+                // Ảnh sản phẩm lưu trên Cloudinary: lưu URL public + PublicId để dọn rác
+                entity.Property(p => p.ImageUrl).HasMaxLength(1000).IsRequired(false);
+                entity.Property(p => p.ImagePublicId).HasMaxLength(255).IsRequired(false);
             });
 
             // 3. Cấu hình Fluent API cho AppUser
@@ -133,6 +139,44 @@ namespace FoodDelivery.Infrastructure.Data
                       .WithMany(u => u.Reviews)
                       .HasForeignKey(r => r.UserId)
                       .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // 8. Cấu hình Fluent API cho ProductQuestion
+            modelBuilder.Entity<ProductQuestion>(entity =>
+            {
+                entity.HasKey(pq => pq.Id);
+                entity.Property(pq => pq.QuestionText).IsRequired().HasMaxLength(2000);
+                entity.Property(pq => pq.AnswerText).HasMaxLength(2000).IsRequired(false);
+
+                entity.HasOne(pq => pq.Product)
+                      .WithMany()
+                      .HasForeignKey(pq => pq.ProductId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(pq => pq.User)
+                      .WithMany()
+                      .HasForeignKey(pq => pq.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // 9. Cấu hình Fluent API cho SupportTicket
+            modelBuilder.Entity<SupportTicket>(entity =>
+            {
+                entity.HasKey(st => st.Id);
+                entity.Property(st => st.Subject).IsRequired().HasMaxLength(200);
+                entity.Property(st => st.Message).IsRequired().HasMaxLength(4000);
+                entity.Property(st => st.AdminReply).HasMaxLength(4000).IsRequired(false);
+                entity.Property(st => st.Status).HasMaxLength(50).HasDefaultValue("Open");
+
+                entity.HasOne(st => st.User)
+                      .WithMany()
+                      .HasForeignKey(st => st.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(st => st.Order)
+                      .WithMany()
+                      .HasForeignKey(st => st.OrderId)
+                      .OnDelete(DeleteBehavior.SetNull);
             });
         }
     }

@@ -9,14 +9,33 @@ using FoodDelivery.Infrastructure.Data;
 using FoodDelivery.Infrastructure.Data.Seeds;
 using FoodDelivery.Infrastructure.Repositories;
 using FoodDelivery.Infrastructure.Services;
+using FoodDelivery.Infrastructure.Settings;
 using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// =============================================
+// 0. KESTREL – tăng giới hạn multipart upload (ảnh sản phẩm)
+// =============================================
+builder.WebHost.ConfigureKestrel(options =>
+{
+    // Cho phép request body tối đa ~50 MB (phòng trường hợp nhiều ảnh cùng lúc)
+    options.Limits.MaxRequestBodySize = 50 * 1024 * 1024;
+});
+
+// Cho phép form-data lớn hơn mặc định (mặc định ~28 MB)
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 50 * 1024 * 1024; // 50 MB
+    options.ValueLengthLimit = int.MaxValue;
+    options.MultipartHeadersLengthLimit = int.MaxValue;
+});
 
 // =============================================
 // 1. CONTROLLERS
@@ -109,6 +128,16 @@ builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();
 builder.Services.AddScoped<IEmailService, FoodDelivery.Infrastructure.Services.EmailService>();
+builder.Services.AddScoped<ISupportService, FoodDelivery.Infrastructure.Services.SupportService>();
+
+// =============================================
+// 5.1 CLOUDINARY OPTIONS BINDING + IMAGE SERVICE
+// =============================================
+builder.Services.Configure<CloudinarySettings>(
+    builder.Configuration.GetSection(CloudinarySettings.SectionName));
+
+// Singleton vì Cloudinary client thread-safe, không cần tạo mới mỗi request
+builder.Services.AddSingleton<IImageService, CloudinaryImageService>();
 
 // =============================================
 // 6. DEPENDENCY INJECTION – Infrastructure Repositories
