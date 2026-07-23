@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axiosClient from '../api/axiosClient';
 import { Link } from 'react-router-dom';
@@ -14,8 +15,18 @@ import {
   Loader2,
   AlertCircle,
   TrendingUp,
-  CreditCard
+  CreditCard,
+  Lock,
+  KeyRound
 } from 'lucide-react';
+
+type TabKey = 'info' | 'address' | 'password';
+
+const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
+  { key: 'info',     label: 'Thông tin cá nhân', icon: <User className="w-4 h-4" /> },
+  { key: 'address',  label: 'Địa chỉ',           icon: <MapPin className="w-4 h-4" /> },
+  { key: 'password', label: 'Đổi mật khẩu',     icon: <KeyRound className="w-4 h-4" /> },
+];
 
 export type MembershipTier = 0 | 1 | 2 | 3;
 export const MembershipTierVal = {
@@ -38,6 +49,8 @@ export interface UserProfile {
 }
 
 export default function ProfilePage() {
+
+  const [activeTab, setActiveTab] = useState<TabKey>('info');
 
   const { data: profile, isLoading, isError, error, refetch } = useQuery<UserProfile>({
     queryKey: ['userProfile'],
@@ -100,33 +113,37 @@ export default function ProfilePage() {
         return {
           title: 'PLATINUM MEMBER',
           label: 'Bạch Kim',
-          bgClass: 'bg-gradient-to-tr from-slate-900 via-zinc-200 to-slate-400 text-slate-950 border border-slate-300/60 shadow-2xl shadow-slate-300/20',
-          badgeClass: 'bg-slate-950/80 text-zinc-100 border border-zinc-300/50',
-          icon: <Sparkles className="w-6 h-6 text-amber-300 animate-pulse" />,
+          // Bạch Kim: gradient bạc-slate sáng (giữ đặc trưng kim loại quý)
+          bgClass: 'bg-gradient-to-br from-slate-400 via-zinc-200 to-slate-600 text-slate-900 border border-white/60 shadow-2xl shadow-slate-400/40',
+          badgeClass: 'bg-slate-900/85 text-zinc-100 border border-white/30 backdrop-blur-md',
+          icon: <Sparkles className="w-6 h-6 text-amber-400" />,
         };
       case MembershipTierVal.Gold:
         return {
           title: 'GOLD MEMBER',
           label: 'Vàng',
-          bgClass: 'bg-gradient-to-tr from-amber-600 via-yellow-400 to-amber-500 text-slate-950 border border-amber-300/60 shadow-2xl shadow-amber-500/20',
-          badgeClass: 'bg-slate-950/80 text-amber-300 border border-amber-400/50',
-          icon: <Crown className="w-6 h-6 text-amber-900" />,
+          // Vàng: gradient vàng-amber đậm (đặc trưng kim loại quý)
+          bgClass: 'bg-gradient-to-br from-amber-500 via-yellow-400 to-amber-700 text-amber-950 border border-amber-300/80 shadow-2xl shadow-amber-500/40',
+          badgeClass: 'bg-amber-950/85 text-amber-100 border border-amber-300/40 backdrop-blur-md',
+          icon: <Crown className="w-6 h-6 text-amber-100" />,
         };
       case MembershipTierVal.Silver:
         return {
           title: 'SILVER MEMBER',
           label: 'Bạc',
-          bgClass: 'bg-gradient-to-tr from-slate-700 via-zinc-400 to-slate-500 text-slate-950 border border-slate-300/50 shadow-2xl shadow-slate-400/20',
-          badgeClass: 'bg-slate-950/80 text-slate-200 border border-slate-400/50',
-          icon: <Award className="w-6 h-6 text-slate-900" />,
+          // Bạc: gradient xám-trắng bạc
+          bgClass: 'bg-gradient-to-br from-slate-300 via-zinc-100 to-slate-500 text-slate-900 border border-white/60 shadow-2xl shadow-slate-400/40',
+          badgeClass: 'bg-slate-900/85 text-slate-100 border border-white/30 backdrop-blur-md',
+          icon: <Award className="w-6 h-6 text-slate-100" />,
         };
       default:
         return {
           title: 'STANDARD MEMBER',
           label: 'Chuẩn (Standard)',
-          bgClass: 'bg-gradient-to-tr from-slate-900 via-slate-850 to-slate-800 text-white border border-slate-700 shadow-xl',
-          badgeClass: 'bg-slate-800 text-slate-300 border border-slate-700',
-          icon: <CreditCard className="w-6 h-6 text-orange-400" />,
+          // Standard: gradient emerald-teal chủ đạo dự án (theo yêu cầu đề bài)
+          bgClass: 'bg-gradient-to-br from-emerald-600 via-emerald-500 to-teal-800 text-white border border-white/20 shadow-2xl shadow-emerald-500/40',
+          badgeClass: 'bg-emerald-950/70 text-white border border-white/30 backdrop-blur-md',
+          icon: <CreditCard className="w-6 h-6 text-white" />,
         };
     }
   };
@@ -134,207 +151,469 @@ export default function ProfilePage() {
   const cardStyle = getCardStyle(currentTier);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans p-4 sm:p-8 selection:bg-orange-500 selection:text-white">
-      <div className="max-w-4xl mx-auto space-y-8">
+    <main className="min-h-screen bg-slate-50 text-slate-700 font-sans pb-20">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
 
         {/* HEADER BAR */}
-        <div className="flex items-center justify-between pb-6 border-b border-slate-800">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
           <div className="flex items-center gap-3">
             <Link
               to="/"
-              className="p-2.5 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition border border-slate-800"
+              data-testid="button-back-home"
+              aria-label="Quay về trang chủ"
+              className="p-2.5 bg-white hover:bg-slate-100 text-slate-500 hover:text-emerald-600 rounded-lg transition border border-slate-200 shadow-sm"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-2xl font-black text-white flex items-center gap-2">
-                <User className="w-7 h-7 text-orange-500" />
-                Hồ sơ & Thẻ Thành viên
+              <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <User className="w-7 h-7 text-emerald-600" />
+                Hồ sơ &amp; Thẻ Thành viên
               </h1>
-              <p className="text-xs text-slate-400">Quản lý thông tin cá nhân và điểm thưởng tích lũy</p>
+              <p className="text-sm text-slate-500 mt-1">Quản lý thông tin cá nhân và điểm thưởng tích lũy</p>
             </div>
           </div>
 
           <button
             onClick={() => refetch()}
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold rounded-xl transition border border-slate-800 flex items-center gap-1.5"
+            data-testid="button-refresh-profile"
+            className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 hover:text-emerald-700 text-sm font-semibold rounded-lg transition border border-slate-200 shadow-sm flex items-center gap-1.5 w-fit"
           >
             Làm mới
           </button>
-        </div>
+        </header>
 
         {/* LOADING / ERROR STATE */}
         {isLoading && (
-          <div className="py-20 flex flex-col items-center justify-center gap-3 text-slate-400">
-            <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+          <section className="py-20 flex flex-col items-center justify-center gap-3 text-slate-500">
+            <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
             <p className="text-sm font-medium">Đang tải thông tin hồ sơ của bạn...</p>
-          </div>
+          </section>
         )}
 
         {isError && (
-          <div className="p-6 bg-red-950/80 border border-red-500/50 rounded-2xl text-red-200 space-y-2">
+          <section role="alert" className="p-6 bg-red-50 border border-red-200 rounded-xl text-red-800 space-y-2 shadow-sm">
             <div className="flex items-center gap-2 font-bold text-sm">
-              <AlertCircle className="w-5 h-5 text-red-400" />
+              <AlertCircle className="w-5 h-5 text-red-600" />
               <span>Không thể tải thông tin hồ sơ</span>
             </div>
-            <p className="text-xs text-red-300">{(error as any)?.message || 'Vui lòng kiểm tra lại kết nối mạng hoặc đăng nhập lại.'}</p>
-          </div>
+            <p className="text-xs text-red-700">{(error as any)?.message || 'Vui lòng kiểm tra lại kết nối mạng hoặc đăng nhập lại.'}</p>
+          </section>
         )}
 
         {profile && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
 
-            {/* VIRTUAL MEMBERSHIP CARD (Lefthand Side - 5 cols) */}
-            <div className="lg:col-span-5 space-y-6">
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-orange-400" />
-                Thẻ hội viên điện tử
-              </div>
-
-              {/* THE CARD */}
-              <div className={`relative rounded-3xl p-6 h-56 flex flex-col justify-between overflow-hidden ${cardStyle.bgClass} transition-all duration-300 hover:scale-[1.02]`}>
-                {/* Background decorative watermark pattern */}
-                <div className="absolute -right-8 -bottom-8 w-40 h-40 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-
-                {/* Top Card Header */}
-                <div className="flex justify-between items-start z-10">
-                  <div>
-                    <span className="text-[10px] font-black tracking-widest uppercase opacity-75">FoodDelivery Club</span>
-                    <h3 className="text-lg font-black tracking-wider mt-0.5">{cardStyle.title}</h3>
-                  </div>
-                  <div className="p-2 bg-slate-950/20 backdrop-blur-md rounded-2xl border border-white/20">
-                    {cardStyle.icon}
-                  </div>
-                </div>
-
-                {/* Card Middle Chip & Number */}
-                <div className="z-10 space-y-1 my-auto">
-                  <div className="w-9 h-7 bg-amber-400/80 rounded-md border border-amber-200/50 shadow-inner" />
-                  <p className="font-mono text-sm tracking-widest opacity-80 pt-1">
-                    **** **** **** {String(profile.id).padStart(4, '0')}
-                  </p>
-                </div>
-
-                {/* Card Bottom Footer */}
-                <div className="flex justify-between items-end z-10 pt-2 border-t border-black/10">
-                  <div>
-                    <span className="text-[9px] uppercase font-bold opacity-70 block">Chủ thẻ</span>
-                    <span className="font-bold text-sm tracking-wide uppercase">{profile.fullName}</span>
-                  </div>
-                  <div className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase shadow-sm ${cardStyle.badgeClass}`}>
-                    Hạng {cardStyle.label}
-                  </div>
-                </div>
-              </div>
-
-              {/* MEMBERSHIP PROGRESS BAR */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-lg">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="font-bold text-slate-300 flex items-center gap-1.5">
-                    <TrendingUp className="w-4 h-4 text-orange-400" />
-                    Điểm tích lũy hiện tại:
-                  </span>
-                  <span className="font-black text-base text-orange-400">{profile.loyaltyPoints} điểm</span>
-                </div>
-
-                {/* Progress Bar Container */}
-                <div className="space-y-2">
-                  <div className="w-full h-3 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-700">
-                    <div
-                      className="h-full bg-gradient-to-r from-orange-500 to-amber-400 rounded-full transition-all duration-500 shadow-lg shadow-orange-500/30"
-                      style={{ width: `${progressInfo.percentage}%` }}
-                    />
-                  </div>
-
-                  <div className="flex justify-between items-center text-[11px] text-slate-400 pt-1">
-                    <span>{progressInfo.percentage}% đạt được</span>
-                    {currentTier === MembershipTierVal.Platinum ? (
-                      <span className="text-emerald-400 font-bold flex items-center gap-1">
-                        <Sparkles className="w-3.5 h-3.5" /> Đã đạt hạng cao nhất!
-                      </span>
-                    ) : (
-                      <span>Cần thêm <strong className="text-amber-400">{progressInfo.pointsNeeded} điểm</strong> để lên {progressInfo.nextTierName}</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* USER DETAILED INFORMATION (Righthand Side - 7 cols) */}
-            <div className="lg:col-span-7 space-y-6">
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-orange-400" />
-                Chi tiết tài khoản
-              </div>
-
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-6 shadow-xl">
-                {/* Profile Avatar & Title */}
-                <div className="flex items-center gap-4 pb-6 border-b border-slate-800">
-                  <div className="w-16 h-16 bg-gradient-to-tr from-orange-500 to-amber-500 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-lg shadow-orange-500/20">
+            {/* ============== SIDEBAR (1/4 cols) ============== */}
+            <aside className="md:col-span-1 space-y-4">
+              {/* Avatar + name card */}
+              <section className="bg-white border border-slate-200 rounded-xl p-5 text-center shadow-sm">
+                <div className="relative inline-block">
+                  <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-emerald-500 to-teal-700 text-white flex items-center justify-center text-3xl font-bold shadow-md ring-4 ring-white border border-slate-200">
                     {profile.fullName.charAt(0).toUpperCase()}
                   </div>
+                  <span className="absolute -bottom-1 -right-1 inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-500 text-white border-2 border-white shadow-sm">
+                    {cardStyle.icon}
+                  </span>
+                </div>
+                <h2 className="mt-3 text-base font-bold text-slate-900 truncate">{profile.fullName}</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Mã tài khoản: #{profile.id}</p>
+                <span className="mt-2 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-semibold uppercase tracking-wide">
+                  <ShieldCheck className="w-3 h-3" /> {profile.role}
+                </span>
+              </section>
+
+              {/* Tabs */}
+              <nav className="bg-white border border-slate-200 rounded-xl p-2 shadow-sm" aria-label="Điều hướng hồ sơ">
+                <ul className="space-y-1">
+                  {TABS.map((t) => {
+                    const isActive = activeTab === t.key;
+                    return (
+                      <li key={t.key}>
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab(t.key)}
+                          data-testid={`tab-${t.key}`}
+                          aria-current={isActive ? 'page' : undefined}
+                          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition text-left ${
+                            isActive
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                              : 'text-slate-700 hover:bg-slate-100 border border-transparent'
+                          }`}
+                        >
+                          <span className={isActive ? 'text-emerald-600' : 'text-slate-400'}>
+                            {t.icon}
+                          </span>
+                          <span className="flex-1">{t.label}</span>
+                          {isActive && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" aria-hidden="true" />}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </nav>
+            </aside>
+
+            {/* ============== MAIN CONTENT (3/4 cols) ============== */}
+            <section className="md:col-span-3 space-y-6">
+
+              {/* TAB: THÔNG TIN CÁ NHÂN */}
+              {activeTab === 'info' && (
+                <>
                   <div>
-                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                      {profile.fullName}
-                      <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase bg-orange-500/20 text-orange-300 border border-orange-500/30 rounded-lg">
-                        {profile.role}
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+                      <CreditCard className="w-4 h-4 text-emerald-600" />
+                      Thẻ hội viên điện tử
+                    </h3>
+                  </div>
+
+                  {/* THE CARD - aspect-[1.58/1] như thẻ tín dụng */}
+                  <article
+                    data-testid="membership-card"
+                    className={`relative w-full max-w-md aspect-[1.58/1] rounded-2xl p-5 sm:p-6 flex flex-col justify-between overflow-hidden ${cardStyle.bgClass} transition-all duration-300 hover:scale-[1.02]`}
+                  >
+                    {/* Glassmorphism decorative blobs */}
+                    <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/15 rounded-full blur-2xl pointer-events-none" aria-hidden="true" />
+                    <div className="absolute -right-4 -bottom-12 w-44 h-44 bg-white/10 rounded-full blur-3xl pointer-events-none" aria-hidden="true" />
+
+                    {/* Top: Logo + Tier Badge */}
+                    <div className="flex justify-between items-start z-10 relative">
+                      <div>
+                        <span className="block text-[10px] font-bold tracking-widest uppercase opacity-80">Member Card</span>
+                        <h4 className="text-base sm:text-lg font-bold tracking-wider mt-0.5">{cardStyle.title}</h4>
+                      </div>
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/30 text-xs font-bold uppercase shadow-sm">
+                        {cardStyle.icon}
+                        <span>{cardStyle.label}</span>
+                      </div>
+                    </div>
+
+                    {/* Middle: Chip + barcode-style card number */}
+                    <div className="z-10 relative space-y-1.5">
+                      <div className="w-10 h-7 bg-amber-300/90 rounded-md border border-amber-100/60 shadow-inner" aria-hidden="true" />
+                      <p className="font-mono text-sm sm:text-base tracking-widest font-semibold opacity-90 pt-1">
+                        **** **** **** {String(profile.id).padStart(4, '0')}
+                      </p>
+                    </div>
+
+                    {/* Bottom: Customer name + Points */}
+                    <div className="flex justify-between items-end z-10 relative pt-2 border-t border-black/10">
+                      <div className="min-w-0">
+                        <span className="block text-[9px] uppercase font-bold opacity-70">Chủ thẻ</span>
+                        <span className="font-bold text-sm tracking-wide uppercase truncate block max-w-[12rem]">
+                          {profile.fullName}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="block text-[9px] uppercase font-bold opacity-70">Điểm</span>
+                        <span className="font-bold text-base tabular-nums">
+                          {profile.loyaltyPoints.toLocaleString('vi-VN')}
+                        </span>
+                      </div>
+                    </div>
+                  </article>
+
+                  {/* MEMBERSHIP PROGRESS BAR */}
+                  <section className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 shadow-sm">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="font-bold text-slate-700 flex items-center gap-1.5">
+                        <TrendingUp className="w-4 h-4 text-emerald-600" />
+                        Điểm tích lũy hiện tại:
                       </span>
-                    </h2>
-                    <p className="text-xs text-slate-400 font-mono mt-0.5">Mã tài khoản: #{profile.id}</p>
-                  </div>
-                </div>
+                      <span className="font-bold text-base text-emerald-600 tabular-nums">
+                        {profile.loyaltyPoints} điểm
+                      </span>
+                    </div>
 
-                {/* Field Details */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-2xl space-y-1">
-                    <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
-                      <Mail className="w-3.5 h-3.5 text-orange-400" /> Địa chỉ Email
+                    <div className="space-y-2">
+                      <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                        <div
+                          className="h-full bg-gradient-to-r from-emerald-500 to-amber-400 rounded-full transition-all duration-500"
+                          style={{ width: `${progressInfo.percentage}%` }}
+                        />
+                      </div>
+
+                      <div className="flex justify-between items-center text-xs text-slate-500 pt-1">
+                        <span>{progressInfo.percentage}% đạt được</span>
+                        {currentTier === MembershipTierVal.Platinum ? (
+                          <span className="text-emerald-700 font-bold flex items-center gap-1">
+                            <Sparkles className="w-3.5 h-3.5" /> Đã đạt hạng cao nhất!
+                          </span>
+                        ) : (
+                          <span>
+                            Cần thêm <strong className="text-amber-600">{progressInfo.pointsNeeded} điểm</strong> để lên {progressInfo.nextTierName}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </section>
+
+                  {/* FORM THÔNG TIN CÁ NHÂN */}
+                  <form
+                    onSubmit={(e) => e.preventDefault()}
+                    className="bg-white border border-slate-200 rounded-xl p-6 space-y-5 shadow-sm"
+                    aria-labelledby="profile-form-title"
+                  >
+                    <div className="flex items-center gap-2 pb-3 border-b border-slate-200">
+                      <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                      <h3 id="profile-form-title" className="text-base font-bold text-slate-900">
+                        Chi tiết tài khoản
+                      </h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label htmlFor="profile-fullName" className="block text-xs font-semibold text-slate-700">
+                          Họ và tên
+                        </label>
+                        <div className="relative">
+                          <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <input
+                            id="profile-fullName"
+                            type="text"
+                            readOnly
+                            value={profile.fullName}
+                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label htmlFor="profile-phone" className="block text-xs font-semibold text-slate-700">
+                          Số điện thoại
+                        </label>
+                        <div className="relative">
+                          <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <input
+                            id="profile-phone"
+                            type="tel"
+                            readOnly
+                            value={profile.phoneNumber || ''}
+                            placeholder="Chưa cập nhật"
+                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5 sm:col-span-2">
+                        <label htmlFor="profile-email" className="block text-xs font-semibold text-slate-700">
+                          Địa chỉ Email
+                        </label>
+                        <div className="relative">
+                          <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                          <input
+                            id="profile-email"
+                            type="email"
+                            readOnly
+                            value={profile.email}
+                            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-900 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end pt-2 border-t border-slate-100">
+                      <button
+                        type="button"
+                        disabled
+                        title="Tính năng cập nhật thông tin đang được phát triển"
+                        data-testid="button-update-profile"
+                        className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold text-sm rounded-lg shadow-sm hover:shadow-md transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Cập nhật thông tin
+                      </button>
+                    </div>
+                  </form>
+
+                  {/* QUYỀN LỢI HẠNG THẺ */}
+                  <section className="bg-white border border-slate-200 rounded-xl p-6 space-y-4 shadow-sm">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                      Quyền lợi Hạng thẻ của bạn
+                    </h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                      <div
+                        className={`p-3 rounded-lg border text-center transition ${
+                          currentTier === MembershipTierVal.Standard
+                            ? 'border-emerald-300 bg-emerald-50 text-emerald-800 font-bold'
+                            : 'border-slate-200 bg-slate-50 text-slate-500'
+                        }`}
+                      >
+                        Standard (&lt;100đ)
+                      </div>
+                      <div
+                        className={`p-3 rounded-lg border text-center transition ${
+                          currentTier === MembershipTierVal.Silver
+                            ? 'border-slate-400 bg-slate-100 text-slate-800 font-bold'
+                            : 'border-slate-200 bg-slate-50 text-slate-500'
+                        }`}
+                      >
+                        Bạc (100đ+)
+                      </div>
+                      <div
+                        className={`p-3 rounded-lg border text-center transition ${
+                          currentTier === MembershipTierVal.Gold
+                            ? 'border-amber-300 bg-amber-50 text-amber-800 font-bold'
+                            : 'border-slate-200 bg-slate-50 text-slate-500'
+                        }`}
+                      >
+                        Vàng (500đ+)
+                      </div>
+                      <div
+                        className={`p-3 rounded-lg border text-center transition ${
+                          currentTier === MembershipTierVal.Platinum
+                            ? 'border-zinc-400 bg-zinc-100 text-zinc-800 font-bold'
+                            : 'border-slate-200 bg-slate-50 text-slate-500'
+                        }`}
+                      >
+                        Bạch Kim (1000đ+)
+                      </div>
+                    </div>
+                  </section>
+                </>
+              )}
+
+              {/* TAB: ĐỊA CHỈ */}
+              {activeTab === 'address' && (
+                <form
+                  onSubmit={(e) => e.preventDefault()}
+                  className="bg-white border border-slate-200 rounded-xl p-6 space-y-5 shadow-sm"
+                  aria-labelledby="address-form-title"
+                >
+                  <div className="flex items-center gap-2 pb-3 border-b border-slate-200">
+                    <MapPin className="w-5 h-5 text-emerald-600" />
+                    <h3 id="address-form-title" className="text-base font-bold text-slate-900">
+                      Sổ địa chỉ giao hàng
+                    </h3>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <label htmlFor="profile-address1" className="block text-xs font-semibold text-slate-700">
+                        Địa chỉ chính
+                      </label>
+                      <div className="relative">
+                        <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+                        <textarea
+                          id="profile-address1"
+                          readOnly
+                          rows={2}
+                          value={profile.address1 || ''}
+                          placeholder="Chưa cập nhật"
+                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition resize-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label htmlFor="profile-address2" className="block text-xs font-semibold text-slate-700">
+                        Địa chỉ phụ (tuỳ chọn)
+                      </label>
+                      <div className="relative">
+                        <MapPin className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+                        <textarea
+                          id="profile-address2"
+                          readOnly
+                          rows={2}
+                          value={profile.address2 || ''}
+                          placeholder="Chưa cập nhật"
+                          className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition resize-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      disabled
+                      title="Tính năng cập nhật địa chỉ đang được phát triển"
+                      className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold text-sm rounded-lg shadow-sm hover:shadow-md transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Cập nhật địa chỉ
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* TAB: ĐỔI MẬT KHẨU */}
+              {activeTab === 'password' && (
+                <form
+                  onSubmit={(e) => e.preventDefault()}
+                  className="bg-white border border-slate-200 rounded-xl p-6 space-y-5 shadow-sm"
+                  aria-labelledby="password-form-title"
+                >
+                  <div className="flex items-center gap-2 pb-3 border-b border-slate-200">
+                    <KeyRound className="w-5 h-5 text-emerald-600" />
+                    <h3 id="password-form-title" className="text-base font-bold text-slate-900">
+                      Đổi mật khẩu
+                    </h3>
+                  </div>
+
+                  <div className="p-4 rounded-lg bg-sky-50 border border-sky-200 text-sm text-sky-800 flex items-start gap-2">
+                    <Lock className="w-4 h-4 mt-0.5 text-sky-600 flex-shrink-0" />
+                    <span>
+                      Để bảo mật tài khoản, vui lòng sử dụng mật khẩu mới có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và số.
                     </span>
-                    <p className="text-sm font-medium text-slate-100 truncate">{profile.email}</p>
                   </div>
 
-                  <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-2xl space-y-1">
-                    <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
-                      <Phone className="w-3.5 h-3.5 text-emerald-400" /> Số điện thoại
-                    </span>
-                    <p className="text-sm font-medium text-slate-100">{profile.phoneNumber || 'Chưa cập nhật'}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="space-y-1.5">
+                      <label htmlFor="profile-current-pw" className="block text-xs font-semibold text-slate-700">
+                        Mật khẩu hiện tại
+                      </label>
+                      <input
+                        id="profile-current-pw"
+                        type="password"
+                        disabled
+                        placeholder="••••••••"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition disabled:opacity-60"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label htmlFor="profile-new-pw" className="block text-xs font-semibold text-slate-700">
+                        Mật khẩu mới
+                      </label>
+                      <input
+                        id="profile-new-pw"
+                        type="password"
+                        disabled
+                        placeholder="••••••••"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition disabled:opacity-60"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label htmlFor="profile-confirm-pw" className="block text-xs font-semibold text-slate-700">
+                        Xác nhận mật khẩu mới
+                      </label>
+                      <input
+                        id="profile-confirm-pw"
+                        type="password"
+                        disabled
+                        placeholder="••••••••"
+                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition disabled:opacity-60"
+                      />
+                    </div>
                   </div>
 
-                  <div className="sm:col-span-2 p-4 bg-slate-950/60 border border-slate-800 rounded-2xl space-y-1">
-                    <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-amber-400" /> Địa chỉ giao hàng chính
-                    </span>
-                    <p className="text-sm font-medium text-slate-100">{profile.address1 || 'Chưa cập nhật'}</p>
-                    {profile.address2 && <p className="text-xs text-slate-400 pt-0.5">{profile.address2}</p>}
+                  <div className="flex justify-end pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      disabled
+                      title="Tính năng đổi mật khẩu đang được phát triển"
+                      className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-bold text-sm rounded-lg shadow-sm hover:shadow-md transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Đổi mật khẩu
+                    </button>
                   </div>
-                </div>
+                </form>
+              )}
 
-                {/* MEMBERSHIP TIER BENIFITS OVERVIEW */}
-                <div className="pt-4 border-t border-slate-800">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3">Quyền lợi Hạng thẻ của bạn:</h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px]">
-                    <div className={`p-3 rounded-xl border text-center transition ${currentTier === MembershipTierVal.Standard ? 'border-orange-500 bg-orange-500/10 text-white font-bold' : 'border-slate-800 bg-slate-950/40 text-slate-400'}`}>
-                      Standard (&lt;100đ)
-                    </div>
-                    <div className={`p-3 rounded-xl border text-center transition ${currentTier === MembershipTierVal.Silver ? 'border-slate-400 bg-slate-400/10 text-slate-200 font-bold' : 'border-slate-800 bg-slate-950/40 text-slate-400'}`}>
-                      Bạc (100đ+)
-                    </div>
-                    <div className={`p-3 rounded-xl border text-center transition ${currentTier === MembershipTierVal.Gold ? 'border-amber-400 bg-amber-400/10 text-amber-300 font-bold' : 'border-slate-800 bg-slate-950/40 text-slate-400'}`}>
-                      Vàng (500đ+)
-                    </div>
-                    <div className={`p-3 rounded-xl border text-center transition ${currentTier === MembershipTierVal.Platinum ? 'border-zinc-200 bg-zinc-200/10 text-zinc-100 font-bold' : 'border-slate-800 bg-slate-950/40 text-slate-400'}`}>
-                      Bạch Kim (1000đ+)
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            </div>
+            </section>
 
           </div>
         )}
 
       </div>
-    </div>
+    </main>
   );
 }

@@ -61,9 +61,8 @@ export const CheckoutForm: React.FC = () => {
 
   const finalTotal = Math.max(0, originalTotal - discountAmount);
 
-  // Áp dụng Mã khuyến mãi
-  const handleApplyCoupon = async (e: FormEvent) => {
-    e.preventDefault();
+  // Áp dụng Mã khuyến mãi — không cần FormEvent vì đã gỡ <form> wrapper.
+  const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
 
     setIsValidatingCoupon(true);
@@ -401,7 +400,8 @@ export const CheckoutForm: React.FC = () => {
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
             Mã khuyến mãi (Voucher)
           </label>
-          <form onSubmit={handleApplyCoupon} className="flex gap-2">
+          {/* Dùng <div> thay vì <form> lồng để tránh HTML invalid (form-inside-form bị browser bỏ qua). */}
+          <div className="flex gap-2">
             <div className="relative flex-1">
               <Tag className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
@@ -409,6 +409,12 @@ export const CheckoutForm: React.FC = () => {
                 placeholder="Nhập mã (VD: HELLOFRESH, FOOD50)..."
                 value={couponCode}
                 onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleApplyCoupon();
+                  }
+                }}
                 className="
                   w-full pl-10 pr-3 py-2.5
                   bg-white border border-slate-300 rounded-lg
@@ -420,7 +426,8 @@ export const CheckoutForm: React.FC = () => {
               />
             </div>
             <button
-              type="submit"
+              type="button"
+              onClick={handleApplyCoupon}
               disabled={isValidatingCoupon || !couponCode.trim()}
               className="
                 px-5 py-2.5 rounded-lg
@@ -434,7 +441,7 @@ export const CheckoutForm: React.FC = () => {
             >
               {isValidatingCoupon ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Áp dụng'}
             </button>
-          </form>
+          </div>
 
           {couponError && (
             <p className="text-xs font-semibold text-red-600 flex items-center gap-1">
@@ -449,6 +456,68 @@ export const CheckoutForm: React.FC = () => {
             </p>
           )}
         </section>
+
+        {/* ─── NÚT SUBMIT ───
+            Đặt ở cột trái (sau Coupon) để button luôn hiển thị ở mọi
+            viewport, không phụ thuộc vào aside sticky. */}
+        <div className="pt-2">
+          {!token ? (
+            <Link
+              to="/login"
+              className="
+                w-full inline-flex items-center justify-center gap-2
+                rounded-lg bg-amber-400 hover:bg-amber-500 active:bg-amber-600
+                border-2 border-amber-500
+                text-slate-900 font-extrabold
+                px-6 py-4
+                shadow-md hover:shadow-lg shadow-amber-500/40
+                transition-all duration-200
+                hover:-translate-y-1
+              "
+            >
+              <LogIn className="w-5 h-5" />
+              <span>Đăng nhập để thanh toán ({cartItems.length} món)</span>
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+          ) : (
+            <button
+              type="submit"
+              disabled={isPending || cartItems.length === 0}
+              className="
+                group relative z-10
+                w-full inline-flex items-center justify-center gap-2
+                rounded-lg font-extrabold text-slate-900
+                px-6 py-4
+                bg-amber-400 hover:bg-amber-500 active:bg-amber-600
+                border-2 border-amber-500
+                shadow-md hover:shadow-lg shadow-amber-500/40
+                transition-all duration-200
+                hover:-translate-y-1
+                disabled:opacity-50 disabled:cursor-not-allowed
+                disabled:hover:translate-y-0 disabled:hover:shadow-md
+              "
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Đang xử lý đặt hàng...</span>
+                </>
+              ) : paymentMethod === 2 ? (
+                <>
+                  <Wallet className="w-5 h-5" />
+                  <span>Thanh toán qua VNPay ({cartItems.length} món)</span>
+                  <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                </>
+              ) : (
+                <>
+                  <Truck className="w-5 h-5" />
+                  <span>Xác nhận đặt hàng ({cartItems.length} món)</span>
+                  <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+                </>
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ─────────────── CỘT PHẢI: STICKY ORDER SUMMARY ─────────────── */}
@@ -525,61 +594,6 @@ export const CheckoutForm: React.FC = () => {
             <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>Thanh toán an toàn · Bảo mật thông tin</span>
           </div>
-
-          {/* NÚT SUBMIT */}
-          {!token ? (
-            <Link
-              to="/login"
-              className="
-                w-full inline-flex items-center justify-center gap-2
-                rounded-xl bg-emerald-500 hover:bg-emerald-600
-                text-white font-bold
-                px-6 py-3.5
-                shadow-md shadow-emerald-500/30
-                transition-all duration-200 hover:-translate-y-0.5
-              "
-            >
-              <LogIn className="w-5 h-5" />
-              <span>Đăng nhập để thanh toán ({cartItems.length} món)</span>
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-          ) : (
-            <button
-              type="submit"
-              disabled={isPending || cartItems.length === 0}
-              className="
-                group w-full inline-flex items-center justify-center gap-2
-                rounded-xl font-bold text-white
-                px-6 py-4
-                bg-gradient-to-br from-amber-500 to-amber-600
-                hover:from-amber-600 hover:to-amber-700
-                shadow-lg shadow-amber-500/30
-                transition-all duration-200
-                hover:-translate-y-1 hover:shadow-xl
-                disabled:opacity-60 disabled:cursor-not-allowed
-                disabled:hover:translate-y-0
-              "
-            >
-              {isPending ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Đang xử lý đặt hàng...</span>
-                </>
-              ) : paymentMethod === 2 ? (
-                <>
-                  <Wallet className="w-5 h-5" />
-                  <span>Thanh toán qua VNPay ({cartItems.length} món)</span>
-                  <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-                </>
-              ) : (
-                <>
-                  <Truck className="w-5 h-5" />
-                  <span>Xác nhận đặt hàng ({cartItems.length} món)</span>
-                  <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-                </>
-              )}
-            </button>
-          )}
 
           <Link
             to="/cart"

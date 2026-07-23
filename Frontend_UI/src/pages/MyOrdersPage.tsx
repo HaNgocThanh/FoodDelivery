@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
+import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../api/axiosClient';
 import { Link } from 'react-router-dom';
 import {
@@ -21,53 +21,53 @@ import type { OrderItem } from './OrderManagementPage';
 const statusBadges: Record<number | string, { label: string; icon: React.ReactNode; bgClass: string }> = {
   1: {
     label: 'Chờ xử lý (Pending)',
-    icon: <Clock className="w-4 h-4 text-amber-400" />,
-    bgClass: 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+    icon: <Clock className="w-4 h-4 text-amber-600" />,
+    bgClass: 'bg-amber-50 text-amber-700 border-amber-200'
   },
   Pending: {
     label: 'Chờ xử lý (Pending)',
-    icon: <Clock className="w-4 h-4 text-amber-400" />,
-    bgClass: 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+    icon: <Clock className="w-4 h-4 text-amber-600" />,
+    bgClass: 'bg-amber-50 text-amber-700 border-amber-200'
   },
   2: {
     label: 'Đã duyệt (Approved)',
-    icon: <CheckCircle className="w-4 h-4 text-blue-400" />,
-    bgClass: 'bg-blue-500/15 text-blue-300 border-blue-500/30'
+    icon: <CheckCircle className="w-4 h-4 text-sky-600" />,
+    bgClass: 'bg-sky-50 text-sky-700 border-sky-200'
   },
   Approved: {
     label: 'Đã duyệt (Approved)',
-    icon: <CheckCircle className="w-4 h-4 text-blue-400" />,
-    bgClass: 'bg-blue-500/15 text-blue-300 border-blue-500/30'
+    icon: <CheckCircle className="w-4 h-4 text-sky-600" />,
+    bgClass: 'bg-sky-50 text-sky-700 border-sky-200'
   },
   3: {
     label: 'Đang giao (Shipping)',
-    icon: <Truck className="w-4 h-4 text-indigo-400" />,
-    bgClass: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+    icon: <Truck className="w-4 h-4 text-sky-600" />,
+    bgClass: 'bg-sky-50 text-sky-700 border-sky-200'
   },
   Shipping: {
     label: 'Đang giao (Shipping)',
-    icon: <Truck className="w-4 h-4 text-indigo-400" />,
-    bgClass: 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+    icon: <Truck className="w-4 h-4 text-sky-600" />,
+    bgClass: 'bg-sky-50 text-sky-700 border-sky-200'
   },
   4: {
     label: 'Hoàn tất (Completed)',
-    icon: <CheckCircle className="w-4 h-4 text-emerald-400" />,
-    bgClass: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+    icon: <CheckCircle className="w-4 h-4 text-emerald-600" />,
+    bgClass: 'bg-emerald-50 text-emerald-700 border-emerald-200'
   },
   Completed: {
     label: 'Hoàn tất (Completed)',
-    icon: <CheckCircle className="w-4 h-4 text-emerald-400" />,
-    bgClass: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+    icon: <CheckCircle className="w-4 h-4 text-emerald-600" />,
+    bgClass: 'bg-emerald-50 text-emerald-700 border-emerald-200'
   },
   5: {
     label: 'Đã hủy (Cancelled)',
-    icon: <XCircle className="w-4 h-4 text-red-400" />,
-    bgClass: 'bg-red-500/15 text-red-300 border-red-500/30'
+    icon: <XCircle className="w-4 h-4 text-red-600" />,
+    bgClass: 'bg-red-50 text-red-700 border-red-200'
   },
   Cancelled: {
     label: 'Đã hủy (Cancelled)',
-    icon: <XCircle className="w-4 h-4 text-red-400" />,
-    bgClass: 'bg-red-500/15 text-red-300 border-red-500/30'
+    icon: <XCircle className="w-4 h-4 text-red-600" />,
+    bgClass: 'bg-red-50 text-red-700 border-red-200'
   },
 };
 
@@ -87,6 +87,10 @@ export default function MyOrdersPage() {
       return await axiosClient.get<OrderItem[], OrderItem[]>('/api/orders/my-orders');
     },
   });
+
+  // Helper: lấy imageUrl cho từng sản phẩm trong các đơn hàng (vì API /orders chỉ trả productName).
+  // Dùng useQueries để batch-fetch theo productId unique; React Query sẽ tự cache.
+  const productImageMap = useProductImageMap(orders);
 
   // Cancel Order Mutation
   const cancelMutation = useMutation({
@@ -147,77 +151,81 @@ export default function MyOrdersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans p-4 sm:p-8 selection:bg-orange-500 selection:text-white">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <main className="min-h-screen bg-slate-50 text-slate-700 font-sans pb-20">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 space-y-8">
 
         {/* HEADER BAR */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
           <div className="flex items-center gap-3">
             <Link
               to="/"
-              className="p-2.5 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition border border-slate-800"
+              data-testid="button-back-home"
+              className="p-2.5 bg-white hover:bg-slate-100 text-slate-500 hover:text-emerald-600 rounded-lg transition border border-slate-200 shadow-sm"
             >
               <ArrowLeft className="w-5 h-5" />
             </Link>
             <div>
-              <h1 className="text-2xl font-black text-white flex items-center gap-2">
-                <ShoppingBag className="w-7 h-7 text-orange-500" />
+              <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <ShoppingBag className="w-7 h-7 text-emerald-600" />
                 Lịch sử Đơn hàng của tôi
               </h1>
-              <p className="text-xs text-slate-400">Theo dõi tiến độ giao hàng và danh sách các đơn hàng đã đặt</p>
+              <p className="text-sm text-slate-500 mt-1">Theo dõi tiến độ giao hàng và danh sách các đơn hàng đã đặt</p>
             </div>
           </div>
 
           <button
             onClick={() => refetch()}
-            className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold rounded-xl transition border border-slate-800 flex items-center gap-1.5 w-fit"
+            data-testid="button-refresh-orders"
+            className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 hover:text-emerald-700 text-sm font-semibold rounded-lg transition border border-slate-200 shadow-sm flex items-center gap-1.5 w-fit"
           >
             Làm mới
           </button>
-        </div>
+        </header>
 
         {/* NOTIFICATION TOAST */}
         {notification && (
-          <div
-            className={`p-4 rounded-2xl border flex items-center justify-between text-sm shadow-2xl transition ${
+          <section
+            role="status"
+            aria-live="polite"
+            className={`p-4 rounded-xl border flex items-center justify-between text-sm shadow-sm ${
               notification.type === 'success'
-                ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-200'
-                : 'bg-red-950/90 border-red-500/50 text-red-200'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : 'bg-red-50 border-red-200 text-red-800'
             }`}
           >
             <div className="flex items-center gap-2.5">
               {notification.type === 'success' ? (
-                <Check className="w-5 h-5 text-emerald-400" />
+                <Check className="w-5 h-5 text-emerald-600" />
               ) : (
-                <AlertCircle className="w-5 h-5 text-red-400" />
+                <AlertCircle className="w-5 h-5 text-red-600" />
               )}
               <span className="font-medium">{notification.message}</span>
             </div>
             <button
               onClick={() => setNotification(null)}
-              className="text-xs opacity-70 hover:opacity-100 underline"
+              className="text-xs font-semibold opacity-80 hover:opacity-100 underline"
             >
               Đóng
             </button>
-          </div>
+          </section>
         )}
 
         {/* LOADING & ERROR STATES */}
         {isLoading && (
-          <div className="py-20 flex flex-col items-center justify-center gap-3 text-slate-400">
-            <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+          <section className="py-20 flex flex-col items-center justify-center gap-3 text-slate-500">
+            <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
             <p className="text-sm font-medium">Đang tải lịch sử đơn hàng...</p>
-          </div>
+          </section>
         )}
 
         {isError && (
-          <div className="p-6 bg-red-950/80 border border-red-500/50 rounded-2xl text-red-200 space-y-2">
+          <section role="alert" className="p-6 bg-red-50 border border-red-200 rounded-xl text-red-800 space-y-2 shadow-sm">
             <div className="flex items-center gap-2 font-bold text-sm">
-              <AlertCircle className="w-5 h-5 text-red-400" />
+              <AlertCircle className="w-5 h-5 text-red-600" />
               <span>Không thể lấy lịch sử đơn hàng</span>
             </div>
-            <p className="text-xs text-red-300">{(error as any)?.message || 'Vui lòng kiểm tra lại kết nối hoặc đăng nhập.'}</p>
-          </div>
+            <p className="text-xs text-red-700">{(error as any)?.message || 'Vui lòng kiểm tra lại kết nối hoặc đăng nhập.'}</p>
+          </section>
         )}
 
         {/* ORDERS LIST CONTAINER */}
@@ -228,38 +236,39 @@ export default function MyOrdersPage() {
                 const statusInfo = statusBadges[order.status] || {
                   label: `Trạng thái ${order.status}`,
                   icon: <Clock className="w-4 h-4" />,
-                  bgClass: 'bg-slate-800 text-slate-300 border-slate-700',
+                  bgClass: 'bg-slate-100 text-slate-700 border-slate-200',
                 };
 
                 const isPending = String(order.status).toLowerCase() === 'pending' || Number(order.status) === 1;
 
                 return (
-                  <div
+                  <article
                     key={order.id}
-                    className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-6 shadow-xl hover:border-slate-700 transition"
+                    data-testid={`order-card-${order.id}`}
+                    className="bg-white border border-slate-200 rounded-xl p-6 space-y-6 shadow-sm transition-all duration-200 hover:shadow-md"
                   >
                     {/* TOP ORDER HEADER */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-3">
-                          <span className="font-mono font-bold text-white text-base">Mã đơn: #{order.id}</span>
+                    <div className="flex flex-col gap-4 pb-4 border-b border-slate-200">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <span className="font-mono font-bold text-slate-900 text-base">Mã đơn: #{order.id}</span>
                           <span
-                            className={`px-3 py-1 text-xs font-bold uppercase rounded-xl border flex items-center gap-1.5 w-fit ${statusInfo.bgClass}`}
+                            className={`px-3 py-1 text-xs font-bold uppercase rounded-lg border flex items-center gap-1.5 w-fit ${statusInfo.bgClass}`}
                           >
                             {statusInfo.icon}
                             {statusInfo.label}
                           </span>
                         </div>
-                        <p className="text-xs text-slate-400 flex items-center gap-1.5 pt-0.5">
-                          <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                        <p className="text-xs text-slate-500 flex items-center gap-1.5">
+                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
                           Ngày đặt: {new Date(order.orderDate).toLocaleString('vi-VN')}
                         </p>
                       </div>
 
-                      <div className="flex items-center justify-between sm:justify-end gap-3">
-                        <div className="text-right mr-2">
-                          <span className="text-xs text-slate-400 block">Tổng thanh toán</span>
-                          <span className="text-xl font-black text-orange-400">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2 border-t border-dashed border-slate-200 sm:border-t-0 sm:pt-0">
+                        <div className="text-left sm:text-right">
+                          <span className="text-xs text-slate-500 block">Tổng thanh toán</span>
+                          <span className="text-xl font-bold text-emerald-600 tabular-nums">
                             {order.totalAmount.toLocaleString('vi-VN')} đ
                           </span>
                         </div>
@@ -268,14 +277,15 @@ export default function MyOrdersPage() {
                         {isPending && (
                           <button
                             disabled={cancelMutation.isPending}
+                            data-testid={`button-cancel-order-${order.id}`}
                             onClick={() => {
                               if (window.confirm(`Bạn có chắc chắn muốn hủy đơn hàng #${order.id}?`)) {
                                 cancelMutation.mutate(order.id);
                               }
                             }}
-                            className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 border border-red-500/40 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                            className="px-5 py-2.5 bg-red-50 hover:bg-red-100 active:bg-red-200 disabled:opacity-50 text-red-600 hover:text-red-700 border border-red-200 hover:border-red-300 text-sm font-bold rounded-lg transition flex items-center gap-1.5"
                           >
-                            <Ban className="w-4 h-4 text-red-400" />
+                            <Ban className="w-4 h-4" />
                             Hủy đơn hàng
                           </button>
                         )}
@@ -287,7 +297,8 @@ export default function MyOrdersPage() {
                           Number(order.status) === 5) && (
                           <button
                             onClick={() => handleOpenTicketModal(order.id)}
-                            className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-orange-400 border border-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                            data-testid={`button-support-order-${order.id}`}
+                            className="px-4 py-2 bg-white hover:bg-slate-50 text-emerald-700 border border-slate-200 hover:border-emerald-300 text-xs font-bold rounded-lg transition shadow-sm flex items-center gap-1.5"
                           >
                             Yêu cầu hỗ trợ
                           </button>
@@ -296,96 +307,122 @@ export default function MyOrdersPage() {
                     </div>
 
                     {/* ORDER DETAILS ITEMS TABLE */}
-                    <div className="space-y-3">
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                        <Package className="w-4 h-4 text-orange-400" /> Danh sách sản phẩm trong đơn:
-                      </h4>
+                    <section aria-label={`Chi tiết đơn hàng #${order.id}`} className="space-y-3">
+                      <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                        <Package className="w-4 h-4 text-emerald-600" /> Danh sách sản phẩm trong đơn:
+                      </h2>
 
-                      <div className="bg-slate-950/60 border border-slate-800 rounded-2xl overflow-hidden">
-                        <div className="divide-y divide-slate-800/60">
-                          {order.details && order.details.length > 0 ? (
-                            order.details.map((detail, idx) => (
-                              <div
-                                key={idx}
-                                className="p-3.5 flex items-center justify-between text-xs hover:bg-slate-900/40 transition"
-                              >
-                                <div>
-                                  <Link
-                                    to={`/products/${detail.productId}`}
-                                    className="font-bold text-white hover:text-orange-400 transition"
-                                  >
-                                    {detail.productName}
-                                  </Link>
-                                  <p className="text-slate-500 text-[11px] font-mono">ID: #{detail.productId}</p>
-                                </div>
-                                <div className="flex items-center gap-6 text-right font-medium">
-                                  <span className="text-slate-400">Số lượng: <strong className="text-white">{detail.quantity}</strong></span>
-                                  <span className="text-slate-300">{detail.unitPrice.toLocaleString('vi-VN')} đ</span>
-                                  <span className="font-bold text-orange-400 min-w-[90px]">
-                                    {(detail.subtotal || detail.quantity * detail.unitPrice).toLocaleString('vi-VN')} đ
+                      <div className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden">
+                        <div className="max-h-64 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+                          <div className="divide-y divide-slate-200">
+                            {order.details && order.details.length > 0 ? (
+                              order.details.map((detail, idx) => (
+                                <div
+                                  key={idx}
+                                  className="flex items-center gap-4 py-3 px-3.5 border-b border-slate-200 last:border-0 text-xs hover:bg-white transition"
+                                >
+                                  <div className="w-16 h-16 rounded-lg border border-slate-200 bg-white overflow-hidden flex-shrink-0">
+                                    {productImageMap[detail.productId] ? (
+                                      <img
+                                        src={productImageMap[detail.productId]}
+                                        alt={detail.productName}
+                                        loading="lazy"
+                                        className="w-full h-full object-cover"
+                                      />
+                                    ) : (
+                                      <div className="w-full h-full flex items-center justify-center text-slate-400">
+                                        <Package className="w-6 h-6" />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <Link
+                                      to={`/products/${detail.productId}`}
+                                      className="font-semibold text-slate-900 text-sm leading-snug line-clamp-2 hover:text-emerald-600 transition"
+                                    >
+                                      {detail.productName}
+                                    </Link>
+                                    <p className="text-sm text-slate-500 mt-0.5">x{detail.quantity}</p>
+                                  </div>
+                                  <span className="ml-auto pl-3 text-sm font-semibold text-slate-700 tabular-nums whitespace-nowrap flex-shrink-0">
+                                    {detail.unitPrice.toLocaleString('vi-VN')} đ
                                   </span>
                                 </div>
-                              </div>
-                            ))
-                          ) : (
-                            <div className="p-4 text-xs text-slate-500 italic">Chi tiết đơn hàng đang được cập nhật</div>
-                          )}
+                              ))
+                            ) : (
+                              <div className="p-4 text-xs text-slate-500 italic">Chi tiết đơn hàng đang được cập nhật</div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="px-4 py-3 border-t border-dashed border-slate-300 flex items-center justify-between bg-white">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Tổng cộng</span>
+                          <span className="text-sm font-bold text-emerald-600 tabular-nums">
+                            {order.totalAmount.toLocaleString('vi-VN')} đ
+                          </span>
                         </div>
                       </div>
-                    </div>
+                    </section>
 
-                  </div>
+                  </article>
                 );
               })}
             </div>
           ) : (
-            <div className="p-16 bg-slate-900/60 border border-slate-800 rounded-3xl text-center space-y-4">
-              <ShoppingBag className="w-12 h-12 text-slate-700 mx-auto" />
+            <section className="p-16 bg-white border border-slate-200 rounded-xl text-center space-y-4 shadow-sm">
+              <ShoppingBag className="w-12 h-12 text-slate-300 mx-auto" />
               <div className="space-y-1">
-                <h3 className="text-base font-bold text-slate-300">Bạn chưa có đơn hàng nào</h3>
+                <h2 className="text-base font-bold text-slate-900">Bạn chưa có đơn hàng nào</h2>
                 <p className="text-xs text-slate-500">Khám phá hàng ngàn thực phẩm tươi sạch và đặt đơn ngay hôm nay!</p>
               </div>
               <Link
                 to="/products"
-                className="inline-block px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-black uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/25 transition"
+                data-testid="button-shop-now-empty"
+                className="inline-block px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-lg shadow-sm hover:shadow-md transition-all duration-150"
               >
                 Mua sắm ngay
               </Link>
-            </div>
+            </section>
           )
         )}
 
         {/* SUPPORT TICKET MODAL */}
         {isTicketModalOpen && (
-          <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-lg space-y-6 shadow-2xl relative">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="ticket-modal-title"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          >
+            <div className="bg-white border border-slate-200 rounded-xl p-6 w-full max-w-lg space-y-6 shadow-xl relative">
               <div>
-                <h3 className="text-lg font-black text-white">Yêu cầu hỗ trợ &amp; Khiếu nại</h3>
-                <p className="text-xs text-slate-400">Gửi phản hồi của bạn về đơn hàng #{selectedOrderId}</p>
+                <h2 id="ticket-modal-title" className="text-lg font-bold text-slate-900">Yêu cầu hỗ trợ &amp; Khiếu nại</h2>
+                <p className="text-xs text-slate-500 mt-1">Gửi phản hồi của bạn về đơn hàng #{selectedOrderId}</p>
               </div>
 
               <form onSubmit={handleTicketSubmit} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs text-slate-400 font-semibold">Chủ đề khiếu nại:</label>
+                  <label htmlFor="ticket-subject" className="text-xs text-slate-700 font-semibold">Chủ đề khiếu nại:</label>
                   <input
+                    id="ticket-subject"
                     type="text"
                     required
                     value={ticketSubject}
                     onChange={(e) => setTicketSubject(e.target.value)}
                     placeholder="Ví dụ: Giao sai món, thiếu sản phẩm, hoàn trả tiền..."
-                    className="w-full px-4 py-2.5 bg-slate-950 border border-slate-800 focus:border-orange-500 text-white placeholder-slate-600 rounded-xl text-xs transition focus:outline-none"
+                    className="w-full px-4 py-2.5 bg-white border border-slate-200 focus:border-emerald-500 text-slate-900 placeholder-slate-400 rounded-lg text-sm transition focus:outline-none shadow-sm"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs text-slate-400 font-semibold">Nội dung khiếu nại chi tiết:</label>
+                  <label htmlFor="ticket-message" className="text-xs text-slate-700 font-semibold">Nội dung khiếu nại chi tiết:</label>
                   <textarea
+                    id="ticket-message"
                     rows={5}
                     required
                     value={ticketMessage}
                     onChange={(e) => setTicketMessage(e.target.value)}
                     placeholder="Mô tả chi tiết vấn đề bạn gặp phải để admin giải quyết nhanh nhất..."
-                    className="w-full px-4 py-3 bg-slate-950 border border-slate-800 focus:border-orange-500 text-white placeholder-slate-600 rounded-2xl text-xs transition focus:outline-none resize-none"
+                    className="w-full px-4 py-3 bg-white border border-slate-200 focus:border-emerald-500 text-slate-900 placeholder-slate-400 rounded-lg text-sm transition focus:outline-none resize-none shadow-sm"
                   />
                 </div>
 
@@ -397,14 +434,16 @@ export default function MyOrdersPage() {
                       setTicketSubject('');
                       setTicketMessage('');
                     }}
-                    className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition"
+                    data-testid="button-cancel-ticket"
+                    className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold rounded-lg transition"
                   >
                     Hủy bỏ
                   </button>
                   <button
                     type="submit"
                     disabled={ticketMutation.isPending}
-                    className="px-5 py-2.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-40 text-white text-xs font-bold rounded-xl transition shadow-lg shadow-orange-500/20 flex items-center gap-1.5"
+                    data-testid="button-submit-ticket"
+                    className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition shadow-sm flex items-center gap-1.5"
                   >
                     {ticketMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Gửi yêu cầu'}
                   </button>
@@ -415,6 +454,44 @@ export default function MyOrdersPage() {
         )}
 
       </div>
-    </div>
+    </main>
   );
+}
+
+/**
+ * Hook phụ: fetch imageUrl cho từng productId duy nhất xuất hiện trong danh sách đơn.
+ * Vì API /orders chỉ trả productName (không kèm ảnh), ta gọi /api/products/{id} để lấy.
+ * useQueries sẽ batch + cache, không ảnh hưởng logic đơn hàng.
+ */
+function useProductImageMap(orders: OrderItem[]): Record<number, string | undefined> {
+  const productIds = useMemo(() => {
+    const set = new Set<number>();
+    for (const order of orders) {
+      for (const detail of order.details ?? []) {
+        set.add(detail.productId);
+      }
+    }
+    return Array.from(set);
+  }, [orders]);
+
+  const queries = useQueries({
+    queries: productIds.map((id) => ({
+      queryKey: ['product-image', id] as const,
+      queryFn: async () => {
+        return await axiosClient.get<{ imageUrl?: string }, { imageUrl?: string }>(
+          `/api/products/${id}`
+        );
+      },
+      staleTime: 5 * 60 * 1000,
+      retry: 1,
+    })),
+  });
+
+  return useMemo(() => {
+    const map: Record<number, string | undefined> = {};
+    productIds.forEach((id, idx) => {
+      map[id] = queries[idx]?.data?.imageUrl;
+    });
+    return map;
+  }, [productIds, queries]);
 }
