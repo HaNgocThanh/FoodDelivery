@@ -73,132 +73,146 @@ export default function PromotionManagementPage() {
 
   return (
     <AdminLayout>
-      <div className="p-6 lg:p-8 space-y-6 min-h-screen">
+      <main className="p-6 lg:p-8 space-y-6 min-h-screen bg-slate-50">
 
         {/* HEADER */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-slate-800">
+        <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-6 border-b border-slate-200">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white flex items-center gap-3">
-              <Ticket className="w-8 h-8 text-orange-500" />
+            <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
+              <span className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-amber-50 text-amber-600">
+                <Ticket className="w-6 h-6" />
+              </span>
               Quản lý Mã Khuyến mãi (Voucher)
             </h1>
-            <p className="text-slate-400 text-sm mt-1">
+            <p className="text-slate-500 text-sm mt-1">
               Tạo mã giảm giá, thiết lập hạn sử dụng và theo dõi lượt dùng
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             <button
+              type="button"
               onClick={() => refetch()}
-              className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl border border-slate-700 transition text-sm font-medium"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 rounded-lg border border-slate-200 hover:border-slate-300 transition text-sm font-semibold shadow-sm"
             >
               <RefreshCw className="w-4 h-4" />
               Làm mới
             </button>
 
             <button
+              type="button"
               onClick={() => setIsCreateOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white rounded-xl shadow-lg shadow-orange-500/20 transition text-sm font-semibold"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-lg shadow-sm hover:shadow-md transition text-sm font-bold"
             >
               <Plus className="w-4 h-4" />
               Tạo mã mới
             </button>
           </div>
-        </div>
+        </header>
 
         {/* NOTIFICATION TOAST */}
         {notification && (
           <div
-            className={`p-4 rounded-xl border flex items-center justify-between gap-3 ${
+            role="alert"
+            className={`p-4 rounded-xl border flex items-center justify-between gap-3 shadow-sm ${
               notification.type === 'success'
-                ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-200'
-                : 'bg-red-950/80 border-red-500/50 text-red-200'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : 'bg-red-50 border-red-200 text-red-800'
             }`}
           >
             <div className="flex items-center gap-3">
               {notification.type === 'success' ? (
-                <CheckCircle className="w-5 h-5 text-emerald-400" />
+                <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0" />
               ) : (
-                <AlertCircle className="w-5 h-5 text-red-400" />
+                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
               )}
-              <span className="text-sm font-medium">{notification.message}</span>
+              <span className="text-sm font-semibold">{notification.message}</span>
             </div>
-            <button onClick={() => setNotification(null)} className="text-slate-400 hover:text-white">
+            <button
+              type="button"
+              onClick={() => setNotification(null)}
+              aria-label="Đóng thông báo"
+              className="text-slate-400 hover:text-slate-700 transition"
+            >
               <X className="w-5 h-5" />
             </button>
           </div>
         )}
 
-        {/* TABLE CONTAINER */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
+        {/* TABLE CONTAINER — Modern Data Table */}
+        <section className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           {isLoading ? (
-            <div className="p-12 text-center text-slate-400 flex flex-col items-center gap-3">
-              <RefreshCw className="w-8 h-8 animate-spin text-orange-500" />
-              <span>Đang tải danh sách mã khuyến mãi...</span>
+            <div className="p-12 text-center text-slate-500 flex flex-col items-center gap-3">
+              <RefreshCw className="w-8 h-8 animate-spin text-emerald-500" />
+              <span className="text-sm">Đang tải danh sách mã khuyến mãi...</span>
             </div>
           ) : isError ? (
-            <div className="p-12 text-center text-red-400 flex flex-col items-center gap-2">
+            <div className="p-12 text-center text-red-600 flex flex-col items-center gap-2">
               <AlertCircle className="w-8 h-8" />
-              <span>Không thể tải mã khuyến mãi từ server.</span>
+              <span className="text-sm font-semibold">Không thể tải mã khuyến mãi từ server.</span>
             </div>
           ) : promotions.length === 0 ? (
-            <div className="p-12 text-center text-slate-400 flex flex-col items-center gap-2">
-              <Ticket className="w-10 h-10 text-slate-600 mb-2" />
-              <p className="font-semibold text-slate-300">Chưa có mã khuyến mãi nào</p>
+            <div className="p-12 text-center text-slate-500 flex flex-col items-center gap-2">
+              <Ticket className="w-10 h-10 text-slate-300 mb-2" />
+              <p className="font-semibold text-slate-700">Chưa có mã khuyến mãi nào</p>
+              <p className="text-xs text-slate-500">Bấm "Tạo mã mới" để bắt đầu.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-800/80 text-slate-400 text-xs font-bold uppercase tracking-wider border-b border-slate-700/60">
-                    <th className="py-4 px-6">ID</th>
-                    <th className="py-4 px-6">Mã Voucher</th>
-                    <th className="py-4 px-6">Mức giảm giá</th>
-                    <th className="py-4 px-6">Lượt sử dụng</th>
-                    <th className="py-4 px-6">Hạn sử dụng</th>
-                    <th className="py-4 px-6">Trạng thái</th>
+                  <tr className="bg-slate-50 text-slate-500 text-xs font-semibold uppercase tracking-wider border-b border-slate-200">
+                    <th scope="col" className="py-3.5 px-6">ID</th>
+                    <th scope="col" className="py-3.5 px-6">Mã Voucher</th>
+                    <th scope="col" className="py-3.5 px-6">Mức giảm giá</th>
+                    <th scope="col" className="py-3.5 px-6">Lượt sử dụng</th>
+                    <th scope="col" className="py-3.5 px-6">Hạn sử dụng</th>
+                    <th scope="col" className="py-3.5 px-6">Trạng thái</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800 text-sm">
+                <tbody className="divide-y divide-slate-100 text-sm">
                   {promotions.map((promo) => {
                     const isFull = promo.currentUsage >= promo.maxUsage;
                     const isExpired = promo.isExpired || new Date() > new Date(promo.expiryDate);
                     const isValid = promo.isActive && !isExpired && !isFull;
 
                     return (
-                      <tr key={promo.id} className="hover:bg-slate-800/40 transition">
-                        <td className="py-4 px-6 font-mono font-bold text-orange-400">#{promo.id}</td>
+                      <tr key={promo.id} className="hover:bg-slate-50 transition">
+                        <td className="py-4 px-6 font-mono font-bold text-emerald-700 whitespace-nowrap">
+                          #{promo.id}
+                        </td>
                         <td className="py-4 px-6">
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800 border border-slate-700 rounded-lg font-mono font-bold text-white tracking-wider">
-                            <Tag className="w-3.5 h-3.5 text-orange-500" />
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 rounded-lg font-mono font-bold text-slate-900 tracking-wider shadow-sm">
+                            <Tag className="w-3.5 h-3.5 text-amber-600" />
                             {promo.code}
                           </span>
                         </td>
-                        <td className="py-4 px-6 font-bold text-emerald-400 text-base">
+                        <td className="py-4 px-6 font-bold text-emerald-700 text-base whitespace-nowrap">
                           -{promo.discountPercentage}%
                         </td>
-                        <td className="py-4 px-6 text-slate-300">
-                          <span className="font-semibold">{promo.currentUsage}</span> / {promo.maxUsage} lượt
+                        <td className="py-4 px-6 text-slate-700">
+                          <span className="font-semibold">{promo.currentUsage}</span>
+                          <span className="text-slate-400"> / {promo.maxUsage} lượt</span>
                         </td>
-                        <td className="py-4 px-6 text-slate-400 text-xs flex items-center gap-1.5 pt-5">
-                          <Clock className="w-3.5 h-3.5 text-slate-500" />
+                        <td className="py-4 px-6 text-slate-600 text-xs flex items-center gap-1.5 pt-5">
+                          <Clock className="w-3.5 h-3.5 text-slate-400" />
                           {new Date(promo.expiryDate).toLocaleDateString('vi-VN')}
                         </td>
                         <td className="py-4 px-6">
                           {isValid ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                               <CheckCircle className="w-3.5 h-3.5" /> Còn hạn
                             </span>
                           ) : isExpired ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-500/15 text-red-400 border border-red-500/30">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
                               <AlertCircle className="w-3.5 h-3.5" /> Hết hạn
                             </span>
                           ) : isFull ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
                               <AlertCircle className="w-3.5 h-3.5" /> Hết lượt
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-400 border border-slate-700">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
                               Vô hiệu
                             </span>
                           )}
@@ -210,95 +224,106 @@ export default function PromotionManagementPage() {
               </table>
             </div>
           )}
-        </div>
-      </div>
+        </section>
+      </main>
 
-      {/* MODAL TẠO MÃ KHUYẾN MÃI MỚI */}
+      {/* MODAL TẠO MÃ KHUYẾN MÃI MỚI — light mode */}
       {isCreateOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 space-y-6 shadow-2xl">
-            <div className="flex justify-between items-center pb-4 border-b border-slate-800">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Ticket className="w-5 h-5 text-orange-400" />
-                Tạo Mã Khuyến Mãi Mới
-              </h3>
-              <button onClick={() => setIsCreateOpen(false)} className="text-slate-400 hover:text-white">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+        <div className="fixed inset-0 z-50">
+          <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setIsCreateOpen(false)} aria-hidden="true" />
+          <div role="dialog" aria-modal="true" aria-labelledby="promo-create-title"
+               className="absolute inset-0 flex items-center justify-center p-4">
+            <div className="relative bg-white border border-slate-200 rounded-xl max-w-lg w-full p-6 space-y-5 shadow-xl">
+              <header className="flex justify-between items-center pb-4 border-b border-slate-200">
+                <h3 id="promo-create-title" className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                  <Ticket className="w-5 h-5 text-amber-600" />
+                  Tạo Mã Khuyến Mãi Mới
+                </h3>
+                <button type="button" onClick={() => setIsCreateOpen(false)} aria-label="Đóng" className="text-slate-400 hover:text-slate-700 transition">
+                  <X className="w-5 h-5" />
+                </button>
+              </header>
 
-            <div className="space-y-4 text-sm">
-              <div>
-                <label className="block font-medium text-slate-300 mb-1">Mã Voucher (Code):</label>
-                <input
-                  type="text"
-                  placeholder="VD: HELLOFRESH, FOOD50..."
-                  value={createForm.code}
-                  onChange={(e) => setCreateForm({ ...createForm, code: e.target.value.toUpperCase() })}
-                  className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white font-mono font-bold tracking-wider outline-none focus:border-orange-500 uppercase"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-4 text-sm">
                 <div>
-                  <label className="block font-medium text-slate-300 mb-1">Mức giảm (%):</label>
+                  <label htmlFor="promo-code" className="block font-semibold text-slate-700 mb-1.5">Mã Voucher (Code):</label>
                   <input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={createForm.discountPercentage}
-                    onChange={(e) => setCreateForm({ ...createForm, discountPercentage: Number(e.target.value) })}
-                    className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white outline-none focus:border-orange-500 font-bold"
+                    id="promo-code"
+                    type="text"
+                    placeholder="VD: HELLOFRESH, FOOD50..."
+                    value={createForm.code}
+                    onChange={(e) => setCreateForm({ ...createForm, code: e.target.value.toUpperCase() })}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder-slate-400 font-mono font-bold tracking-wider outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition uppercase"
                   />
                 </div>
 
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="promo-discount" className="block font-semibold text-slate-700 mb-1.5">Mức giảm (%):</label>
+                    <input
+                      id="promo-discount"
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={createForm.discountPercentage}
+                      onChange={(e) => setCreateForm({ ...createForm, discountPercentage: Number(e.target.value) })}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition font-bold tabular-nums"
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="promo-maxusage" className="block font-semibold text-slate-700 mb-1.5">Số lượt tối đa:</label>
+                    <input
+                      id="promo-maxusage"
+                      type="number"
+                      min={1}
+                      value={createForm.maxUsage}
+                      onChange={(e) => setCreateForm({ ...createForm, maxUsage: Number(e.target.value) })}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition font-bold tabular-nums"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block font-medium text-slate-300 mb-1">Số lượt tối đa:</label>
+                  <label htmlFor="promo-expiry" className="block font-semibold text-slate-700 mb-1.5">Ngày hết hạn:</label>
                   <input
-                    type="number"
-                    min={1}
-                    value={createForm.maxUsage}
-                    onChange={(e) => setCreateForm({ ...createForm, maxUsage: Number(e.target.value) })}
-                    className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white outline-none focus:border-orange-500 font-bold"
+                    id="promo-expiry"
+                    type="date"
+                    value={createForm.expiryDate}
+                    onChange={(e) => setCreateForm({ ...createForm, expiryDate: e.target.value })}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-slate-900 outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition font-medium"
                   />
                 </div>
+
+                <label className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition">
+                  <span className="font-semibold text-slate-700">Kích hoạt mã ngay</span>
+                  <input
+                    type="checkbox"
+                    checked={createForm.isActive}
+                    onChange={(e) => setCreateForm({ ...createForm, isActive: e.target.checked })}
+                    className="w-5 h-5 accent-emerald-500 cursor-pointer"
+                  />
+                </label>
               </div>
 
-              <div>
-                <label className="block font-medium text-slate-300 mb-1">Ngày hết hạn:</label>
-                <input
-                  type="date"
-                  value={createForm.expiryDate}
-                  onChange={(e) => setCreateForm({ ...createForm, expiryDate: e.target.value })}
-                  className="w-full p-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white outline-none focus:border-orange-500 font-medium"
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-slate-800/60 rounded-xl border border-slate-700/50">
-                <span className="font-medium text-slate-200">Kích hoạt mã ngay:</span>
-                <input
-                  type="checkbox"
-                  checked={createForm.isActive}
-                  onChange={(e) => setCreateForm({ ...createForm, isActive: e.target.checked })}
-                  className="w-5 h-5 accent-orange-500 cursor-pointer"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-3 pt-4 border-t border-slate-800">
-              <button
-                onClick={() => setIsCreateOpen(false)}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-semibold transition"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={() => createMutation.mutate(createForm)}
-                disabled={createMutation.isPending || !createForm.code.trim()}
-                className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl text-sm font-semibold shadow-lg shadow-orange-500/20 transition flex items-center gap-2 disabled:opacity-60"
-              >
-                {createMutation.isPending ? 'Đang tạo...' : 'Tạo mã voucher'}
-              </button>
+              <footer className="flex justify-end gap-3 pt-4 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateOpen(false)}
+                  className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-lg text-sm font-semibold transition"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="button"
+                  onClick={() => createMutation.mutate(createForm)}
+                  disabled={createMutation.isPending || !createForm.code.trim()}
+                  data-testid="button-create-promo"
+                  className="inline-flex items-center gap-1.5 px-5 py-2 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-lg text-sm font-bold shadow-sm hover:shadow-md transition disabled:opacity-60"
+                >
+                  {createMutation.isPending ? 'Đang tạo...' : 'Tạo mã voucher'}
+                </button>
+              </footer>
             </div>
           </div>
         </div>

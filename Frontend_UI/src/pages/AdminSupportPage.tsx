@@ -141,46 +141,51 @@ export default function AdminSupportPage() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <main className="p-6 lg:p-8 space-y-6 min-h-screen bg-slate-50">
         {/* HEADER */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+        <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
           <div>
-            <h1 className="text-xl font-bold text-white flex items-center gap-2">
-              <MessageSquare className="w-6 h-6 text-orange-500" />
+            <h1 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
+              <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-rose-50 text-rose-600">
+                <MessageSquare className="w-5 h-5" />
+              </span>
               Chăm sóc Khách hàng &amp; Hỗ trợ
             </h1>
-            <p className="text-xs text-slate-400">Trả lời câu hỏi sản phẩm và giải quyết yêu cầu hỗ trợ khách hàng</p>
+            <p className="text-xs text-slate-500 mt-1">Trả lời câu hỏi sản phẩm và giải quyết yêu cầu hỗ trợ khách hàng</p>
           </div>
 
           <button
+            type="button"
             onClick={handleRefresh}
-            className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-850 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700 text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-md w-fit"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-slate-50 text-slate-700 hover:text-emerald-700 border border-slate-200 hover:border-emerald-300 text-xs font-semibold rounded-lg transition shadow-sm w-fit"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             Làm mới
           </button>
-        </div>
+        </header>
 
         {/* NOTIFICATION */}
         {notification && (
           <div
-            className={`p-4 rounded-xl border flex items-center justify-between text-xs transition duration-200 ${
+            role="alert"
+            className={`p-4 rounded-xl border flex items-center justify-between text-xs transition duration-200 shadow-sm ${
               notification.type === 'success'
-                ? 'bg-emerald-950/80 border-emerald-500/35 text-emerald-300 shadow-emerald-950/10'
-                : 'bg-red-950/80 border-red-500/35 text-red-300 shadow-red-950/10'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : 'bg-red-50 border-red-200 text-red-800'
             }`}
           >
             <div className="flex items-center gap-2">
               {notification.type === 'success' ? (
-                <CheckCircle className="w-4 h-4 text-emerald-400" />
+                <CheckCircle className="w-4 h-4 text-emerald-600" />
               ) : (
-                <AlertCircle className="w-4 h-4 text-red-400" />
+                <AlertCircle className="w-4 h-4 text-red-600" />
               )}
-              <span className="font-medium">{notification.message}</span>
+              <span className="font-semibold">{notification.message}</span>
             </div>
             <button
+              type="button"
               onClick={() => setNotification(null)}
-              className="text-[10px] font-bold hover:underline opacity-80 hover:opacity-100"
+              className="text-[10px] font-bold opacity-80 hover:opacity-100 hover:underline transition"
             >
               Đóng
             </button>
@@ -188,63 +193,73 @@ export default function AdminSupportPage() {
         )}
 
         {/* TAB CONTROLS */}
-        <div className="flex gap-4 border-b border-slate-850 pb-1">
+        <nav role="tablist" className="flex gap-4 border-b border-slate-200 pb-1">
           <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'qa'}
             onClick={() => setActiveTab('qa')}
-            className={`pb-3 font-bold text-sm transition relative ${activeTab === 'qa' ? 'text-orange-500 font-extrabold' : 'text-slate-500 hover:text-slate-300'}`}
+            className={`pb-3 font-bold text-sm transition relative ${
+              activeTab === 'qa' ? 'text-emerald-700 font-extrabold' : 'text-slate-500 hover:text-slate-700'
+            }`}
           >
             Hỏi đáp chưa trả lời ({unansweredQuestions.length})
             {activeTab === 'qa' && (
-              <span className="absolute bottom-0 left-0 right-0 h-1 bg-orange-500 rounded-full" />
+              <span className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500 rounded-full" />
             )}
           </button>
           <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'tickets'}
             onClick={() => setActiveTab('tickets')}
-            className={`pb-3 font-bold text-sm transition relative ${activeTab === 'tickets' ? 'text-orange-500 font-extrabold' : 'text-slate-500 hover:text-slate-300'}`}
+            className={`pb-3 font-bold text-sm transition relative ${
+              activeTab === 'tickets' ? 'text-emerald-700 font-extrabold' : 'text-slate-500 hover:text-slate-700'
+            }`}
           >
             Yêu cầu hỗ trợ (Tickets) ({openTickets.length})
             {activeTab === 'tickets' && (
-              <span className="absolute bottom-0 left-0 right-0 h-1 bg-orange-500 rounded-full" />
+              <span className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500 rounded-full" />
             )}
           </button>
-        </div>
+        </nav>
 
         {/* CONTENT */}
         {activeTab === 'qa' ? (
           <div>
             {isQLoading ? (
-              <div className="py-20 flex flex-col items-center justify-center gap-2 text-slate-400">
-                <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+              <div className="py-20 flex flex-col items-center justify-center gap-2 text-slate-500">
+                <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
                 <p className="text-xs">Đang tải câu hỏi chưa trả lời...</p>
               </div>
             ) : unansweredQuestions.length > 0 ? (
               <div className="grid grid-cols-1 gap-4">
                 {unansweredQuestions.map((q) => (
-                  <div
+                  <article
                     key={q.id}
-                    className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-4 hover:border-slate-700 transition"
+                    className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 hover:border-emerald-300 hover:shadow-sm transition"
                   >
                     <div className="flex flex-col sm:flex-row justify-between gap-3 text-xs">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 font-mono font-bold">
+                        <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 font-mono font-bold">
                           {q.userFullName?.charAt(0).toUpperCase() || 'Q'}
                         </div>
                         <div>
-                          <p className="font-bold text-white">{q.userFullName}</p>
+                          <p className="font-bold text-slate-900">{q.userFullName}</p>
                           <span className="text-[10px] text-slate-500 flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             {new Date(q.createdAt).toLocaleString('vi-VN')}
                           </span>
                         </div>
                       </div>
-                      <div className="px-2.5 py-1 bg-orange-500/10 border border-orange-500/20 text-orange-400 font-bold rounded-lg h-fit text-[10px]">
+                      <div className="px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-700 font-bold rounded-lg h-fit text-[10px]">
                         Sản phẩm: {q.productName}
                       </div>
                     </div>
 
                     <div className="pl-9 space-y-1">
-                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Câu hỏi:</p>
-                      <p className="text-sm text-slate-200 italic">"{q.questionText}"</p>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Câu hỏi:</p>
+                      <p className="text-sm text-slate-700 italic">"{q.questionText}"</p>
                     </div>
 
                     {answeringQuestionId === q.id ? (
@@ -255,20 +270,21 @@ export default function AdminSupportPage() {
                           value={answerText}
                           onChange={(e) => setAnswerText(e.target.value)}
                           placeholder="Nhập câu trả lời chi tiết cho khách hàng..."
-                          className="w-full px-3 py-2 bg-slate-950 border border-slate-850 focus:border-orange-500 text-white placeholder-slate-700 rounded-xl text-xs focus:outline-none transition resize-none"
+                          className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 text-slate-900 placeholder-slate-400 rounded-lg text-xs focus:outline-none transition resize-none"
                         />
                         <div className="flex justify-end gap-2">
                           <button
                             type="button"
                             onClick={() => setAnsweringQuestionId(null)}
-                            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-750 text-slate-300 text-xs font-semibold rounded-lg transition"
+                            className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold rounded-lg transition"
                           >
                             Hủy
                           </button>
                           <button
                             type="submit"
                             disabled={answerMutation.isPending}
-                            className="px-4 py-1.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1"
+                            data-testid="button-submit-answer"
+                            className="inline-flex items-center gap-1 px-4 py-1.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition shadow-sm"
                           >
                             {answerMutation.isPending ? (
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -283,63 +299,64 @@ export default function AdminSupportPage() {
                     ) : (
                       <div className="pl-9 pt-2">
                         <button
+                          type="button"
                           onClick={() => {
                             setAnsweringQuestionId(q.id);
                             setAnswerText('');
                           }}
-                          className="px-3 py-1.5 bg-slate-850 hover:bg-slate-800 text-orange-400 border border-slate-850 rounded-lg text-xs font-bold transition flex items-center gap-1"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold transition"
                         >
                           Phản hồi câu hỏi
                           <ArrowRight className="w-3 h-3" />
                         </button>
                       </div>
                     )}
-                  </div>
+                  </article>
                 ))}
               </div>
             ) : (
-              <div className="p-12 bg-slate-900/30 border border-slate-850 rounded-2xl text-center space-y-2 text-slate-500">
-                <HelpCircle className="w-8 h-8 text-slate-700 mx-auto" />
-                <p className="text-xs font-medium text-slate-400">Không có câu hỏi nào chưa trả lời</p>
-                <p className="text-[10px] text-slate-600">Tuyệt vời! Tất cả câu hỏi của người dùng đã được giải đáp.</p>
+              <div className="p-12 bg-white border border-slate-200 rounded-xl text-center space-y-2 shadow-sm">
+                <HelpCircle className="w-8 h-8 text-slate-300 mx-auto" />
+                <p className="text-xs font-medium text-slate-700">Không có câu hỏi nào chưa trả lời</p>
+                <p className="text-[10px] text-slate-500">Tuyệt vời! Tất cả câu hỏi của người dùng đã được giải đáp.</p>
               </div>
             )}
           </div>
         ) : (
           <div>
             {isTicketsLoading ? (
-              <div className="py-20 flex flex-col items-center justify-center gap-2 text-slate-400">
-                <Loader2 className="w-6 h-6 animate-spin text-orange-500" />
+              <div className="py-20 flex flex-col items-center justify-center gap-2 text-slate-500">
+                <Loader2 className="w-6 h-6 animate-spin text-emerald-500" />
                 <p className="text-xs">Đang tải danh sách khiếu nại...</p>
               </div>
             ) : openTickets.length > 0 ? (
               <div className="grid grid-cols-1 gap-4">
                 {openTickets.map((t) => (
-                  <div
+                  <article
                     key={t.id}
-                    className="bg-slate-900/60 border border-slate-800 rounded-2xl p-5 space-y-4 hover:border-slate-700 transition"
+                    className="bg-white border border-slate-200 rounded-xl p-5 space-y-4 hover:border-emerald-300 hover:shadow-sm transition"
                   >
                     <div className="flex flex-col sm:flex-row justify-between gap-3 text-xs">
                       <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 font-mono font-bold">
-                          U
+                        <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-700 font-mono font-bold">
+                          {t.userFullName?.charAt(0).toUpperCase() || 'U'}
                         </div>
                         <div>
-                          <p className="font-bold text-white">{t.userFullName}</p>
+                          <p className="font-bold text-slate-900">{t.userFullName}</p>
                           <span className="text-[10px] text-slate-500 flex items-center gap-1.5">
-                            <Mail className="w-3 h-3 text-slate-650" />
+                            <Mail className="w-3 h-3 text-slate-400" />
                             {t.userEmail}
                           </span>
                         </div>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 flex-wrap">
                         {t.orderId && (
-                          <div className="px-2.5 py-1 bg-slate-800 border border-slate-700 text-slate-300 font-mono font-bold rounded-lg h-fit text-[10px]">
+                          <div className="px-2.5 py-1 bg-slate-50 border border-slate-200 text-slate-700 font-mono font-bold rounded-lg h-fit text-[10px]">
                             Đơn hàng: #{t.orderId}
                           </div>
                         )}
-                        <div className="px-2.5 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 font-bold rounded-lg h-fit text-[10px] flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                        <div className="px-2.5 py-1 bg-amber-50 border border-amber-200 text-amber-700 font-bold rounded-lg h-fit text-[10px] flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                           {t.status}
                         </div>
                       </div>
@@ -348,11 +365,11 @@ export default function AdminSupportPage() {
                     <div className="pl-9 space-y-2">
                       <div>
                         <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">Chủ đề khiếu nại:</span>
-                        <p className="text-sm font-bold text-white">{t.subject}</p>
+                        <p className="text-sm font-bold text-slate-900">{t.subject}</p>
                       </div>
-                      <div className="bg-slate-950/40 p-4 rounded-xl border border-slate-850">
+                      <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
                         <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block mb-1">Nội dung yêu cầu hỗ trợ:</span>
-                        <p className="text-xs text-slate-300 leading-relaxed italic">"{t.message}"</p>
+                        <p className="text-xs text-slate-700 leading-relaxed italic">"{t.message}"</p>
                       </div>
                     </div>
 
@@ -364,20 +381,21 @@ export default function AdminSupportPage() {
                           value={replyText}
                           onChange={(e) => setReplyText(e.target.value)}
                           placeholder="Nhập nội dung phản hồi giải quyết chi tiết... (Hệ thống sẽ gửi email HTML thông báo trực tiếp tới tài khoản khách hàng)"
-                          className="w-full px-3 py-2.5 bg-slate-950 border border-slate-850 focus:border-orange-500 text-white placeholder-slate-700 rounded-xl text-xs focus:outline-none transition resize-none"
+                          className="w-full px-3 py-2.5 bg-white border border-slate-200 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 text-slate-900 placeholder-slate-400 rounded-lg text-xs focus:outline-none transition resize-none"
                         />
                         <div className="flex justify-end gap-2">
                           <button
                             type="button"
                             onClick={() => setReplyingTicketId(null)}
-                            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-755 text-slate-300 text-xs font-semibold rounded-lg transition"
+                            className="px-3 py-1.5 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 text-xs font-semibold rounded-lg transition"
                           >
                             Hủy
                           </button>
                           <button
                             type="submit"
                             disabled={replyMutation.isPending}
-                            className="px-4 py-1.5 bg-orange-500 hover:bg-orange-600 disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition flex items-center gap-1"
+                            data-testid="button-submit-reply"
+                            className="inline-flex items-center gap-1 px-4 py-1.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition shadow-sm"
                           >
                             {replyMutation.isPending ? (
                               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -392,30 +410,31 @@ export default function AdminSupportPage() {
                     ) : (
                       <div className="pl-9 pt-2">
                         <button
+                          type="button"
                           onClick={() => {
                             setReplyingTicketId(t.id);
                             setReplyText('');
                           }}
-                          className="px-3.5 py-1.5 bg-slate-850 hover:bg-slate-800 text-orange-400 border border-slate-850 rounded-lg text-xs font-bold transition flex items-center gap-1.5"
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-bold transition"
                         >
                           Xử lý khiếu nại
                           <ArrowRight className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     )}
-                  </div>
+                  </article>
                 ))}
               </div>
             ) : (
-              <div className="p-12 bg-slate-900/30 border border-slate-850 rounded-2xl text-center space-y-2 text-slate-500">
-                <FileText className="w-8 h-8 text-slate-700 mx-auto" />
-                <p className="text-xs font-medium text-slate-400">Không có yêu cầu hỗ trợ nào đang mở</p>
-                <p className="text-[10px] text-slate-600">Tuyệt vời! Tất cả các yêu cầu hỗ trợ từ khách hàng đã được xử lý xong.</p>
+              <div className="p-12 bg-white border border-slate-200 rounded-xl text-center space-y-2 shadow-sm">
+                <FileText className="w-8 h-8 text-slate-300 mx-auto" />
+                <p className="text-xs font-medium text-slate-700">Không có yêu cầu hỗ trợ nào đang mở</p>
+                <p className="text-[10px] text-slate-500">Tuyệt vời! Tất cả các yêu cầu hỗ trợ từ khách hàng đã được xử lý xong.</p>
               </div>
             )}
           </div>
         )}
-      </div>
+      </main>
     </AdminLayout>
   );
 }
