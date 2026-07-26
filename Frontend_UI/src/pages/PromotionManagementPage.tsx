@@ -102,7 +102,8 @@ export default function PromotionManagementPage() {
             <button
               type="button"
               onClick={() => setIsCreateOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-lg shadow-sm hover:shadow-md transition text-sm font-bold"
+              style={{ backgroundColor: '#047857', color: '#ffffff', borderColor: '#065f46' }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 !bg-emerald-700 !text-white !border !border-emerald-800 hover:!bg-emerald-600 active:!bg-emerald-800 rounded-lg shadow-sm hover:shadow-md transition text-sm font-bold"
             >
               <Plus className="w-4 h-4" />
               Tạo mã mới
@@ -319,7 +320,8 @@ export default function PromotionManagementPage() {
                   onClick={() => createMutation.mutate(createForm)}
                   disabled={createMutation.isPending || !createForm.code.trim()}
                   data-testid="button-create-promo"
-                  className="inline-flex items-center gap-1.5 px-5 py-2 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-lg text-sm font-bold shadow-sm hover:shadow-md transition disabled:opacity-60"
+                  style={{ backgroundColor: '#047857', color: '#ffffff', borderColor: '#065f46' }}
+                  className="inline-flex items-center gap-1.5 px-5 py-2 !bg-emerald-700 !text-white !border !border-emerald-800 hover:!bg-emerald-600 active:!bg-emerald-800 rounded-lg text-sm font-bold shadow-sm hover:shadow-md transition disabled:opacity-60"
                 >
                   {createMutation.isPending ? 'Đang tạo...' : 'Tạo mã voucher'}
                 </button>

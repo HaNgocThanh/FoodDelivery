@@ -418,7 +418,8 @@ export default function UserManagementPage() {
                   onClick={handleSaveUser}
                   disabled={isSaving}
                   data-testid="button-save-user"
-                  className="inline-flex items-center gap-1.5 px-5 py-2 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 disabled:opacity-60 text-white rounded-lg text-xs font-bold shadow-sm hover:shadow-md transition"
+                  style={{ backgroundColor: '#047857', color: '#ffffff', borderColor: '#065f46' }}
+                  className="inline-flex items-center gap-1.5 px-5 py-2 !bg-emerald-700 !text-white !border !border-emerald-800 hover:!bg-emerald-600 active:!bg-emerald-800 disabled:opacity-60 rounded-lg text-xs font-bold shadow-sm hover:shadow-md transition"
                 >
                   {isSaving ? (
                     <>

@@ -207,14 +207,15 @@ export default function OrderManagementPage() {
               key={st}
               onClick={() => setFilterStatus(st)}
               data-testid={`filter-status-${st || 'all'}`}
-              className={`px-4 py-2 rounded-full text-sm font-semibold transition border ${
+              style={filterStatus === st ? { backgroundColor: '#047857', borderColor: '#065f46' } : undefined}
+              className={`px-4 py-2 rounded-full text-sm font-semibold transition border shadow-md ${
                 filterStatus === st
-                  ? 'bg-emerald-500 text-white border-emerald-500 shadow-sm'
-                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:text-emerald-700 hover:border-emerald-200'
+                  ? 'bg-emerald-700 text-white border-emerald-800'
+                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 hover:text-emerald-700 hover:border-emerald-300'
               }`}
             >
               {st === '' ? 'Tất cả đơn hàng'
-                : st === 'Pending' ? 'Chờ xử lý'
+                : st === 'Pending' ? 'Chờ xử lý'  
                 : st === 'Approved' ? 'Đã duyệt'
                 : st === 'Shipping' ? 'Đang giao'
                 : st === 'Completed' ? 'Hoàn tất'
@@ -244,7 +245,8 @@ export default function OrderManagementPage() {
                 </button>
                 <Link
                   to="/login"
-                  className="inline-flex items-center px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg transition shadow-sm"
+                  style={{ backgroundColor: '#047857', color: '#ffffff', borderColor: '#065f46' }}
+                  className="inline-flex items-center px-4 py-2 !bg-emerald-700 !text-white !border !border-emerald-800 hover:!bg-emerald-600 text-xs font-semibold rounded-lg transition shadow-sm"
                 >
                   Đăng nhập Admin
                 </Link>
@@ -415,7 +417,8 @@ export default function OrderManagementPage() {
                   }
                   disabled={assignShipperMutation.isPending}
                   data-testid="button-confirm-assign"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 text-white rounded-lg text-sm font-bold shadow-sm hover:shadow-md transition disabled:opacity-60"
+                  style={{ backgroundColor: '#4338ca', color: '#ffffff', borderColor: '#3730a3' }}
+                  className="inline-flex items-center gap-2 px-4 py-2 !bg-indigo-700 !text-white !border !border-indigo-800 hover:!bg-indigo-600 active:!bg-indigo-800 rounded-lg text-sm font-bold shadow-sm hover:shadow-md transition disabled:opacity-60"
                 >
                   {assignShipperMutation.isPending ? 'Đang lưu...' : 'Xác nhận phân công'}
                 </button>
@@ -477,9 +480,10 @@ export default function OrderManagementPage() {
                   }
                   disabled={updateStatusMutation.isPending}
                   data-testid="button-confirm-status"
-                  className="inline-flex items-center gap-2 px-5 py-2 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white rounded-lg text-sm font-bold shadow-sm hover:shadow-md transition disabled:opacity-60"
+                  style={{ backgroundColor: '#047857', color: '#ffffff', borderColor: '#065f46' }}
+                  className="inline-flex items-center gap-2 px-5 py-2 !bg-emerald-700 !text-white !border !border-emerald-800 hover:!bg-emerald-600 active:!bg-emerald-800 focus-visible:!bg-emerald-700 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 rounded-lg text-sm font-bold shadow-md hover:shadow-lg transition disabled:opacity-60"
                 >
-                  <Save className="w-4 h-4" />
+                  <Save className="w-4 h-4 text-white" />
                   {updateStatusMutation.isPending ? 'Đang lưu...' : 'Lưu trạng thái'}
                 </button>
               </footer>
@@ -585,7 +589,8 @@ export default function OrderManagementPage() {
                         setSelectedStatus(3);
                       }}
                       data-testid="button-update-status-from-detail"
-                      className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-bold text-sm rounded-lg shadow-sm hover:shadow-md transition"
+                      style={{ backgroundColor: '#047857', color: '#ffffff', borderColor: '#065f46' }}
+                      className="inline-flex items-center justify-center gap-2 px-5 py-2.5 !bg-emerald-700 !text-white !border !border-emerald-800 hover:!bg-emerald-600 active:!bg-emerald-800 focus-visible:!bg-emerald-700 focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 font-bold text-sm rounded-lg shadow-md hover:shadow-lg transition"
                     >
                       <Truck className="w-4 h-4" />
                       Cập nhật trạng thái

@@ -443,7 +443,8 @@ export default function MyOrdersPage() {
                     type="submit"
                     disabled={ticketMutation.isPending}
                     data-testid="button-submit-ticket"
-                    className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 disabled:opacity-50 text-white text-sm font-bold rounded-lg transition shadow-sm flex items-center gap-1.5"
+                    style={{ backgroundColor: '#047857', color: '#ffffff', borderColor: '#065f46' }}
+                    className="px-5 py-2.5 !bg-emerald-700 !text-white !border !border-emerald-800 hover:!bg-emerald-600 active:!bg-emerald-800 disabled:opacity-50 rounded-lg text-sm font-bold transition shadow-sm flex items-center gap-1.5"
                   >
                     {ticketMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Gửi yêu cầu'}
                   </button>

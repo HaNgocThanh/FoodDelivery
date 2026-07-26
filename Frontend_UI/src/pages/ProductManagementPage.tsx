@@ -258,7 +258,8 @@ export default function ProductManagementPage() {
             <button
               type="button"
               onClick={() => setIsCreateOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-lg shadow-sm hover:shadow-md transition text-sm font-bold"
+              style={{ backgroundColor: '#047857', color: '#ffffff', borderColor: '#065f46' }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 !bg-emerald-700 !text-white !border !border-emerald-800 hover:!bg-emerald-600 active:!bg-emerald-800 rounded-lg shadow-sm hover:shadow-md transition text-sm font-bold"
             >
               <Plus className="w-4 h-4" />
               Thêm sản phẩm mới
@@ -483,7 +484,8 @@ export default function ProductManagementPage() {
                     })
                   }
                   disabled={restockMutation.isPending}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-lg text-sm font-bold shadow-sm hover:shadow-md transition disabled:opacity-60"
+                  style={{ backgroundColor: '#047857', color: '#ffffff', borderColor: '#065f46' }}
+                  className="inline-flex items-center gap-2 px-4 py-2 !bg-emerald-700 !text-white !border !border-emerald-800 hover:!bg-emerald-600 active:!bg-emerald-800 rounded-lg text-sm font-bold shadow-sm hover:shadow-md transition disabled:opacity-60"
                 >
                   {restockMutation.isPending ? 'Đang cập nhật...' : 'Xác nhận nhập kho'}
                 </button>
@@ -633,7 +635,8 @@ export default function ProductManagementPage() {
                   onClick={() => editMutation.mutate()}
                   disabled={editMutation.isPending || isUploadingImage}
                   data-testid="button-save-edit"
-                  className="inline-flex items-center gap-1.5 px-5 py-2 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-lg text-sm font-bold shadow-sm hover:shadow-md transition disabled:opacity-60"
+                  style={{ backgroundColor: '#047857', color: '#ffffff', borderColor: '#065f46' }}
+                  className="inline-flex items-center gap-1.5 px-5 py-2 !bg-emerald-700 !text-white !border !border-emerald-800 hover:!bg-emerald-600 active:!bg-emerald-800 rounded-lg text-sm font-bold shadow-sm hover:shadow-md transition disabled:opacity-60"
                 >
                   <Save className="w-4 h-4" />
                   {editMutation.isPending || isUploadingImage ? 'Đang lưu...' : 'Lưu thay đổi'}
@@ -789,7 +792,8 @@ export default function ProductManagementPage() {
                     !createForm.name.trim()
                   }
                   data-testid="button-save-create"
-                  className="inline-flex items-center gap-1.5 px-5 py-2 bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white rounded-lg text-sm font-bold shadow-sm hover:shadow-md transition disabled:opacity-60"
+                  style={{ backgroundColor: '#047857', color: '#ffffff', borderColor: '#065f46' }}
+                  className="inline-flex items-center gap-1.5 px-5 py-2 !bg-emerald-700 !text-white !border !border-emerald-800 hover:!bg-emerald-600 active:!bg-emerald-800 rounded-lg text-sm font-bold shadow-sm hover:shadow-md transition disabled:opacity-60"
                 >
                   <Plus className="w-4 h-4" />
                   {createMutation.isPending || isUploadingImage ? 'Đang tạo...' : 'Tạo sản phẩm'}

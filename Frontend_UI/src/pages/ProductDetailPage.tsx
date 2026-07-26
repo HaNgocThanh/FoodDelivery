@@ -378,11 +378,13 @@ export default function ProductDetailPage() {
                     <button
                       disabled={product.stockQuantity <= 0}
                       onClick={handleAddToCart}
+                      style={{ backgroundColor: '#047857', color: '#ffffff', borderColor: '#065f46' }}
                       className="
                         flex-1 py-3.5 px-6
-                        bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700
+                        !bg-emerald-700 hover:!bg-emerald-600 active:!bg-emerald-800
+                        !text-white !border !border-emerald-800
                         disabled:opacity-40 disabled:cursor-not-allowed
-                        text-white font-bold text-sm
+                        font-bold text-sm
                         rounded-lg
                         shadow-md hover:shadow-lg shadow-emerald-500/30
                         hover:-translate-y-1 active:translate-y-0
@@ -492,11 +494,13 @@ export default function ProductDetailPage() {
                           <button
                             type="submit"
                             disabled={reviewMutation.isPending}
+                            style={{ backgroundColor: '#047857', color: '#ffffff', borderColor: '#065f46' }}
                             className="
                               w-full py-3
-                              bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700
+                              !bg-emerald-700 hover:!bg-emerald-600 active:!bg-emerald-800
+                              !text-white !border !border-emerald-800
                               disabled:opacity-60 disabled:cursor-not-allowed
-                              text-white font-bold text-sm
+                              font-bold text-sm
                               rounded-lg
                               shadow-md hover:shadow-lg shadow-emerald-500/30
                               transition-all
@@ -629,11 +633,13 @@ export default function ProductDetailPage() {
                         <button
                           type="submit"
                           disabled={questionMutation.isPending}
+                          style={{ backgroundColor: '#047857', color: '#ffffff', borderColor: '#065f46' }}
                           className="
                             w-full py-3
-                            bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700
+                            !bg-emerald-700 hover:!bg-emerald-600 active:!bg-emerald-800
+                            !text-white !border !border-emerald-800
                             disabled:opacity-60 disabled:cursor-not-allowed
-                            text-white font-bold text-sm
+                            font-bold text-sm
                             rounded-lg
                             shadow-md hover:shadow-lg shadow-emerald-500/30
                             transition-all
