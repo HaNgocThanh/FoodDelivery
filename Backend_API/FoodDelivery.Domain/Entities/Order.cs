@@ -8,6 +8,9 @@ public class Order
     public int UserId { get; set; }
     public int? PromotionId { get; set; }
     public DateTime OrderDate { get; set; }
+    public decimal SubTotal { get; set; }
+    public decimal DiscountAmount { get; set; }
+    public string? AppliedCouponCode { get; set; }
     public decimal TotalAmount { get; set; }
     public PaymentMethod PaymentMethod { get; set; }
     public OrderStatus Status { get; set; }

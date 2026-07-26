@@ -28,7 +28,10 @@ import { Link } from 'react-router-dom';
 export interface ValidateResponse {
   id: number;
   code: string;
-  discountPercentage: number;
+  discountType: number | string;
+  discountValue: number;
+  maxDiscountAmount?: number | null;
+  minOrderAmount: number;
   isValid: boolean;
   message: string;
 }
@@ -45,23 +48,29 @@ export const CheckoutForm: React.FC = () => {
   const [couponCode, setCouponCode] = useState<string>('');
   const [isValidatingCoupon, setIsValidatingCoupon] = useState<boolean>(false);
   const [couponError, setCouponError] = useState<string | null>(null);
-  const [appliedPromotion, setAppliedPromotion] = useState<{
-    id: number;
-    code: string;
-    discountPercentage: number;
-  } | null>(null);
+  const [appliedPromotion, setAppliedPromotion] = useState<ValidateResponse | null>(null);
 
   const { mutate: createOrder, isPending, isSuccess, isError, error, data: orderResult } = useCreateOrder();
 
   const originalTotal = getTotalOriginalPrice();
 
-  const discountAmount = appliedPromotion
-    ? originalTotal * (appliedPromotion.discountPercentage / 100)
-    : 0;
+  let discountAmount = 0;
+  if (appliedPromotion) {
+    if (originalTotal < appliedPromotion.minOrderAmount) {
+      discountAmount = 0;
+    } else if (appliedPromotion.discountType === 1 || appliedPromotion.discountType === 'Percentage') {
+      discountAmount = originalTotal * (appliedPromotion.discountValue / 100);
+      if (appliedPromotion.maxDiscountAmount && discountAmount > appliedPromotion.maxDiscountAmount) {
+        discountAmount = appliedPromotion.maxDiscountAmount;
+      }
+    } else {
+      discountAmount = appliedPromotion.discountValue;
+    }
+  }
 
   const finalTotal = Math.max(0, originalTotal - discountAmount);
 
-  // Áp dụng Mã khuyến mãi — không cần FormEvent vì đã gỡ <form> wrapper.
+  // Áp dụng Mã khuyến mãi
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
 
@@ -73,11 +82,13 @@ export const CheckoutForm: React.FC = () => {
         code: couponCode.trim(),
       });
 
-      setAppliedPromotion({
-        id: response.id,
-        code: response.code,
-        discountPercentage: response.discountPercentage,
-      });
+      if (originalTotal < response.minOrderAmount) {
+        setAppliedPromotion(null);
+        setCouponError(`Đơn hàng tối thiểu phải từ ${response.minOrderAmount.toLocaleString('vi-VN')} đ mới được áp dụng mã này.`);
+        return;
+      }
+
+      setAppliedPromotion(response);
       setCouponError(null);
     } catch (err: any) {
       setAppliedPromotion(null);
@@ -101,7 +112,7 @@ export const CheckoutForm: React.FC = () => {
       {
         userId,
         paymentMethod,
-        promotionId: appliedPromotion?.id ?? null,
+        couponCode: appliedPromotion?.code ?? null,
         items: itemsPayload,
       },
       {
@@ -131,7 +142,6 @@ export const CheckoutForm: React.FC = () => {
 
   /* ─────────────────────────────────────────────────────────────────────
      NHÁNH 1 — SUCCESS STATE (COD)
-     Giữ layout 1 cột (center card), reskin theo design system.
      ───────────────────────────────────────────────────────────────────── */
   if (isSuccess && orderResult && paymentMethod === 1) {
     return (
@@ -154,7 +164,19 @@ export const CheckoutForm: React.FC = () => {
             <span className="text-slate-700">{new Date(orderResult.orderDate).toLocaleString('vi-VN')}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-slate-500">Tổng thanh toán:</span>
+            <span className="text-slate-500">Tạm tính tiền hàng:</span>
+            <span className="text-slate-700 font-medium tabular-nums">
+              {orderResult.subTotal?.toLocaleString('vi-VN')} đ
+            </span>
+          </div>
+          {orderResult.discountAmount > 0 && (
+            <div className="flex justify-between text-red-600 font-medium">
+              <span>Giảm giá ({orderResult.appliedCouponCode}):</span>
+              <span className="tabular-nums">-{orderResult.discountAmount.toLocaleString('vi-VN')} đ</span>
+            </div>
+          )}
+          <div className="flex justify-between border-t border-slate-200 pt-2">
+            <span className="text-slate-700 font-semibold">Tổng thanh toán:</span>
             <span className="font-bold text-emerald-700 text-base tabular-nums">
               {orderResult.totalAmount?.toLocaleString('vi-VN')} đ
             </span>
@@ -174,7 +196,6 @@ export const CheckoutForm: React.FC = () => {
 
   /* ─────────────────────────────────────────────────────────────────────
      NHÁNH 2 — EMPTY CART
-     Layout 1 cột, icon to + CTA amber.
      ───────────────────────────────────────────────────────────────────── */
   if (cartItems.length === 0) {
     return (
@@ -203,9 +224,6 @@ export const CheckoutForm: React.FC = () => {
 
   /* ─────────────────────────────────────────────────────────────────────
      NHÁNH 3 — CHECKOUT FORM
-     Layout 2 cột (desktop) / 1 cột (mobile):
-       • Cột trái: Cart items (stacked cards) + Payment + Coupon
-       • Cột phải: Sticky aside chứa Order Summary + Nút Submit
      ───────────────────────────────────────────────────────────────────── */
   return (
     <form
@@ -258,7 +276,6 @@ export const CheckoutForm: React.FC = () => {
                   transition-shadow hover:shadow-sm
                 "
               >
-                {/* Thumbnail placeholder (store CartItem chưa có imageUrl) */}
                 <div
                   aria-hidden="true"
                   className="
@@ -282,7 +299,6 @@ export const CheckoutForm: React.FC = () => {
                     <span className="mx-1 text-slate-300">/ sp</span>
                   </p>
 
-                  {/* Qty stepper — grouped [-][N][+] liền mạch */}
                   <div
                     role="group"
                     aria-label={`Số lượng ${item.name}`}
@@ -400,7 +416,6 @@ export const CheckoutForm: React.FC = () => {
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
             Mã khuyến mãi (Voucher)
           </label>
-          {/* Dùng <div> thay vì <form> lồng để tránh HTML invalid (form-inside-form bị browser bỏ qua). */}
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Tag className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -452,14 +467,16 @@ export const CheckoutForm: React.FC = () => {
           {appliedPromotion && (
             <p className="text-xs font-semibold text-emerald-700 flex items-center gap-1">
               <Check className="w-3.5 h-3.5" />
-              Đã áp dụng mã {appliedPromotion.code} (-{appliedPromotion.discountPercentage}%)
+              Đã áp dụng mã {appliedPromotion.code} (
+              {appliedPromotion.discountType === 1 || appliedPromotion.discountType === 'Percentage'
+                ? `-${appliedPromotion.discountValue}%`
+                : `-${appliedPromotion.discountValue.toLocaleString('vi-VN')} đ`}
+              )
             </p>
           )}
         </section>
 
-        {/* ─── NÚT SUBMIT ───
-            Đặt ở cột trái (sau Coupon) để button luôn hiển thị ở mọi
-            viewport, không phụ thuộc vào aside sticky. */}
+        {/* ─── NÚT SUBMIT ─── */}
         <div className="pt-2">
           {!token ? (
             <Link
@@ -555,7 +572,13 @@ export const CheckoutForm: React.FC = () => {
 
             {appliedPromotion && (
               <div className="flex items-center justify-between text-emerald-700 font-medium">
-                <span>Giảm giá ({appliedPromotion.discountPercentage}%)</span>
+                <span>
+                  Giảm giá (
+                  {appliedPromotion.discountType === 1 || appliedPromotion.discountType === 'Percentage'
+                    ? `-${appliedPromotion.discountValue}%`
+                    : `-${appliedPromotion.discountValue.toLocaleString('vi-VN')} đ`}
+                  )
+                </span>
                 <span className="tabular-nums">
                   -{discountAmount.toLocaleString('vi-VN')} đ
                 </span>

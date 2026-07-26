@@ -1,6 +1,7 @@
 using FoodDelivery.Application.DTOs.Promotion;
 using FoodDelivery.Application.Interfaces;
 using FoodDelivery.Domain.Entities;
+using FoodDelivery.Domain.Enums;
 using FoodDelivery.Domain.Exceptions;
 using FoodDelivery.Domain.Interfaces;
 
@@ -49,12 +50,19 @@ public class PromotionService : IPromotionService
             throw new ArgumentException("Mã khuyến mãi này đã hết lượt sử dụng.");
         }
 
+        string descMessage = promotion.DiscountType == DiscountType.Percentage
+            ? $"Áp dụng thành công mã {promotion.Code}! Giảm {promotion.DiscountValue}%"
+            : $"Áp dụng thành công mã {promotion.Code}! Giảm {promotion.DiscountValue:N0} đ";
+
         return new ValidatePromotionResponseDTO(
             promotion.Id,
             promotion.Code,
-            promotion.DiscountPercentage,
+            promotion.DiscountType,
+            promotion.DiscountValue,
+            promotion.MaxDiscountAmount,
+            promotion.MinOrderAmount,
             true,
-            $"Áp dụng thành công mã {promotion.Code}! Giảm {promotion.DiscountPercentage}%"
+            descMessage
         );
     }
 
@@ -63,8 +71,17 @@ public class PromotionService : IPromotionService
         if (string.IsNullOrWhiteSpace(dto.Code))
             throw new ArgumentException("Mã khuyến mãi không được để trống.");
 
-        if (dto.DiscountPercentage <= 0 || dto.DiscountPercentage > 100)
+        if (dto.DiscountType == DiscountType.Percentage && (dto.DiscountValue <= 0 || dto.DiscountValue > 100))
             throw new ArgumentException("Phần trăm giảm giá phải từ 1% đến 100%.");
+
+        if (dto.DiscountType == DiscountType.FixedAmount && dto.DiscountValue <= 0)
+            throw new ArgumentException("Số tiền giảm giá phải lớn hơn 0.");
+
+        if (dto.MinOrderAmount < 0)
+            throw new ArgumentException("Giá trị đơn tối thiểu không được âm.");
+
+        if (dto.MaxDiscountAmount.HasValue && dto.MaxDiscountAmount.Value <= 0)
+            throw new ArgumentException("Số tiền giảm giá tối đa phải lớn hơn 0.");
 
         if (dto.MaxUsage <= 0)
             throw new ArgumentException("Số lượt sử dụng tối đa phải lớn hơn 0.");
@@ -76,7 +93,10 @@ public class PromotionService : IPromotionService
         var promotion = new Promotion
         {
             Code = dto.Code.Trim().ToUpper(),
-            DiscountPercentage = dto.DiscountPercentage,
+            DiscountType = dto.DiscountType,
+            DiscountValue = dto.DiscountValue,
+            MaxDiscountAmount = dto.MaxDiscountAmount,
+            MinOrderAmount = dto.MinOrderAmount,
             MaxUsage = dto.MaxUsage,
             CurrentUsage = 0,
             ExpiryDate = dto.ExpiryDate,
@@ -92,7 +112,10 @@ public class PromotionService : IPromotionService
     private static PromotionResponseDTO MapToDTO(Promotion p) => new(
         p.Id,
         p.Code,
-        p.DiscountPercentage,
+        p.DiscountType,
+        p.DiscountValue,
+        p.MaxDiscountAmount,
+        p.MinOrderAmount,
         p.MaxUsage,
         p.CurrentUsage,
         p.ExpiryDate,

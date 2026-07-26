@@ -73,7 +73,10 @@ namespace FoodDelivery.Infrastructure.Data
             {
                 entity.HasKey(p => p.Id);
                 entity.Property(p => p.Code).IsRequired().HasMaxLength(50);
-                entity.Property(p => p.DiscountPercentage).HasColumnType("decimal(18,2)");
+                entity.Property(p => p.DiscountType).HasConversion<string>().HasDefaultValue(DiscountType.Percentage);
+                entity.Property(p => p.DiscountValue).HasColumnType("decimal(18,2)");
+                entity.Property(p => p.MaxDiscountAmount).HasColumnType("decimal(18,2)").IsRequired(false);
+                entity.Property(p => p.MinOrderAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
                 entity.HasIndex(p => p.Code).IsUnique(); // Đảm bảo mã KM không trùng lặp
             });
 
@@ -81,9 +84,15 @@ namespace FoodDelivery.Infrastructure.Data
             modelBuilder.Entity<Order>(entity =>
             {
                 entity.HasKey(o => o.Id);
+                entity.Property(o => o.SubTotal).HasColumnType("decimal(18,2)");
+                entity.Property(o => o.DiscountAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+                entity.Property(o => o.AppliedCouponCode).HasMaxLength(50).IsRequired(false);
                 entity.Property(o => o.TotalAmount).HasColumnType("decimal(18,2)");
                 entity.Property(o => o.PaymentMethod).HasConversion<string>(); // Lưu Enum dưới dạng String (COD, Online)
                 entity.Property(o => o.Status).HasConversion<string>();
+
+                // Check constraint: TotalAmount >= 0
+                entity.ToTable(t => t.HasCheckConstraint("CK_Order_TotalAmount", "\"TotalAmount\" >= 0"));
 
                 // Quan hệ: Khách hàng (User) <-> Đơn hàng
                 entity.HasOne(o => o.User)

@@ -1,4 +1,5 @@
 using FoodDelivery.Domain.Entities;
+using FoodDelivery.Domain.Enums;
 using FoodDelivery.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -153,7 +154,9 @@ public static class DbInitializer
                 new Promotion
                 {
                     Code = "HELLOFRESH",
-                    DiscountPercentage = 20,
+                    DiscountType = DiscountType.Percentage,
+                    DiscountValue = 20,
+                    MinOrderAmount = 100000m,
                     MaxUsage = 100,
                     CurrentUsage = 0,
                     ExpiryDate = DateTime.UtcNow.AddDays(30),
@@ -162,7 +165,10 @@ public static class DbInitializer
                 new Promotion
                 {
                     Code = "FOOD50",
-                    DiscountPercentage = 50,
+                    DiscountType = DiscountType.Percentage,
+                    DiscountValue = 50,
+                    MaxDiscountAmount = 50000m,
+                    MinOrderAmount = 50000m,
                     MaxUsage = 10,
                     CurrentUsage = 0,
                     ExpiryDate = DateTime.UtcNow.AddDays(15),

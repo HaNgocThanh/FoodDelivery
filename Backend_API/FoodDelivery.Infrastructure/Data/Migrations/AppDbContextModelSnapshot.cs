@@ -115,6 +115,15 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
 
                     OraclePropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("AppliedCouponCode")
+                        .HasMaxLength(50)
+                        .HasColumnType("NVARCHAR2(50)");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("TIMESTAMP(7)");
 
@@ -132,6 +141,9 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("NVARCHAR2(2000)");
 
+                    b.Property<decimal>("SubTotal")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(18,2)");
 
@@ -146,7 +158,10 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Orders");
+                    b.ToTable("Orders", t =>
+                        {
+                            t.HasCheckConstraint("CK_Order_TotalAmount", "\"TotalAmount\" >= 0");
+                        });
                 });
 
             modelBuilder.Entity("FoodDelivery.Domain.Entities.OrderDetail", b =>
@@ -276,7 +291,13 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
                     b.Property<int>("CurrentUsage")
                         .HasColumnType("NUMBER(10)");
 
-                    b.Property<decimal>("DiscountPercentage")
+                    b.Property<string>("DiscountType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("NVARCHAR2(2000)")
+                        .HasDefaultValue("Percentage");
+
+                    b.Property<decimal>("DiscountValue")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("ExpiryDate")
@@ -285,8 +306,16 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("BOOLEAN");
 
+                    b.Property<decimal?>("MaxDiscountAmount")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int>("MaxUsage")
                         .HasColumnType("NUMBER(10)");
+
+                    b.Property<decimal>("MinOrderAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
 
                     b.HasKey("Id");
 

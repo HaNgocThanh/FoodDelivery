@@ -89,7 +89,6 @@ export default function MyOrdersPage() {
   });
 
   // Helper: lấy imageUrl cho từng sản phẩm trong các đơn hàng (vì API /orders chỉ trả productName).
-  // Dùng useQueries để batch-fetch theo productId unique; React Query sẽ tự cache.
   const productImageMap = useProductImageMap(orders);
 
   // Cancel Order Mutation
@@ -100,7 +99,7 @@ export default function MyOrdersPage() {
     onSuccess: (_, orderId) => {
       setNotification({
         type: 'success',
-        message: `Đã hủy thành công đơn hàng #${orderId}. Số lượng tồn kho đã được hoàn trả!`,
+        message: `Đã hủy thành công đơn hàng #${orderId}. Số lượng tồn kho và lượt dùng mã giảm giá đã được hoàn trả!`,
       });
       queryClient.invalidateQueries({ queryKey: ['myOrders'] });
       queryClient.invalidateQueries({ queryKey: ['userProfile'] });
@@ -266,14 +265,24 @@ export default function MyOrdersPage() {
                       </div>
 
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-2 border-t border-dashed border-slate-200 sm:border-t-0 sm:pt-0">
-                        <div className="text-left sm:text-right">
+                        <div className="text-left sm:text-right space-y-0.5">
+                          {order.subTotal !== undefined && (
+                            <div className="text-xs text-slate-500">
+                              Tạm tính: <span className="font-medium text-slate-700 tabular-nums">{order.subTotal.toLocaleString('vi-VN')} đ</span>
+                            </div>
+                          )}
+                          {order.discountAmount && order.discountAmount > 0 ? (
+                            <div className="text-xs text-red-600 font-medium">
+                              Giảm giá ({order.appliedCouponCode}): -{order.discountAmount.toLocaleString('vi-VN')} đ
+                            </div>
+                          ) : null}
                           <span className="text-xs text-slate-500 block">Tổng thanh toán</span>
                           <span className="text-xl font-bold text-emerald-600 tabular-nums">
                             {order.totalAmount.toLocaleString('vi-VN')} đ
                           </span>
                         </div>
 
-                        {/* CANCEL BUTTON (Only shown when Pending) */}
+                        {/* CANCEL BUTTON */}
                         {isPending && (
                           <button
                             disabled={cancelMutation.isPending}
@@ -290,7 +299,7 @@ export default function MyOrdersPage() {
                           </button>
                         )}
 
-                        {/* SUPPORT TICKET TRIGGER (Only shown when Completed or Cancelled) */}
+                        {/* SUPPORT TICKET TRIGGER */}
                         {(String(order.status).toLowerCase() === 'completed' ||
                           String(order.status).toLowerCase() === 'cancelled' ||
                           Number(order.status) === 4 ||
@@ -354,11 +363,25 @@ export default function MyOrdersPage() {
                             )}
                           </div>
                         </div>
-                        <div className="px-4 py-3 border-t border-dashed border-slate-300 flex items-center justify-between bg-white">
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Tổng cộng</span>
-                          <span className="text-sm font-bold text-emerald-600 tabular-nums">
-                            {order.totalAmount.toLocaleString('vi-VN')} đ
-                          </span>
+                        <div className="px-4 py-3 border-t border-dashed border-slate-300 flex flex-col gap-1 bg-white">
+                          {order.subTotal !== undefined && (
+                            <div className="flex items-center justify-between text-xs text-slate-500">
+                              <span>Tạm tính tiền hàng:</span>
+                              <span className="tabular-nums font-medium">{order.subTotal.toLocaleString('vi-VN')} đ</span>
+                            </div>
+                          )}
+                          {order.discountAmount && order.discountAmount > 0 ? (
+                            <div className="flex items-center justify-between text-xs text-red-600 font-semibold">
+                              <span>Giảm giá ({order.appliedCouponCode}):</span>
+                              <span className="tabular-nums">-{order.discountAmount.toLocaleString('vi-VN')} đ</span>
+                            </div>
+                          ) : null}
+                          <div className="flex items-center justify-between border-t border-slate-200 pt-1.5">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700">Tổng thanh toán:</span>
+                            <span className="text-sm font-bold text-emerald-600 tabular-nums">
+                              {order.totalAmount.toLocaleString('vi-VN')} đ
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </section>
@@ -459,11 +482,6 @@ export default function MyOrdersPage() {
   );
 }
 
-/**
- * Hook phụ: fetch imageUrl cho từng productId duy nhất xuất hiện trong danh sách đơn.
- * Vì API /orders chỉ trả productName (không kèm ảnh), ta gọi /api/products/{id} để lấy.
- * useQueries sẽ batch + cache, không ảnh hưởng logic đơn hàng.
- */
 function useProductImageMap(orders: OrderItem[]): Record<number, string | undefined> {
   const productIds = useMemo(() => {
     const set = new Set<number>();

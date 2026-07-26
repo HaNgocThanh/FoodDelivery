@@ -14,10 +14,12 @@ public record OrderResponseDTO(
     int Id,
     int UserId,
     DateTime OrderDate,
+    decimal SubTotal,
+    decimal DiscountAmount,
+    string? AppliedCouponCode,
     decimal TotalAmount,
     PaymentMethod PaymentMethod,
     OrderStatus Status,
-    int? PromotionId,
     int? ShipperId,
     List<OrderDetailResponseDTO> Details
 );

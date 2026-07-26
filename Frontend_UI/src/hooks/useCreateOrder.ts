@@ -9,7 +9,7 @@ export interface OrderItemPayload {
 export interface OrderRequestPayload {
   userId: number;
   paymentMethod: number; // 1 = COD, 2 = Online
-  promotionId?: number | null;
+  couponCode?: string | null;
   items: OrderItemPayload[];
 }
 
@@ -25,10 +25,12 @@ export interface OrderResponse {
   id: number;
   userId: number;
   orderDate: string;
+  subTotal: number;
+  discountAmount: number;
+  appliedCouponCode?: string | null;
   totalAmount: number;
   paymentMethod: string;
   status: string;
-  promotionId?: number | null;
   shipperId?: number | null;
   details: OrderDetailResponse[];
 }

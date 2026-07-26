@@ -33,6 +33,9 @@ export interface OrderItem {
   id: number;
   userId: number;
   orderDate: string;
+  subTotal?: number;
+  discountAmount?: number;
+  appliedCouponCode?: string | null;
   totalAmount: number;
   paymentMethod: string | number;
   status: string | number;
@@ -54,11 +57,6 @@ const defaultShippers: ShipperItem[] = [
   { id: 4, fullName: 'Phạm Văn Cường (Đội 3 - Bình Thạnh)', phoneNumber: '0983333444' },
 ];
 
-// Light-mode badge tokens (theo design system):
-//   - Amber: Chờ duyệt (Pending / 1)
-//   - Sky:   Đã duyệt / Đang giao (Approved/2, Shipping/3)
-//   - Emerald: Hoàn tất (Completed/4)
-//   - Red:   Đã hủy (Cancelled/5)
 const statusNames: Record<number | string, { label: string; style: string }> = {
   1: { label: 'Chờ xử lý (Pending)', style: 'bg-amber-50 text-amber-700 border-amber-200' },
   Pending: { label: 'Chờ xử lý (Pending)', style: 'bg-amber-50 text-amber-700 border-amber-200' },
@@ -199,7 +197,7 @@ export default function OrderManagementPage() {
           </div>
         )}
 
-        {/* STATUS TABS / FILTERS — pill shape, light mode */}
+        {/* STATUS TABS / FILTERS */}
         <nav aria-label="Lọc theo trạng thái" className="flex flex-wrap gap-2">
           {['Pending', 'Approved', 'Shipping', 'Completed', 'Cancelled', ''].map((st) => (
             <button
@@ -224,7 +222,7 @@ export default function OrderManagementPage() {
           ))}
         </nav>
 
-        {/* TABLE CONTAINER — Modern Data Table */}
+        {/* TABLE CONTAINER */}
         <section className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           {isLoading ? (
             <div className="p-12 text-center text-slate-500 flex flex-col items-center gap-3">
@@ -291,6 +289,11 @@ export default function OrderManagementPage() {
                         </td>
                         <td className="py-4 px-6 font-bold text-slate-900 whitespace-nowrap tabular-nums">
                           {order.totalAmount?.toLocaleString('vi-VN')} đ
+                          {order.discountAmount && order.discountAmount > 0 ? (
+                            <span className="block text-[11px] font-normal text-red-600">
+                              Giảm: -{order.discountAmount.toLocaleString('vi-VN')} đ
+                            </span>
+                          ) : null}
                         </td>
                         <td className="py-4 px-6">
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
@@ -311,7 +314,6 @@ export default function OrderManagementPage() {
                         </td>
                         <td className="py-4 px-6">
                           <div className="flex items-center justify-center gap-1" role="group" aria-label="Thao tác">
-                            {/* Xem chi tiết */}
                             <button
                               type="button"
                               onClick={() => setDetailModalOrder(order)}
@@ -323,7 +325,6 @@ export default function OrderManagementPage() {
                               <Eye className="w-4 h-4" />
                             </button>
 
-                            {/* Phân công shipper */}
                             <button
                               type="button"
                               onClick={() => {
@@ -338,7 +339,6 @@ export default function OrderManagementPage() {
                               <UserCheck className="w-4 h-4" />
                             </button>
 
-                            {/* Cập nhật trạng thái */}
                             <button
                               type="button"
                               onClick={() => {
@@ -364,7 +364,7 @@ export default function OrderManagementPage() {
         </section>
       </main>
 
-      {/* MODAL PHÂN CÔNG SHIPPER — light mode */}
+      {/* MODAL PHÂN CÔNG SHIPPER */}
       {assignModalOrder && (
         <div className="fixed inset-0 z-50">
           <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setAssignModalOrder(null)} aria-hidden="true" />
@@ -428,7 +428,7 @@ export default function OrderManagementPage() {
         </div>
       )}
 
-      {/* MODAL CẬP NHẬT TRẠNG THÁI — light mode, nút lớn */}
+      {/* MODAL CẬP NHẬT TRẠNG THÁI */}
       {statusModalOrder && (
         <div className="fixed inset-0 z-50">
           <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setStatusModalOrder(null)} aria-hidden="true" />
@@ -492,14 +492,13 @@ export default function OrderManagementPage() {
         </div>
       )}
 
-      {/* MODAL XEM CHI TIẾT ĐƠN HÀNG — 2-Card layout (Customer info + Product list) */}
+      {/* MODAL XEM CHI TIẾT ĐƠN HÀNG */}
       {detailModalOrder && (
         <div className="fixed inset-0 z-50">
           <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setDetailModalOrder(null)} aria-hidden="true" />
           <div role="dialog" aria-modal="true" aria-labelledby="detail-title"
                className="absolute inset-0 flex items-center justify-center p-4">
             <div className="relative bg-white border border-slate-200 rounded-xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-xl">
-              {/* Header — sticky */}
               <header className="flex justify-between items-center px-6 py-4 border-b border-slate-200 flex-shrink-0">
                 <h3 id="detail-title" className="text-lg font-bold text-slate-900 flex items-center gap-2">
                   <PackageCheck className="w-5 h-5 text-amber-600" />
@@ -510,9 +509,7 @@ export default function OrderManagementPage() {
                 </button>
               </header>
 
-              {/* Body — 2 cards */}
               <div className="flex-1 overflow-y-auto p-6 space-y-5">
-                {/* CARD 1: Thông tin khách hàng & Giao hàng */}
                 <section aria-label="Thông tin khách hàng" className="bg-slate-50 border border-slate-200 rounded-xl p-5">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5 mb-4">
                     <User className="w-4 h-4 text-emerald-600" /> Thông tin khách hàng &amp; Giao hàng
@@ -561,16 +558,8 @@ export default function OrderManagementPage() {
                         </dd>
                       </div>
                     </div>
-                    <div className="flex items-start gap-2.5 sm:col-span-2">
-                      <MapPin className="w-4 h-4 text-slate-400 mt-0.5 flex-shrink-0" />
-                      <div>
-                        <dt className="text-xs text-slate-500">Địa chỉ nhận hàng</dt>
-                        <dd className="font-medium text-slate-700">(Xem chi tiết trong đơn hàng của khách)</dd>
-                      </div>
-                    </div>
                   </dl>
 
-                  {/* Trạng thái + Update status CTA */}
                   <div className="mt-5 pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Trạng thái hiện tại:</span>
@@ -598,7 +587,6 @@ export default function OrderManagementPage() {
                   </div>
                 </section>
 
-                {/* CARD 2: Danh sách sản phẩm — giống MyOrdersPage body card */}
                 <section aria-label="Danh sách sản phẩm" className="bg-white border border-slate-200 rounded-xl overflow-hidden">
                   <header className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-200 bg-slate-50">
                     <ShoppingBag className="w-4 h-4 text-emerald-600" />
@@ -634,17 +622,29 @@ export default function OrderManagementPage() {
                     )}
                   </div>
 
-                  {/* Footer tổng */}
-                  <footer className="flex justify-between items-center px-5 py-4 border-t border-slate-200 bg-emerald-50">
-                    <span className="text-sm font-bold text-slate-700">Tổng cộng đơn hàng:</span>
-                    <span className="text-xl font-extrabold text-emerald-700 tabular-nums">
-                      {detailModalOrder.totalAmount?.toLocaleString('vi-VN')} đ
-                    </span>
+                  <footer className="px-5 py-4 border-t border-slate-200 bg-emerald-50 space-y-1.5 text-sm">
+                    {detailModalOrder.subTotal !== undefined && (
+                      <div className="flex justify-between text-slate-600">
+                        <span>Tạm tính tiền hàng:</span>
+                        <span className="tabular-nums font-medium">{detailModalOrder.subTotal.toLocaleString('vi-VN')} đ</span>
+                      </div>
+                    )}
+                    {detailModalOrder.discountAmount && detailModalOrder.discountAmount > 0 ? (
+                      <div className="flex justify-between text-red-600 font-semibold">
+                        <span>Giảm giá ({detailModalOrder.appliedCouponCode}):</span>
+                        <span className="tabular-nums">-{detailModalOrder.discountAmount.toLocaleString('vi-VN')} đ</span>
+                      </div>
+                    ) : null}
+                    <div className="flex justify-between items-center border-t border-emerald-200/60 pt-2 text-base font-extrabold text-emerald-700">
+                      <span>Tổng cộng đơn hàng:</span>
+                      <span className="text-xl tabular-nums">
+                        {detailModalOrder.totalAmount?.toLocaleString('vi-VN')} đ
+                      </span>
+                    </div>
                   </footer>
                 </section>
               </div>
 
-              {/* Footer — sticky đóng */}
               <footer className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200 bg-slate-50 rounded-b-xl flex-shrink-0">
                 <button
                   type="button"

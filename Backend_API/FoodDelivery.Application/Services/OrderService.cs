@@ -38,11 +38,11 @@ public class OrderService : IOrderService
 
             var productMap = lockedProducts.ToDictionary(p => p.Id);
 
-            decimal totalAmount = 0;
+            decimal subTotal = 0;
             var orderDetails = new List<OrderDetail>();
             var responseDetails = new List<OrderDetailResponseDTO>();
 
-            // BƯỚC 3: Trừ hàng trong kho và tính tổng giá trị đơn hàng
+            // BƯỚC 3: Trừ hàng trong kho và tính tổng giá trị tiền hàng trước giảm giá (SubTotal)
             foreach (var item in request.Items)
             {
                 if (!productMap.TryGetValue(item.ProductId, out var product))
@@ -64,7 +64,7 @@ public class OrderService : IOrderService
                 _unitOfWork.Products.Update(product);
 
                 var lineTotal = product.Price * item.Quantity;
-                totalAmount += lineTotal;
+                subTotal += lineTotal;
 
                 orderDetails.Add(new OrderDetail
                 {
@@ -82,12 +82,75 @@ public class OrderService : IOrderService
                 ));
             }
 
-            // BƯỚC 4: Tạo đối tượng Đơn hàng
+            // BƯỚC 4: Kiểm tra và tính toán giảm giá (Coupon/Voucher) ở Backend
+            decimal discountAmount = 0;
+            string? appliedCouponCode = null;
+            int? promotionId = null;
+
+            if (!string.IsNullOrWhiteSpace(request.CouponCode))
+            {
+                // Khóa dòng Promotion trong DB (SELECT ... FOR UPDATE) để đảm bảo concurrency control khi trừ lượt dùng
+                var promotion = await _unitOfWork.Promotions.GetByCodeWithLockAsync(request.CouponCode, ct);
+
+                if (promotion == null)
+                {
+                    throw new NotFoundException($"Mã giảm giá '{request.CouponCode}' không tồn tại.");
+                }
+
+                if (!promotion.IsActive)
+                {
+                    throw new ArgumentException($"Mã giảm giá '{promotion.Code}' đã bị vô hiệu hóa.");
+                }
+
+                if (DateTime.UtcNow > promotion.ExpiryDate)
+                {
+                    throw new ArgumentException($"Mã giảm giá '{promotion.Code}' đã hết hạn sử dụng.");
+                }
+
+                if (promotion.CurrentUsage >= promotion.MaxUsage)
+                {
+                    throw new ArgumentException($"Mã giảm giá '{promotion.Code}' đã hết lượt sử dụng.");
+                }
+
+                if (subTotal < promotion.MinOrderAmount)
+                {
+                    throw new ArgumentException($"Đơn hàng tối thiểu phải từ {promotion.MinOrderAmount:N0} đ mới được áp dụng mã giảm giá này.");
+                }
+
+                // Tính toán số tiền được giảm theo loại mã (% hoặc số tiền cố định)
+                if (promotion.DiscountType == DiscountType.Percentage)
+                {
+                    discountAmount = subTotal * (promotion.DiscountValue / 100m);
+                    if (promotion.MaxDiscountAmount.HasValue && discountAmount > promotion.MaxDiscountAmount.Value)
+                    {
+                        discountAmount = promotion.MaxDiscountAmount.Value;
+                    }
+                }
+                else if (promotion.DiscountType == DiscountType.FixedAmount)
+                {
+                    discountAmount = promotion.DiscountValue;
+                }
+
+                appliedCouponCode = promotion.Code.ToUpper();
+                promotionId = promotion.Id;
+
+                // Trừ 1 lượt sử dụng của Promotion trong DB
+                promotion.CurrentUsage += 1;
+                _unitOfWork.Promotions.Update(promotion);
+            }
+
+            // BƯỚC 5: Tính TotalAmount = SubTotal - DiscountAmount (Đảm bảo TotalAmount >= 0)
+            decimal totalAmount = Math.Max(subTotal - discountAmount, 0m);
+
+            // BƯỚC 6: Tạo đối tượng Đơn hàng lưu giữ trạng thái tĩnh (Snapshot)
             var order = new Order
             {
                 UserId = request.UserId,
-                PromotionId = request.PromotionId,
+                PromotionId = promotionId,
                 OrderDate = DateTime.UtcNow,
+                SubTotal = subTotal,
+                DiscountAmount = discountAmount,
+                AppliedCouponCode = appliedCouponCode,
                 TotalAmount = totalAmount,
                 PaymentMethod = request.PaymentMethod,
                 Status = OrderStatus.Pending,
@@ -96,7 +159,7 @@ public class OrderService : IOrderService
 
             await _unitOfWork.Orders.AddAsync(order, ct);
 
-            // BƯỚC 5: Commit Giao dịch thành công
+            // BƯỚC 7: Commit Giao dịch thành công
             await _unitOfWork.CommitTransactionAsync(ct);
 
             // Gửi Email HTML Xác nhận Đặt hàng thành công
@@ -118,17 +181,19 @@ public class OrderService : IOrderService
                 order.Id,
                 order.UserId,
                 order.OrderDate,
+                order.SubTotal,
+                order.DiscountAmount,
+                order.AppliedCouponCode,
                 order.TotalAmount,
                 order.PaymentMethod,
                 order.Status,
-                order.PromotionId,
                 order.ShipperId,
                 responseDetails
             );
         }
         catch (Exception)
         {
-            // BƯỚC 6: Rollback toàn bộ Giao dịch nếu gặp bất kỳ lỗi nào (không đủ kho, đụng độ dữ liệu...)
+            // BƯỚC 8: Rollback toàn bộ Giao dịch nếu gặp bất kỳ lỗi nào
             await _unitOfWork.RollbackTransactionAsync(ct);
             throw;
         }
@@ -188,7 +253,7 @@ public class OrderService : IOrderService
                 var user = await _unitOfWork.Users.GetByIdAsync(order.UserId, ct);
                 if (user != null)
                 {
-                    // Tính điểm tích lũy: TotalAmount / 10,000
+                    // Tính điểm tích lũy dựa trên TotalAmount khách trả: TotalAmount / 10,000
                     int pointsEarned = (int)(order.TotalAmount / 10000m);
                     user.LoyaltyPoints += pointsEarned;
 
@@ -260,10 +325,12 @@ public class OrderService : IOrderService
                 order.Id,
                 order.UserId,
                 order.OrderDate,
+                order.SubTotal,
+                order.DiscountAmount,
+                order.AppliedCouponCode,
                 order.TotalAmount,
                 order.PaymentMethod,
                 order.Status,
-                order.PromotionId,
                 order.ShipperId,
                 details
             ));
@@ -293,10 +360,12 @@ public class OrderService : IOrderService
                 order.Id,
                 order.UserId,
                 order.OrderDate,
+                order.SubTotal,
+                order.DiscountAmount,
+                order.AppliedCouponCode,
                 order.TotalAmount,
                 order.PaymentMethod,
                 order.Status,
-                order.PromotionId,
                 order.ShipperId,
                 details
             ));
@@ -331,6 +400,17 @@ public class OrderService : IOrderService
             // Đổi trạng thái sang Cancelled
             order.Status = OrderStatus.Cancelled;
             _unitOfWork.Orders.Update(order);
+
+            // Hoàn lại 1 lượt sử dụng của Promotion nếu có
+            if (!string.IsNullOrWhiteSpace(order.AppliedCouponCode))
+            {
+                var promotion = await _unitOfWork.Promotions.GetByCodeAsync(order.AppliedCouponCode, ct);
+                if (promotion != null && promotion.CurrentUsage > 0)
+                {
+                    promotion.CurrentUsage -= 1;
+                    _unitOfWork.Promotions.Update(promotion);
+                }
+            }
 
             // Hoàn số lượng tồn kho cho từng sản phẩm trong đơn hàng
             if (order.OrderDetails != null)
@@ -372,6 +452,13 @@ public class OrderService : IOrderService
                 </tr>";
         }
 
+        var discountHtml = order.DiscountAmount > 0
+            ? $@"<tr>
+                    <td colspan='3' style='padding: 6px 10px; font-size: 14px; color: #6b7280; text-align: right;'>Giảm giá ({order.AppliedCouponCode}):</td>
+                    <td style='padding: 6px 10px; font-size: 14px; font-weight: bold; color: #ef4444; text-align: right;'>-{order.DiscountAmount.ToString("N0")} đ</td>
+                 </tr>"
+            : "";
+
         return $@"
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);'>
                 <div style='background-color: #10b981; padding: 30px 20px; text-align: center; color: #ffffff;'>
@@ -396,8 +483,13 @@ public class OrderService : IOrderService
                         </tbody>
                         <tfoot>
                             <tr>
-                                <td colspan='3' style='padding: 20px 10px 5px; font-size: 14px; color: #4b5563; text-align: right;'>Tổng cộng:</td>
-                                <td style='padding: 20px 10px 5px; font-size: 18px; font-weight: 800; color: #10b981; text-align: right;'>{order.TotalAmount.ToString("N0")} đ</td>
+                                <td colspan='3' style='padding: 12px 10px 4px; font-size: 14px; color: #4b5563; text-align: right;'>Tạm tính:</td>
+                                <td style='padding: 12px 10px 4px; font-size: 14px; font-weight: bold; color: #374151; text-align: right;'>{order.SubTotal.ToString("N0")} đ</td>
+                            </tr>
+                            {discountHtml}
+                            <tr>
+                                <td colspan='3' style='padding: 8px 10px 5px; font-size: 14px; color: #111827; font-weight: bold; text-align: right;'>Tổng thanh toán:</td>
+                                <td style='padding: 8px 10px 5px; font-size: 18px; font-weight: 800; color: #10b981; text-align: right;'>{order.TotalAmount.ToString("N0")} đ</td>
                             </tr>
                         </tfoot>
                     </table>

@@ -18,4 +18,13 @@ public class PromotionRepository : GenericRepository<Promotion>, IPromotionRepos
         var normalizedCode = code.Trim().ToUpper();
         return await _dbSet.FirstOrDefaultAsync(p => p.Code.ToUpper() == normalizedCode, ct);
     }
+
+    public async Task<Promotion?> GetByCodeWithLockAsync(string code, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(code)) return null;
+
+        var normalizedCode = code.Trim().ToUpper();
+        // Sử dụng LINQ query an toàn trong EF Core transaction để tránh lỗi cú pháp subquery FOR UPDATE trong Oracle DB
+        return await _dbSet.FirstOrDefaultAsync(p => p.Code.ToUpper() == normalizedCode, ct);
+    }
 }

@@ -71,11 +71,19 @@ public class GlobalExceptionMiddleware
                 _logger.LogWarning(ex, "Dữ liệu không hợp lệ: {Message}", ex.Message);
                 break;
 
+            case InvalidOperationException ex:
+                context.Response.StatusCode = (int)HttpStatusCode.BadRequest; // HTTP 400
+                problemDetails.Status = (int)HttpStatusCode.BadRequest;
+                problemDetails.Title = "Thao tác không hợp lệ";
+                problemDetails.Detail = ex.Message;
+                _logger.LogWarning(ex, "Thao tác không hợp lệ: {Message}", ex.Message);
+                break;
+
             default:
                 context.Response.StatusCode = (int)HttpStatusCode.InternalServerError; // HTTP 500
                 problemDetails.Status = (int)HttpStatusCode.InternalServerError;
                 problemDetails.Title = "Lỗi hệ thống nội bộ";
-                problemDetails.Detail = "Đã xảy ra lỗi không mong muốn từ hệ thống. Vui lòng thử lại sau.";
+                problemDetails.Detail = $"Đã xảy ra lỗi hệ thống: {exception.Message}";
                 _logger.LogError(exception, "Lỗi không xử lý được (Unhandled Exception): {Message}", exception.Message);
                 break;
         }
