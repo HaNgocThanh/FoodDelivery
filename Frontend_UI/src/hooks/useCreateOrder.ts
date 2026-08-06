@@ -10,6 +10,8 @@ export interface OrderRequestPayload {
   userId: number;
   paymentMethod: number; // 1 = COD, 2 = Online
   couponCode?: string | null;
+  usePoints?: boolean;
+  userPointsAvailable?: number;
   items: OrderItemPayload[];
 }
 
@@ -28,6 +30,8 @@ export interface OrderResponse {
   subTotal: number;
   discountAmount: number;
   appliedCouponCode?: string | null;
+  pointsUsed?: number | null;
+  pointDiscount?: number | null;
   totalAmount: number;
   paymentMethod: string;
   status: string;

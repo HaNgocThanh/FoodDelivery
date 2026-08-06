@@ -14,7 +14,6 @@ import {
   PackageCheck,
   Eye,
   CreditCard,
-  MapPin,
   User,
   Save,
   ShoppingBag,

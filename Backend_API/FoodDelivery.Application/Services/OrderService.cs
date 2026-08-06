@@ -139,8 +139,59 @@ public class OrderService : IOrderService
                 _unitOfWork.Promotions.Update(promotion);
             }
 
-            // BƯỚC 5: Tính TotalAmount = SubTotal - DiscountAmount (Đảm bảo TotalAmount >= 0)
-            decimal totalAmount = Math.Max(subTotal - discountAmount, 0m);
+            // BƯỚC 4B: Xử lý điểm tích lũy (nếu khách chọn dùng + tier cho phép)
+            int pointsUsed = 0;
+            decimal pointDiscount = 0;
+
+            if (request.UsePoints)
+            {
+                // Khóa dòng User (SELECT ... FOR UPDATE) để chống race condition khi trừ điểm concurrent
+                var user = await _unitOfWork.Users.GetByIdWithLockAsync(request.UserId, ct);
+                if (user == null)
+                {
+                    throw new NotFoundException($"Người dùng với ID {request.UserId} không tồn tại.");
+                }
+
+                var availablePoints = user.LoyaltyPoints;
+
+                // Xác định tỷ lệ giảm tối đa theo Hạng thẻ (Tier)
+                decimal maxDiscountPercent = user.Tier switch
+                {
+                    MembershipTier.Platinum => 0.20m,
+                    MembershipTier.Gold => 0.10m,
+                    MembershipTier.Silver => 0.10m,
+                    _ => 0m,
+                };
+
+                if (maxDiscountPercent <= 0 || availablePoints <= 0)
+                {
+                    // Không đủ điều kiện dùng điểm → bỏ qua, không lỗi
+                }
+                else
+                {
+                    // Tính theo nguyên tắc: 1 điểm = 1000đ; Max points có thể dùng = (SubTotal - CouponDiscount) * tier%
+                    var baseAmount = subTotal - discountAmount; // Đơn hàng sau coupon
+                    var maxDiscountByTier = baseAmount * maxDiscountPercent;
+                    var maxPointsByMoney = (int)Math.Floor(maxDiscountByTier / 1000m);
+
+                    // Lấy số điểm thực tế user có từ DB (trong transaction) — không tin tưởng FE
+                    // Áp dụng Math.Min theo yêu cầu nghiệp vụ
+                    pointsUsed = Math.Min(availablePoints, maxPointsByMoney);
+                    if (pointsUsed < 0) pointsUsed = 0;
+
+                    if (pointsUsed > 0)
+                    {
+                        pointDiscount = pointsUsed * 1000m;
+
+                        // Trừ điểm thật của User
+                        user.LoyaltyPoints -= pointsUsed;
+                        _unitOfWork.Users.Update(user);
+                    }
+                }
+            }
+
+            // BƯỚC 5: Tính TotalAmount = SubTotal - DiscountAmount - PointDiscount (Đảm bảo TotalAmount >= 0)
+            decimal totalAmount = Math.Max(subTotal - discountAmount - pointDiscount, 0m);
 
             // BƯỚC 6: Tạo đối tượng Đơn hàng lưu giữ trạng thái tĩnh (Snapshot)
             var order = new Order
@@ -151,6 +202,8 @@ public class OrderService : IOrderService
                 SubTotal = subTotal,
                 DiscountAmount = discountAmount,
                 AppliedCouponCode = appliedCouponCode,
+                PointsUsed = pointsUsed > 0 ? pointsUsed : null,
+                PointDiscount = pointDiscount > 0 ? pointDiscount : null,
                 TotalAmount = totalAmount,
                 PaymentMethod = request.PaymentMethod,
                 Status = OrderStatus.Pending,
@@ -184,6 +237,8 @@ public class OrderService : IOrderService
                 order.SubTotal,
                 order.DiscountAmount,
                 order.AppliedCouponCode,
+                order.PointsUsed,
+                order.PointDiscount,
                 order.TotalAmount,
                 order.PaymentMethod,
                 order.Status,
@@ -328,6 +383,8 @@ public class OrderService : IOrderService
                 order.SubTotal,
                 order.DiscountAmount,
                 order.AppliedCouponCode,
+                order.PointsUsed,
+                order.PointDiscount,
                 order.TotalAmount,
                 order.PaymentMethod,
                 order.Status,
@@ -363,6 +420,8 @@ public class OrderService : IOrderService
                 order.SubTotal,
                 order.DiscountAmount,
                 order.AppliedCouponCode,
+                order.PointsUsed,
+                order.PointDiscount,
                 order.TotalAmount,
                 order.PaymentMethod,
                 order.Status,
@@ -459,6 +518,13 @@ public class OrderService : IOrderService
                  </tr>"
             : "";
 
+        var pointDiscountHtml = (order.PointDiscount.HasValue && order.PointDiscount.Value > 0)
+            ? $@"<tr>
+                    <td colspan='3' style='padding: 6px 10px; font-size: 14px; color: #6b7280; text-align: right;'>Trừ điểm tích lũy (×{order.PointsUsed ?? 0} điểm):</td>
+                    <td style='padding: 6px 10px; font-size: 14px; font-weight: bold; color: #ef4444; text-align: right;'>-{order.PointDiscount.Value.ToString("N0")} đ</td>
+                 </tr>"
+            : "";
+
         return $@"
             <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 16px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);'>
                 <div style='background-color: #10b981; padding: 30px 20px; text-align: center; color: #ffffff;'>
@@ -487,6 +553,7 @@ public class OrderService : IOrderService
                                 <td style='padding: 12px 10px 4px; font-size: 14px; font-weight: bold; color: #374151; text-align: right;'>{order.SubTotal.ToString("N0")} đ</td>
                             </tr>
                             {discountHtml}
+                            {pointDiscountHtml}
                             <tr>
                                 <td colspan='3' style='padding: 8px 10px 5px; font-size: 14px; color: #111827; font-weight: bold; text-align: right;'>Tổng thanh toán:</td>
                                 <td style='padding: 8px 10px 5px; font-size: 18px; font-weight: 800; color: #10b981; text-align: right;'>{order.TotalAmount.ToString("N0")} đ</td>

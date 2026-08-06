@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
-import { useAuthStore } from '../stores/useAuthStore';
+import { useAuthStore, normalizeTier } from '../stores/useAuthStore';
 import { LogIn, Mail, Lock, AlertCircle, Loader2, ArrowLeft, ShieldCheck, UserCheck, Leaf, Truck, Sparkles } from 'lucide-react';
 
 export interface AuthApiResponse {
@@ -33,10 +33,10 @@ export default function LoginPage() {
     setErrorMsg(null);
 
     try {
-      const res = await axiosClient.post<AuthApiResponse, AuthApiResponse>('/api/auth/login', {
-        email: email.trim(),
-        password: password.trim(),
-      });
+    const res = await axiosClient.post<AuthApiResponse, AuthApiResponse>('/api/auth/login', {
+      email: email.trim(),
+      password: password.trim(),
+    });
 
       // Lưu Token và User Info vào Zustand Store (được tự động persist vào localStorage)
       loginStore(res.token, {
@@ -45,6 +45,25 @@ export default function LoginPage() {
         email: res.email,
         role: res.role,
       });
+
+      // Sau khi login thành công, gọi thêm /api/users/profile để lấy Hạng thẻ + Điểm tích lũy
+      // → dùng cho trang Checkout (tính trần giảm giá theo tier)
+      // Không block navigate nếu lỗi (sẽ tự fallback lookup ở CheckoutPage).
+      try {
+        const updateUser = useAuthStore.getState().updateUser;
+        const profile = (await axiosClient.get('/api/users/profile')) as unknown as {
+          loyaltyPoints?: number;
+          tier?: string | number;
+        } | null;
+        if (profile) {
+          updateUser({
+            loyaltyPoints: profile.loyaltyPoints ?? 0,
+            tier: normalizeTier(profile.tier),
+          });
+        }
+      } catch {
+        /* silent — profile mặc định tier=Standard, loyaltyPoints=0 sẽ dùng */
+      }
 
       // Điều hướng tùy theo vai trò
       if (res.role?.toLowerCase() === 'admin') {

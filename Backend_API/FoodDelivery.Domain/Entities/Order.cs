@@ -11,6 +11,8 @@ public class Order
     public decimal SubTotal { get; set; }
     public decimal DiscountAmount { get; set; }
     public string? AppliedCouponCode { get; set; }
+    public int? PointsUsed { get; set; }
+    public decimal? PointDiscount { get; set; }
     public decimal TotalAmount { get; set; }
     public PaymentMethod PaymentMethod { get; set; }
     public OrderStatus Status { get; set; }

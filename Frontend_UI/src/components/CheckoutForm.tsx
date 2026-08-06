@@ -1,7 +1,7 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect, type FormEvent } from 'react';
 import { useCreateOrder, type OrderItemPayload } from '../hooks/useCreateOrder';
 import { useCartStore } from '../stores/useCartStore';
-import { useAuthStore } from '../stores/useAuthStore';
+import { useAuthStore, normalizeTier, type MembershipTier } from '../stores/useAuthStore';
 import axiosClient from '../api/axiosClient';
 import {
   ShoppingBag,
@@ -22,6 +22,8 @@ import {
   Receipt,
   Truck,
   ShieldCheck,
+  Coins,
+  Sparkles,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -36,6 +38,36 @@ export interface ValidateResponse {
   message: string;
 }
 
+/** Mapping tier → tỷ lệ giảm tối đa + nhãn tiếng Việt */
+const TIER_CONFIG: Record<MembershipTier, { percent: number; label: string; badge: string; color: string }> = {
+  Platinum: {
+    percent: 0.20,
+    label: 'Bạch kim',
+    badge: 'PLATINUM',
+    color: 'bg-violet-100 text-violet-800 border-violet-200',
+  },
+  Gold: {
+    percent: 0.10,
+    label: 'Vàng',
+    badge: 'GOLD',
+    color: 'bg-amber-100 text-amber-800 border-amber-200',
+  },
+  Silver: {
+    percent: 0.10,
+    label: 'Bạc',
+    badge: 'SILVER',
+    color: 'bg-slate-200 text-slate-700 border-slate-300',
+  },
+  Standard: {
+    percent: 0,
+    label: 'Tiêu chuẩn',
+    badge: 'STANDARD',
+    color: 'bg-slate-100 text-slate-600 border-slate-200',
+  },
+};
+
+const POINT_VALUE_VND = 1000; // 1 điểm = 1000đ
+
 export const CheckoutForm: React.FC = () => {
   const [userId] = useState<number>(1);
   const [paymentMethod, setPaymentMethod] = useState<number>(1);
@@ -43,12 +75,41 @@ export const CheckoutForm: React.FC = () => {
   // Đọc giỏ hàng thực tế từ Zustand Store
   const { items: cartItems, updateQuantity, removeFromCart, clearCart, getTotalOriginalPrice } = useCartStore();
   const token = useAuthStore((state) => state.token);
+  const user = useAuthStore((state) => state.user);
+  const updateUser = useAuthStore((state) => state.updateUser);
 
   // Mã khuyến mãi state
   const [couponCode, setCouponCode] = useState<string>('');
   const [isValidatingCoupon, setIsValidatingCoupon] = useState<boolean>(false);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [appliedPromotion, setAppliedPromotion] = useState<ValidateResponse | null>(null);
+
+  // Điểm tích lũy (Loyalty Points) state
+  const [usePoints, setUsePoints] = useState<boolean>(false);
+  const [pointsError, setPointsError] = useState<string | null>(null);
+
+  // Lazy-load profile (tier + points) khi user đăng nhập nhưng authStore chưa có data
+  // Tránh block UI nếu fail → fallback mặc định (Standard + 0 points).
+  useEffect(() => {
+    let cancelled = false;
+    if (token && (user?.loyaltyPoints == null || user?.tier == null)) {
+      axiosClient
+        .get('/api/users/profile')
+        .then((profile: any) => {
+          if (cancelled) return;
+          updateUser({
+            loyaltyPoints: profile?.loyaltyPoints ?? 0,
+            tier: normalizeTier(profile?.tier),
+          });
+        })
+        .catch(() => {
+          /* silent */
+        });
+    }
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
 
   const { mutate: createOrder, isPending, isSuccess, isError, error, data: orderResult } = useCreateOrder();
 
@@ -68,7 +129,46 @@ export const CheckoutForm: React.FC = () => {
     }
   }
 
-  const finalTotal = Math.max(0, originalTotal - discountAmount);
+  // ----- Loyalty points logic (client-side preview) -----
+  const userPointsAvailable: number = user?.loyaltyPoints ?? 0;
+  const userTier: MembershipTier = normalizeTier(user?.tier);
+  const tierConfig = TIER_CONFIG[userTier] ?? TIER_CONFIG.Standard;
+
+  const baseForPoints = Math.max(originalTotal - discountAmount, 0);
+  const maxDiscountByPercent = baseForPoints * tierConfig.percent;
+  const maxPointsByMoney = Math.floor(maxDiscountByPercent / POINT_VALUE_VND);
+
+  // Số điểm thực sự dùng theo Math.Min(UserPoints, MaxPointsByMoney)
+  const pointsToUse = usePoints
+    ? Math.max(0, Math.min(userPointsAvailable, maxPointsByMoney))
+    : 0;
+  const pointDiscount = pointsToUse * POINT_VALUE_VND;
+
+  const finalTotal = Math.max(0, originalTotal - discountAmount - pointDiscount);
+
+  // Validation khi toggle điểm
+  const handleTogglePoints = (next: boolean) => {
+    setPointsError(null);
+    if (next) {
+      if (!token) {
+        setPointsError('Vui lòng đăng nhập để sử dụng điểm tích lũy.');
+        return;
+      }
+      if (userPointsAvailable <= 0) {
+        setPointsError('Bạn chưa có điểm tích lũy để sử dụng.');
+        return;
+      }
+      if (tierConfig.percent <= 0) {
+        setPointsError(`Hạng ${tierConfig.label} chưa hỗ trợ dùng điểm.`);
+        return;
+      }
+      if (baseForPoints <= 0) {
+        setPointsError('Đơn hàng sau khi áp dụng mã giảm giá phải lớn hơn 0.');
+        return;
+      }
+    }
+    setUsePoints(next);
+  };
 
   // Áp dụng Mã khuyến mãi
   const handleApplyCoupon = async () => {
@@ -113,10 +213,19 @@ export const CheckoutForm: React.FC = () => {
         userId,
         paymentMethod,
         couponCode: appliedPromotion?.code ?? null,
+        usePoints,
+        userPointsAvailable,
         items: itemsPayload,
       },
       {
         onSuccess: async (data) => {
+          // Sau khi đặt hàng thành công, sync lại điểm tích lũy (đã bị trừ trên server)
+          const used = data.pointsUsed ?? 0;
+          if (used > 0) {
+            const remaining = Math.max(0, userPointsAvailable - used);
+            updateUser({ loyaltyPoints: remaining });
+          }
+
           if (paymentMethod === 2) {
             try {
               // Gọi API lấy URL thanh toán trực tuyến giả lập
@@ -173,6 +282,15 @@ export const CheckoutForm: React.FC = () => {
             <div className="flex justify-between text-red-600 font-medium">
               <span>Giảm giá ({orderResult.appliedCouponCode}):</span>
               <span className="tabular-nums">-{orderResult.discountAmount.toLocaleString('vi-VN')} đ</span>
+            </div>
+          )}
+          {orderResult.pointDiscount != null && orderResult.pointDiscount > 0 && (
+            <div className="flex justify-between text-amber-600 font-medium">
+              <span>
+                <Coins className="inline w-3.5 h-3.5 mr-1 -mt-0.5" />
+                Trừ điểm tích lũy (×{orderResult.pointsUsed ?? 0} điểm):
+              </span>
+              <span className="tabular-nums">-{orderResult.pointDiscount.toLocaleString('vi-VN')} đ</span>
             </div>
           )}
           <div className="flex justify-between border-t border-slate-200 pt-2">
@@ -484,6 +602,114 @@ export const CheckoutForm: React.FC = () => {
           )}
         </section>
 
+        {/* ─── ĐIỂM TÍCH LŨY (LOYALTY POINTS) ─── */}
+        <section
+          aria-label="Điểm tích lũy"
+          className="rounded-xl bg-gradient-to-br from-amber-50 to-amber-100/60 border border-amber-200 p-5 md:p-6 space-y-4"
+        >
+          <header className="flex items-center justify-between gap-3">
+            <h3 className="text-sm font-bold uppercase tracking-wider text-amber-900 flex items-center gap-2">
+              <Coins className="w-4 h-4 text-amber-700" />
+              Dùng điểm tích lũy
+            </h3>
+            <span className={`shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold border ${tierConfig.color}`}>
+              {tierConfig.badge}
+            </span>
+          </header>
+
+          {!token ? (
+            <div className="flex items-start gap-2 text-xs text-slate-600">
+              <ShieldCheck className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <p>
+                Vui lòng <Link to="/login" className="font-bold text-amber-700 hover:underline">đăng nhập</Link> để
+                sử dụng điểm tích lũy.
+              </p>
+            </div>
+          ) : (
+            <>
+              {/* Phân tích */}
+              <p className="text-sm leading-relaxed text-amber-900">
+                <Sparkles className="inline w-3.5 h-3.5 mr-1 -mt-0.5" />
+                Bạn đang là hạng <strong>{tierConfig.label}</strong>, có{' '}
+                <strong className="tabular-nums">{userPointsAvailable.toLocaleString('vi-VN')}</strong> điểm
+                (Tương đương{' '}
+                <strong className="tabular-nums">
+                  {(userPointsAvailable * POINT_VALUE_VND).toLocaleString('vi-VN')}đ
+                </strong>
+                ). Cho phép giảm tối đa{' '}
+                <strong>
+                  {Math.round(tierConfig.percent * 100)}%
+                </strong>{' '}
+                đơn hàng này.
+              </p>
+
+              {/* Toggle Switch */}
+              <label
+                className={`
+                  flex items-center justify-between gap-3 p-3.5 rounded-lg border-2
+                  transition-all cursor-pointer
+                  ${usePoints
+                    ? 'bg-amber-200/70 border-amber-400 shadow-sm'
+                    : 'bg-white border-amber-200 hover:border-amber-300 hover:bg-amber-50/50'}
+                  ${pointsToUse <= 0 && userPointsAvailable > 0 ? 'opacity-70' : ''}
+                `}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <Coins className="w-5 h-5 text-amber-700 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm text-amber-900">
+                      Dùng {pointsToUse.toLocaleString('vi-VN')} điểm để giảm{' '}
+                      {pointDiscount.toLocaleString('vi-VN')}đ
+                    </p>
+                    <p className="text-xs text-amber-800/70 mt-0.5">
+                      {pointsToUse === 0
+                        ? userPointsAvailable > 0
+                          ? 'Đơn hàng này không đủ điều kiện dùng điểm (sau giảm giá = 0).'
+                          : `Tối đa có thể dùng: ${maxPointsByMoney.toLocaleString('vi-VN')} điểm.`
+                        : `Còn lại ${(userPointsAvailable - pointsToUse).toLocaleString('vi-VN')} điểm sau khi thanh toán.`
+                      }
+                    </p>
+                  </div>
+                </div>
+
+                {/* Toggle component */}
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={usePoints}
+                  // Chỉ disable khi user thực sự hết điểm (hạng Standard vẫn cho click để hiện message)
+                  disabled={userPointsAvailable <= 0}
+                  onClick={() => handleTogglePoints(!usePoints)}
+                  className={`
+                    relative inline-flex h-6 w-11 shrink-0 items-center rounded-full
+                    transition-colors focus:outline-none focus:ring-4 focus:ring-amber-200
+                    ${usePoints ? 'bg-amber-600' : 'bg-slate-300'}
+                    ${userPointsAvailable <= 0 ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}
+                  `}
+                >
+                  <span
+                    className={`
+                      inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform
+                      ${usePoints ? 'translate-x-5' : 'translate-x-0.5'}
+                    `}
+                  />
+                </button>
+              </label>
+
+              {pointsError && (
+                <p className="text-xs font-semibold text-red-600 flex items-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5" /> {pointsError}
+                </p>
+              )}
+
+              <p className="text-[11px] text-amber-800/60 italic">
+                Tỷ giá: 1 điểm = {POINT_VALUE_VND.toLocaleString('vi-VN')}đ.
+                Trần giảm: {Math.round(tierConfig.percent * 100)}% đơn hàng (sau coupon).
+              </p>
+            </>
+          )}
+        </section>
+
         {/* ─── NÚT SUBMIT ─── */}
         <div className="pt-2">
           {!token ? (
@@ -569,7 +795,7 @@ export const CheckoutForm: React.FC = () => {
               <span
                 className={`
                   tabular-nums
-                  ${appliedPromotion
+                  ${(appliedPromotion || pointDiscount > 0)
                     ? 'line-through text-slate-400 font-medium'
                     : 'font-bold text-slate-900'}
                 `}
@@ -593,6 +819,18 @@ export const CheckoutForm: React.FC = () => {
               </div>
             )}
 
+            {usePoints && pointDiscount > 0 && (
+              <div className="flex items-center justify-between text-amber-700 font-medium">
+                <span className="flex items-center gap-1">
+                  <Coins className="w-3.5 h-3.5" />
+                  Trừ điểm tích lũy (×{pointsToUse})
+                </span>
+                <span className="tabular-nums">
+                  -{pointDiscount.toLocaleString('vi-VN')} đ
+                </span>
+              </div>
+            )}
+
             <div className="flex items-center justify-between text-slate-500">
               <span>Phí vận chuyển</span>
               <span className="italic text-xs">Tính khi giao hàng</span>
@@ -603,7 +841,7 @@ export const CheckoutForm: React.FC = () => {
           <div className="pt-4 border-t border-slate-200 flex items-baseline justify-between">
             <span className="text-slate-700 font-semibold">Tổng thanh toán</span>
             <div className="text-right">
-              {appliedPromotion ? (
+              {(appliedPromotion || pointDiscount > 0) ? (
                 <div className="flex flex-col items-end">
                   <span className="text-xs text-slate-400 line-through font-mono tabular-nums">
                     {originalTotal.toLocaleString('vi-VN')} đ

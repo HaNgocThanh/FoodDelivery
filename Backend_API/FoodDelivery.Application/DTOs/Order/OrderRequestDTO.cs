@@ -6,5 +6,7 @@ public record OrderRequestDTO(
     int UserId,
     PaymentMethod PaymentMethod,
     string? CouponCode,
+    bool UsePoints,
+    int UserPointsAvailable,
     List<OrderItemRequestDTO> Items
 );

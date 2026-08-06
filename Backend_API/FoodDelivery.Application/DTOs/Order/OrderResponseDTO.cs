@@ -17,6 +17,8 @@ public record OrderResponseDTO(
     decimal SubTotal,
     decimal DiscountAmount,
     string? AppliedCouponCode,
+    int? PointsUsed,
+    decimal? PointDiscount,
     decimal TotalAmount,
     PaymentMethod PaymentMethod,
     OrderStatus Status,

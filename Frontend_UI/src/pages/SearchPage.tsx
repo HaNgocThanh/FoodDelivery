@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams, Link, useNavigate } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import axiosClient from '@/api/axiosClient';
 import { useCartStore } from '@/stores/useCartStore';
@@ -55,13 +55,11 @@ const RATING_OPTIONS = [5, 4, 3] as const;
 
 export default function SearchPage() {
   const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
   const { addToCart } = useCartStore();
 
   const urlKeyword = searchParams.get('keyword') ?? '';
 
   const [keyword, setKeyword] = useState(urlKeyword);
-  const [inputVal, setInputVal] = useState(urlKeyword);
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [pricePreset, setPricePreset] = useState(0);  // index into PRICE_PRESETS
   const [minPrice, setMinPrice] = useState<string>('');
@@ -78,7 +76,6 @@ export default function SearchPage() {
   // Sync keyword from URL
   useEffect(() => {
     setKeyword(urlKeyword);
-    setInputVal(urlKeyword);
   }, [urlKeyword]);
 
   // Reset page when filters change
@@ -130,12 +127,6 @@ export default function SearchPage() {
   const totalPages = Math.max(1, Math.ceil(filteredResults.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
   const pagedResults = filteredResults.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setKeyword(inputVal);
-    navigate(`/search?keyword=${encodeURIComponent(inputVal)}`);
-  };
 
   const handleAddToCart = (product: ProductItem) => {
     addToCart(product);
