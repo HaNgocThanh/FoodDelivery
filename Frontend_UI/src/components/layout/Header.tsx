@@ -8,6 +8,7 @@ import {
   LogOut,
   Search,
   LayoutDashboard,
+  PackageSearch,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useCartStore } from '../../stores/useCartStore';
@@ -53,6 +54,16 @@ export function Header({ searchInput, onSearchInputChange, onSearchSubmit }: Hea
 
         {/* ADMIN & SEARCH */}
         <nav className="hidden md:flex items-center gap-3 flex-1 justify-end">
+          {/* Track Order (public — luôn hiển thị, kể cả khi chưa đăng nhập) */}
+          <Link
+            to="/track-order"
+            className="flex items-center gap-2 px-3.5 py-2 bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-200 text-slate-700 hover:text-emerald-700 rounded-lg text-xs font-semibold transition-colors"
+            title="Tra cứu đơn hàng không cần đăng nhập"
+          >
+            <PackageSearch className="w-4 h-4 text-emerald-600" />
+            <span className="hidden lg:inline">Tra cứu đơn hàng</span>
+          </Link>
+
           {/* Admin Panel link (chỉ hiển thị cho Admin) */}
           {isAdmin() && (
             <Link

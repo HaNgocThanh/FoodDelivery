@@ -19,6 +19,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <!-- SignalR Hub đã có sẵn trong ASP.NET Core 8 framework, không cần package riêng -->
   </ItemGroup>
 
   <ItemGroup>

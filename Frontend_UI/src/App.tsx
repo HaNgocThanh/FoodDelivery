@@ -21,6 +21,7 @@ const SearchPage               = lazy(() => import('@/pages/SearchPage'));
 const PaymentResultPage        = lazy(() => import('@/pages/PaymentResultPage'));
 const ForgotPasswordPage       = lazy(() => import('@/pages/ForgotPasswordPage'));
 const ResetPasswordPage        = lazy(() => import('@/pages/ResetPasswordPage'));
+const TrackOrderPage           = lazy(() => import('@/pages/TrackOrderPage'));
 const AdminDashboard           = lazy(() => import('@/pages/admin/DashboardPage'));
 const OrderManagementPage       = lazy(() => import('@/pages/OrderManagementPage'));
 const ProductManagementPage     = lazy(() => import('@/pages/ProductManagementPage'));
@@ -82,6 +83,7 @@ export default function App() {
           <Route path="/payment-result"    element={publicPage(<PaymentResultPage />)} />
           <Route path="/forgot-password"   element={publicPage(<ForgotPasswordPage />)} />
           <Route path="/reset-password"    element={publicPage(<ResetPasswordPage />)} />
+          <Route path="/track-order"       element={publicPage(<TrackOrderPage />)} />
 
           {/* Protected routes cho Khách hàng – wrap trong PublicLayout & ProtectedRoute */}
           <Route path="/account/profile"   element={publicPage(<ProtectedRoute><ProfilePage /></ProtectedRoute>)} />

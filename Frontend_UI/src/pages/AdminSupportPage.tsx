@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../api/axiosClient';
 import AdminLayout from '../components/AdminLayout';
+import AdminLiveChat from '@/components/admin/AdminLiveChat.jsx';
 import {
   MessageSquare,
   HelpCircle,
@@ -13,7 +14,8 @@ import {
   Clock,
   ArrowRight,
   Send,
-  RefreshCw
+  RefreshCw,
+  Radio
 } from 'lucide-react';
 
 interface QuestionItem {
@@ -44,7 +46,7 @@ interface TicketItem {
 
 export default function AdminSupportPage() {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'qa' | 'tickets'>('qa');
+  const [activeTab, setActiveTab] = useState<'live' | 'qa' | 'tickets'>('live');
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // States for answering questions
@@ -193,13 +195,30 @@ export default function AdminSupportPage() {
         )}
 
         {/* TAB CONTROLS */}
-        <nav role="tablist" className="flex gap-4 border-b border-slate-200 pb-1">
+        <nav role="tablist" className="flex gap-4 border-b border-slate-200 pb-1 overflow-x-auto">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'live'}
+            onClick={() => setActiveTab('live')}
+            className={`pb-3 font-bold text-sm transition relative whitespace-nowrap ${
+              activeTab === 'live' ? 'text-emerald-700 font-extrabold' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            <span className="inline-flex items-center gap-1.5">
+              <Radio className="w-3.5 h-3.5" />
+              Live Chat (Real-time)
+            </span>
+            {activeTab === 'live' && (
+              <span className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-500 rounded-full" />
+            )}
+          </button>
           <button
             type="button"
             role="tab"
             aria-selected={activeTab === 'qa'}
             onClick={() => setActiveTab('qa')}
-            className={`pb-3 font-bold text-sm transition relative ${
+            className={`pb-3 font-bold text-sm transition relative whitespace-nowrap ${
               activeTab === 'qa' ? 'text-emerald-700 font-extrabold' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
@@ -213,7 +232,7 @@ export default function AdminSupportPage() {
             role="tab"
             aria-selected={activeTab === 'tickets'}
             onClick={() => setActiveTab('tickets')}
-            className={`pb-3 font-bold text-sm transition relative ${
+            className={`pb-3 font-bold text-sm transition relative whitespace-nowrap ${
               activeTab === 'tickets' ? 'text-emerald-700 font-extrabold' : 'text-slate-500 hover:text-slate-700'
             }`}
           >
@@ -225,7 +244,12 @@ export default function AdminSupportPage() {
         </nav>
 
         {/* CONTENT */}
-        {activeTab === 'qa' ? (
+        {activeTab === 'live' ? (
+          <AdminLiveChat
+            hubUrl={import.meta.env.VITE_SIGNALR_HUB_URL || 'http://localhost:5156/supporthub'}
+            accessToken={localStorage.getItem('accessToken')}
+          />
+        ) : activeTab === 'qa' ? (
           <div>
             {isQLoading ? (
               <div className="py-20 flex flex-col items-center justify-center gap-2 text-slate-500">

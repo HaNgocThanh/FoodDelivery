@@ -171,6 +171,32 @@ public class OrdersController : ControllerBase
     }
 
     /// <summary>
+    /// Tra cứu trạng thái đơn hàng công khai (Không cần đăng nhập).
+    /// Người dùng cung cấp OrderId + số điện thoại đặt hàng → validate → trả về thông tin đã mask.
+    /// </summary>
+    [HttpGet("track")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(OrderTrackingDTO), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> TrackOrder(
+        [FromQuery] int orderId,
+        [FromQuery] string phone,
+        CancellationToken ct)
+    {
+        var result = await _orderService.TrackOrderAsync(orderId, phone, ct);
+        if (result == null)
+        {
+            return NotFound(new ProblemDetails
+            {
+                Status = 404,
+                Title = "Không tìm thấy đơn hàng",
+                Detail = "Không tìm thấy đơn hàng. Vui lòng kiểm tra lại Mã đơn và Số điện thoại."
+            });
+        }
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Xác nhận thanh toán trực tuyến thành công (Client)
     /// PUT /api/orders/{id}/pay-success
     /// </summary>

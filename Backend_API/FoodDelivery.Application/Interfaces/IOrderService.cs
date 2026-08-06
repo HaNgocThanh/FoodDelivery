@@ -11,4 +11,5 @@ public interface IOrderService
     Task<IEnumerable<OrderResponseDTO>> GetOrdersByStatusAsync(OrderStatus? status = null, CancellationToken ct = default);
     Task<IEnumerable<OrderResponseDTO>> GetUserOrdersAsync(int userId, CancellationToken ct = default);
     Task<bool> CancelUserOrderAsync(int orderId, int userId, CancellationToken ct = default);
+    Task<OrderTrackingDTO?> TrackOrderAsync(int orderId, string phone, CancellationToken ct = default);
 }

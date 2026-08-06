@@ -1,6 +1,7 @@
 using System.Text;
 using FluentValidation;
 using FluentValidation.AspNetCore;
+using FoodDelivery.API.Hubs;
 using FoodDelivery.API.Middleware;
 using FoodDelivery.Application.Interfaces;
 using FoodDelivery.Application.Services;
@@ -187,6 +188,16 @@ builder.Services.AddCors(options =>
 builder.Services.AddHealthChecks();
 
 // =============================================
+// 10.1 SIGNALR — Realtime chat hub (Customer ↔ Admin)
+// =============================================
+builder.Services.AddSignalR(options =>
+{
+    // Giữ connection sống ~30s, ping mỗi 15s
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+});
+
+// =============================================
 // BUILD APP
 // =============================================
 var app = builder.Build();
@@ -241,5 +252,8 @@ app.MapHealthChecks("/health");
 
 // Controllers
 app.MapControllers();
+
+// SignalR Hub mapping
+app.MapHub<SupportHub>("/supporthub");
 
 app.Run();

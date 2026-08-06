@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Header } from './Header';
 import { Footer } from './Footer';
+import CustomerLiveChat from '@/components/common/CustomerLiveChat.jsx';
 
 interface PublicLayoutProps {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ interface PublicLayoutProps {
  * - Render Header (sticky, light, backdrop-blur)
  * - Render children trong `<main>` để giữ semantic HTML
  * - Render Footer (dark slate-900)
+ * - Mount CustomerLiveChat widget góc dưới-phải (entry point real-time support)
  *
  * QUAN TRỌNG: search input state được quản lý ở đây để Header có thể
  * navigate đi kèm. Mọi page bên trong đều có thể search từ header.
@@ -36,6 +38,10 @@ export function PublicLayout({ children }: PublicLayoutProps) {
       />
       <main className="flex-1 w-full">{children}</main>
       <Footer />
+      {/* Widget chat nổi — realtime support cho mọi trang khách */}
+      <CustomerLiveChat
+        hubUrl={import.meta.env.VITE_SIGNALR_HUB_URL || 'http://localhost:5156/supporthub'}
+      />
     </div>
   );
 }

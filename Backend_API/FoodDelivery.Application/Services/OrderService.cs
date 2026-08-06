@@ -510,6 +510,102 @@ public class OrderService : IOrderService
             </div>";
     }
 
+    public async Task<OrderTrackingDTO?> TrackOrderAsync(int orderId, string phone, CancellationToken ct = default)
+    {
+        if (orderId <= 0 || string.IsNullOrWhiteSpace(phone))
+        {
+            return null;
+        }
+
+        // Normalize phone: bỏ khoảng trắng, dấu chấm, dấu gạch ngang, dấu + đầu
+        var normalizedInput = NormalizePhone(phone);
+
+        var order = await _unitOfWork.Orders.GetOrderWithDetailsAsync(orderId, ct);
+        if (order == null)
+        {
+            return null;
+        }
+
+        var user = await _unitOfWork.Users.GetByIdAsync(order.UserId, ct);
+        if (user == null)
+        {
+            return null;
+        }
+
+        // Validate phone khớp (so sánh cả 2 normalized để tránh format sai)
+        var storedNormalized = NormalizePhone(user.PhoneNumber);
+        if (!string.Equals(normalizedInput, storedNormalized, StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
+        var items = (order.OrderDetails ?? new List<OrderDetail>())
+            .Select(od => new OrderTrackingItemDTO(
+                od.ProductId,
+                od.Product?.Name ?? $"Sản phẩm #{od.ProductId}",
+                od.Quantity,
+                od.UnitPrice,
+                od.Quantity * od.UnitPrice
+            ))
+            .ToList();
+
+        return new OrderTrackingDTO(
+            order.Id,
+            order.OrderDate,
+            order.Status.ToString(),
+            order.SubTotal,
+            order.DiscountAmount,
+            order.TotalAmount,
+            order.PaymentMethod.ToString(),
+            user.FullName,
+            MaskPhone(user.PhoneNumber),
+            MaskAddress(user.Address1, user.Address2),
+            items
+        );
+    }
+
+    /// <summary>
+    /// Chuẩn hóa số điện thoại để so sánh: bỏ khoảng trắng, dấu chấm, dấu gạch ngang, dấu cộng và mã vùng +84.
+    /// </summary>
+    private static string NormalizePhone(string phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone)) return string.Empty;
+        var p = phone.Trim().Replace(" ", "").Replace(".", "").Replace("-", "");
+        if (p.StartsWith("+84")) p = "0" + p[3..];
+        return p;
+    }
+
+    /// <summary>
+    /// Mask số điện thoại: 098xxxx123 (chỉ hiện 3 số đầu + 3 số cuối).
+    /// </summary>
+    private static string MaskPhone(string phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone)) return string.Empty;
+        var normalized = NormalizePhone(phone);
+        if (normalized.Length <= 6) return new string('*', normalized.Length);
+        return $"{normalized[..3]}****{normalized[^3..]}";
+    }
+
+    /// <summary>
+    /// Mask địa chỉ: giữ lại phần district/city (từ dấu phẩy cuối cùng trở về sau), ẩn phần số nhà + tên đường.
+    /// Ví dụ: "123 Nguyễn Huệ, Quận 1, TP.HCM" → "***Quận 1, TP.HCM".
+    /// </summary>
+    private static string MaskAddress(string address1, string? address2)
+    {
+        var full = string.IsNullOrEmpty(address2)
+            ? address1
+            : $"{address1}, {address2}";
+
+        if (string.IsNullOrWhiteSpace(full)) return string.Empty;
+
+        var parts = full.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (parts.Length <= 1) return "***";
+
+        // Giữ lại phầnQuận/Huyện + Tỉnh/TP (1-2 phần cuối), ẩn phần đầu
+        var keep = parts.Length >= 2 ? parts[^2..] : parts;
+        return "***" + string.Join(", ", keep);
+    }
+
     private string GenerateOrderStatusHtml(Order order, OrderStatus status)
     {
         string statusText = "";
