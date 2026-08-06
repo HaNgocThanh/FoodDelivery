@@ -1,7 +1,7 @@
 /** Định dạng số tiền VND */
 export function formatVND(amount: number): string {
   return new Intl.NumberFormat('vi-VN', {
-    style:    'currency',
+    style: 'currency',
     currency: 'VND',
   }).format(amount);
 }
@@ -9,10 +9,10 @@ export function formatVND(amount: number): string {
 /** Định dạng ngày giờ tiếng Việt */
 export function formatDate(dateStr: string): string {
   return new Intl.DateTimeFormat('vi-VN', {
-    day:    '2-digit',
-    month:  '2-digit',
-    year:   'numeric',
-    hour:   '2-digit',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(dateStr));
 }
@@ -20,16 +20,16 @@ export function formatDate(dateStr: string): string {
 /** Relative time (VD: "2 giờ trước") */
 export function formatRelativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
-  const rtf  = new Intl.RelativeTimeFormat('vi', { numeric: 'auto' });
+  const rtf = new Intl.RelativeTimeFormat('vi', { numeric: 'auto' });
 
   const SECOND = 1_000;
   const MINUTE = 60 * SECOND;
-  const HOUR   = 60 * MINUTE;
-  const DAY    = 24 * HOUR;
+  const HOUR = 60 * MINUTE;
+  const DAY = 24 * HOUR;
 
-  if (diff < MINUTE)  return rtf.format(-Math.round(diff / SECOND), 'second');
-  if (diff < HOUR)    return rtf.format(-Math.round(diff / MINUTE), 'minute');
-  if (diff < DAY)     return rtf.format(-Math.round(diff / HOUR),   'hour');
+  if (diff < MINUTE) return rtf.format(-Math.round(diff / SECOND), 'second');
+  if (diff < HOUR) return rtf.format(-Math.round(diff / MINUTE), 'minute');
+  if (diff < DAY) return rtf.format(-Math.round(diff / HOUR), 'hour');
   return rtf.format(-Math.round(diff / DAY), 'day');
 }
 

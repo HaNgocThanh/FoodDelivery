@@ -276,16 +276,24 @@ export const CheckoutForm: React.FC = () => {
                   transition-shadow hover:shadow-sm
                 "
               >
-                <div
-                  aria-hidden="true"
-                  className="
-                    shrink-0 w-16 h-16 md:w-20 md:h-20
-                    rounded-lg bg-emerald-50 border border-emerald-100
-                    flex items-center justify-center text-emerald-600
-                  "
-                >
-                  <Beef className="w-8 h-8 md:w-10 md:h-10" strokeWidth={1.5} />
-                </div>
+                {item.imageUrl ? (
+                  <img
+                    src={item.imageUrl}
+                    alt={item.name}
+                    className="shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-lg object-cover border border-slate-200"
+                  />
+                ) : (
+                  <div
+                    aria-hidden="true"
+                    className="
+                      shrink-0 w-16 h-16 md:w-20 md:h-20
+                      rounded-lg bg-emerald-50 border border-emerald-100
+                      flex items-center justify-center text-emerald-600
+                    "
+                  >
+                    <Beef className="w-8 h-8 md:w-10 md:h-10" strokeWidth={1.5} />
+                  </div>
+                )}
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">

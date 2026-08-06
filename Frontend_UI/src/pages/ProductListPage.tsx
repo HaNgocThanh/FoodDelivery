@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axiosClient from '../api/axiosClient';
 import { useCartStore } from '../stores/useCartStore';
@@ -104,11 +104,10 @@ export default function ProductListPage() {
             <button
               onClick={() => setSelectedCategoryId(null)}
               data-testid="category-filter-all"
-              className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition-colors border ${
-                selectedCategoryId === null
+              className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition-colors border ${selectedCategoryId === null
                   ? 'bg-emerald-500 text-white border-emerald-500 shadow-md'
                   : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300 hover:text-emerald-700'
-              }`}
+                }`}
             >
               Tất cả
             </button>
@@ -125,11 +124,10 @@ export default function ProductListPage() {
                   key={cat.id}
                   onClick={() => setSelectedCategoryId(cat.id)}
                   data-testid={`category-filter-${cat.id}`}
-                  className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition-colors border ${
-                    selectedCategoryId === cat.id
+                  className={`px-4 py-2 rounded-full font-semibold text-sm whitespace-nowrap transition-colors border ${selectedCategoryId === cat.id
                       ? 'bg-emerald-500 text-white border-emerald-500 shadow-md'
                       : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300 hover:text-emerald-700'
-                  }`}
+                    }`}
                 >
                   {cat.name}
                 </button>
@@ -167,9 +165,8 @@ export default function ProductListPage() {
                   <article
                     key={product.id}
                     data-testid={`product-card-${product.id}`}
-                    className={`group relative rounded-xl bg-white border border-slate-200 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col ${
-                      isOutOfStock ? 'opacity-60 select-none' : ''
-                    }`}
+                    className={`group relative rounded-xl bg-white border border-slate-200 overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col ${isOutOfStock ? 'opacity-60 select-none' : ''
+                      }`}
                   >
                     {/* IMAGE */}
                     <Link

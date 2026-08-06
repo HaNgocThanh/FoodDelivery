@@ -10,6 +10,7 @@ export interface CartItem {
   stockQuantity: number;
   origin?: string;
   categoryName?: string;
+  imageUrl?: string | null;
 }
 
 interface CartStoreState {
@@ -41,7 +42,13 @@ export const useCartStore = create<CartStoreState>()(
 
           set({
             items: currentItems.map((i) =>
-              i.id === product.id ? { ...i, quantity: newQuantity } : i
+              i.id === product.id
+                ? {
+                    ...i,
+                    quantity: newQuantity,
+                    imageUrl: i.imageUrl || product.imageUrl,
+                  }
+                : i
             ),
           });
         } else {
@@ -55,6 +62,7 @@ export const useCartStore = create<CartStoreState>()(
                 quantity: Math.min(quantity, product.stockQuantity),
                 stockQuantity: product.stockQuantity,
                 origin: product.origin,
+                imageUrl: product.imageUrl,
               },
             ],
           });

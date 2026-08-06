@@ -45,10 +45,10 @@ const PRICE_PRESETS = [
 ];
 
 const SORT_OPTIONS = [
-  { key: 'newest',   label: 'Mới nhất' },
+  { key: 'newest', label: 'Mới nhất' },
   { key: 'price_asc', label: 'Giá tăng dần' },
   { key: 'price_desc', label: 'Giá giảm dần' },
-  { key: 'popular',  label: 'Phổ biến nhất' },
+  { key: 'popular', label: 'Phổ biến nhất' },
 ];
 
 const RATING_OPTIONS = [5, 4, 3] as const;
@@ -60,17 +60,17 @@ export default function SearchPage() {
 
   const urlKeyword = searchParams.get('keyword') ?? '';
 
-  const [keyword,    setKeyword]    = useState(urlKeyword);
-  const [inputVal,   setInputVal]   = useState(urlKeyword);
+  const [keyword, setKeyword] = useState(urlKeyword);
+  const [inputVal, setInputVal] = useState(urlKeyword);
   const [categoryId, setCategoryId] = useState<number | null>(null);
   const [pricePreset, setPricePreset] = useState(0);  // index into PRICE_PRESETS
-  const [minPrice,   setMinPrice]   = useState<string>('');
-  const [maxPrice,   setMaxPrice]   = useState<string>('');
-  const [rating,     setRating]     = useState<number | null>(null);
-  const [sortBy,     setSortBy]     = useState<string>('newest');
-  const [sortOpen,   setSortOpen]   = useState(false);
+  const [minPrice, setMinPrice] = useState<string>('');
+  const [maxPrice, setMaxPrice] = useState<string>('');
+  const [rating, setRating] = useState<number | null>(null);
+  const [sortBy, setSortBy] = useState<string>('newest');
+  const [sortOpen, setSortOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [addedId,    setAddedId]    = useState<number | null>(null);
+  const [addedId, setAddedId] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const PAGE_SIZE = 12;
@@ -102,10 +102,10 @@ export default function SearchPage() {
     queryKey: ['product-search', keyword, categoryId, effectiveMin, effectiveMax],
     queryFn: () => {
       const params = new URLSearchParams();
-      if (keyword)        params.set('keyword',    keyword);
-      if (categoryId)     params.set('categoryId', String(categoryId));
-      if (effectiveMin)   params.set('minPrice',   String(effectiveMin));
-      if (effectiveMax)   params.set('maxPrice',   String(effectiveMax));
+      if (keyword) params.set('keyword', keyword);
+      if (categoryId) params.set('categoryId', String(categoryId));
+      if (effectiveMin) params.set('minPrice', String(effectiveMin));
+      if (effectiveMax) params.set('maxPrice', String(effectiveMax));
       return axiosClient.get<ProductItem[], ProductItem[]>(`/api/products/search?${params.toString()}`);
     },
     enabled: true,
@@ -118,11 +118,11 @@ export default function SearchPage() {
       list = list.filter((p: any) => Number(p.averageRating ?? 0) >= rating);
     }
     switch (sortBy) {
-      case 'price_asc':  list.sort((a, b) => a.price - b.price); break;
+      case 'price_asc': list.sort((a, b) => a.price - b.price); break;
       case 'price_desc': list.sort((a, b) => b.price - a.price); break;
-      case 'popular':    list.sort((a: any, b: any) => Number(b.averageRating ?? 0) - Number(a.averageRating ?? 0)); break;
+      case 'popular': list.sort((a: any, b: any) => Number(b.averageRating ?? 0) - Number(a.averageRating ?? 0)); break;
       case 'newest':
-      default:           list.sort((a: any, b: any) => Number(b.id) - Number(a.id));
+      default: list.sort((a: any, b: any) => Number(b.id) - Number(a.id));
     }
     return list;
   })();
@@ -185,11 +185,10 @@ export default function SearchPage() {
             <button
               type="button"
               onClick={() => setCategoryId(null)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between transition ${
-                categoryId === null
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between transition ${categoryId === null
                   ? 'bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200'
                   : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50 border border-transparent'
-              }`}
+                }`}
             >
               <span className="truncate">Tất cả danh mục</span>
               {categoryId === null && <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" />}
@@ -200,11 +199,10 @@ export default function SearchPage() {
               <button
                 type="button"
                 onClick={() => setCategoryId(cat.id)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between transition ${
-                  categoryId === cat.id
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between transition ${categoryId === cat.id
                     ? 'bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200'
                     : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50 border border-transparent'
-                }`}
+                  }`}
               >
                 <span className="truncate">{cat.name}</span>
                 {categoryId === cat.id && <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" />}
@@ -223,11 +221,10 @@ export default function SearchPage() {
               <button
                 type="button"
                 onClick={() => { setPricePreset(index); setMinPrice(''); setMaxPrice(''); }}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between transition ${
-                  pricePreset === index
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between transition ${pricePreset === index
                     ? 'bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200'
                     : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50 border border-transparent'
-                }`}
+                  }`}
               >
                 <span className="truncate">{preset.label}</span>
                 {pricePreset === index && <ChevronRight className="w-3.5 h-3.5 flex-shrink-0" />}
@@ -278,11 +275,10 @@ export default function SearchPage() {
             <button
               type="button"
               onClick={() => setRating(null)}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between transition ${
-                rating === null
+              className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between transition ${rating === null
                   ? 'bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200'
                   : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50 border border-transparent'
-              }`}
+                }`}
             >
               <span>Tất cả đánh giá</span>
               {rating === null && <ChevronRight className="w-3.5 h-3.5" />}
@@ -293,11 +289,10 @@ export default function SearchPage() {
               <button
                 type="button"
                 onClick={() => setRating(r)}
-                className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between transition ${
-                  rating === r
+                className={`w-full text-left px-3 py-2 rounded-lg text-sm flex items-center justify-between transition ${rating === r
                     ? 'bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200'
                     : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50 border border-transparent'
-                }`}
+                  }`}
               >
                 <span className="flex items-center gap-1 whitespace-nowrap">
                   {Array.from({ length: r }).map((_, i) => (
@@ -353,70 +348,7 @@ export default function SearchPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
 
         {/* ── BREADCRUMB ───────────────────────────────────── */}
-        <nav aria-label="Breadcrumb" className="mb-4 flex items-center gap-1.5 text-xs text-slate-500">
-          <Link to="/" className="inline-flex items-center gap-1 hover:text-emerald-700 transition">
-            <HomeIcon className="w-3.5 h-3.5" />
-            Trang chủ
-          </Link>
-          <ChevronRight className="w-3 h-3 text-slate-400" />
-          <span className="text-slate-700 font-semibold">Tìm kiếm sản phẩm</span>
-        </nav>
 
-        {/* ── SEARCH BAR (rounded-full) ────────────────────── */}
-        <section className="mb-6">
-          <form
-            onSubmit={handleSearch}
-            role="search"
-            className="flex gap-2 sm:gap-3"
-            aria-label="Tìm kiếm sản phẩm"
-          >
-            <div className="relative flex-1">
-              <Search
-                className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none"
-                aria-hidden="true"
-              />
-              <input
-                id="search-input"
-                type="text"
-                value={inputVal}
-                onChange={(e) => setInputVal(e.target.value)}
-                placeholder="Bạn muốn tìm gì hôm nay? (VD: thịt bò, rau cải…)"
-                className="w-full pl-14 pr-12 py-3 sm:py-4 bg-white border border-slate-200 rounded-full text-slate-700 placeholder-slate-400 text-sm sm:text-base font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 shadow-sm transition"
-              />
-              {inputVal && (
-                <button
-                  type="button"
-                  onClick={() => { setInputVal(''); setKeyword(''); }}
-                  aria-label="Xoá nội dung tìm"
-                  data-testid="button-clear-search"
-                  className="absolute right-4 sm:right-5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-full p-1 transition"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-            <button
-              type="submit"
-              data-testid="button-submit-search"
-              className="px-5 sm:px-7 py-3 sm:py-4 bg-white hover:bg-emerald-50 active:bg-emerald-100 text-emerald-700 font-bold text-sm rounded-full border border-emerald-300 hover:border-emerald-400 shadow-sm hover:shadow-md transition flex items-center gap-2"
-            >
-              <Search className="w-4 h-4" />
-              <span className="hidden sm:inline">Tìm kiếm</span>
-            </button>
-
-            {/* Mobile filter toggle */}
-            <button
-              type="button"
-              onClick={() => setSidebarOpen(true)}
-              data-testid="button-open-mobile-filter"
-              aria-label="Mở bộ lọc"
-              className="lg:hidden px-4 bg-white hover:bg-slate-100 border border-slate-200 rounded-full text-slate-700 shadow-sm transition flex items-center gap-2"
-            >
-              <SlidersHorizontal className="w-4 h-4" />
-              <span className="text-sm font-bold">Lọc</span>
-            </button>
-          </form>
-        </section>
 
         {/* ── MAIN GRID (lg:grid-cols-4) ──────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -500,11 +432,10 @@ export default function SearchPage() {
                             role="option"
                             aria-selected={sortBy === opt.key}
                             onClick={() => { setSortBy(opt.key); setSortOpen(false); }}
-                            className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between transition ${
-                              sortBy === opt.key
+                            className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between transition ${sortBy === opt.key
                                 ? 'bg-emerald-50 text-emerald-700 font-semibold'
                                 : 'text-slate-700 hover:bg-slate-50'
-                            }`}
+                              }`}
                           >
                             <span>{opt.label}</span>
                             {sortBy === opt.key && <Check className="w-4 h-4 text-emerald-600" />}
@@ -580,9 +511,8 @@ export default function SearchPage() {
                       <article
                         key={product.id}
                         data-testid={`product-card-${product.id}`}
-                        className={`group rounded-xl bg-white shadow-sm overflow-hidden border border-slate-100 transition-all duration-200 hover:shadow-md hover:-translate-y-1 flex flex-col ${
-                          isOutOfStock ? 'opacity-60' : ''
-                        }`}
+                        className={`group rounded-xl bg-white shadow-sm overflow-hidden border border-slate-100 transition-all duration-200 hover:shadow-md hover:-translate-y-1 flex flex-col ${isOutOfStock ? 'opacity-60' : ''
+                          }`}
                       >
                         {/* Image */}
                         <Link
@@ -657,16 +587,15 @@ export default function SearchPage() {
                                 isOutOfStock
                                   ? 'Sản phẩm hết hàng'
                                   : isAdded
-                                  ? 'Đã thêm vào giỏ'
-                                  : 'Thêm vào giỏ hàng'
+                                    ? 'Đã thêm vào giỏ'
+                                    : 'Thêm vào giỏ hàng'
                               }
-                              className={`inline-flex items-center justify-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg font-bold text-xs transition flex-shrink-0 ${
-                                isOutOfStock
+                              className={`inline-flex items-center justify-center gap-1 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg font-bold text-xs transition flex-shrink-0 ${isOutOfStock
                                   ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
                                   : isAdded
-                                  ? 'bg-emerald-600 text-white shadow-sm'
-                                  : 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm hover:shadow-md'
-                              }`}
+                                    ? 'bg-emerald-600 text-white shadow-sm'
+                                    : 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm hover:shadow-md'
+                                }`}
                             >
                               {isOutOfStock ? (
                                 'Hết hàng'
@@ -714,11 +643,10 @@ export default function SearchPage() {
                               onClick={() => setCurrentPage(p)}
                               data-testid={`button-page-${p}`}
                               aria-current={safePage === p ? 'page' : undefined}
-                              className={`min-w-[40px] px-3 py-2 text-sm font-bold rounded-full transition ${
-                                safePage === p
+                              className={`min-w-[40px] px-3 py-2 text-sm font-bold rounded-full transition ${safePage === p
                                   ? 'bg-emerald-500 text-white shadow-sm'
                                   : 'bg-white border border-slate-200 text-slate-700 hover:border-emerald-300 hover:bg-slate-50'
-                              }`}
+                                }`}
                             >
                               {p}
                             </button>

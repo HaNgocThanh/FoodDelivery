@@ -1,4 +1,4 @@
-﻿import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useCartStore } from '@/stores/useCartStore';
 import { ShoppingBag, Trash2, Plus, Minus, ArrowRight, Beef } from 'lucide-react';
 
@@ -81,18 +81,26 @@ export default function CartPage() {
                 transition-shadow hover:shadow-md
               "
             >
-              {/* Thumbnail placeholder — store CartItem chưa có imageUrl */}
-              <div
-                aria-hidden="true"
-                className="
-                  shrink-0 w-20 h-20 md:w-24 md:h-24
-                  rounded-lg bg-emerald-50 border border-emerald-100
-                  flex items-center justify-center
-                  text-emerald-600
-                "
-              >
-                <Beef className="w-10 h-10" strokeWidth={1.5} />
-              </div>
+              {/* Thumbnail sản phẩm */}
+              {item.imageUrl ? (
+                <img
+                  src={item.imageUrl}
+                  alt={item.name}
+                  className="shrink-0 w-20 h-20 md:w-24 md:h-24 rounded-lg object-cover border border-slate-200"
+                />
+              ) : (
+                <div
+                  aria-hidden="true"
+                  className="
+                    shrink-0 w-20 h-20 md:w-24 md:h-24
+                    rounded-lg bg-emerald-50 border border-emerald-100
+                    flex items-center justify-center
+                    text-emerald-600
+                  "
+                >
+                  <Beef className="w-10 h-10" strokeWidth={1.5} />
+                </div>
+              )}
 
               {/* Thông tin sản phẩm */}
               <div className="flex-1 min-w-0">

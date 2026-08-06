@@ -159,11 +159,10 @@ export default function HomePage() {
           >
             <button
               onClick={() => setSelectedCategoryId(null)}
-              className={`px-5 py-2.5 rounded-full font-medium text-sm whitespace-nowrap transition-colors ${
-                selectedCategoryId === null
+              className={`px-5 py-2.5 rounded-full font-medium text-sm whitespace-nowrap transition-colors ${selectedCategoryId === null
                   ? 'bg-emerald-600 text-white shadow-md'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+                }`}
             >
               Tất cả sản phẩm
             </button>
@@ -179,11 +178,10 @@ export default function HomePage() {
                 <button
                   key={cat.id}
                   onClick={() => setSelectedCategoryId(cat.id)}
-                  className={`px-5 py-2.5 rounded-full font-medium text-sm whitespace-nowrap transition-colors ${
-                    selectedCategoryId === cat.id
+                  className={`px-5 py-2.5 rounded-full font-medium text-sm whitespace-nowrap transition-colors ${selectedCategoryId === cat.id
                       ? 'bg-emerald-600 text-white shadow-md'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
+                    }`}
                 >
                   {cat.name}
                 </button>
@@ -223,9 +221,8 @@ export default function HomePage() {
                 return (
                   <article
                     key={product.id}
-                    className={`group relative rounded-xl bg-white border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col ${
-                      isOutOfStock ? 'opacity-60 select-none' : ''
-                    }`}
+                    className={`group relative rounded-xl bg-white border border-gray-100 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col ${isOutOfStock ? 'opacity-60 select-none' : ''
+                      }`}
                   >
                     {/* HÌNH ẢNH */}
                     <div className="relative aspect-square bg-gray-50 overflow-hidden rounded-t-xl">
@@ -302,32 +299,32 @@ export default function HomePage() {
                             isOutOfStock
                               ? 'Sản phẩm hết hàng'
                               : addedProductId === product.id
-                              ? 'Đã thêm vào giỏ'
-                              : 'Thêm vào giỏ hàng'
+                                ? 'Đã thêm vào giỏ'
+                                : 'Thêm vào giỏ hàng'
                           }
                           className="w-full font-bold uppercase text-sm tracking-wide"
                           style={
                             isOutOfStock
                               ? {
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  gap: '8px',
-                                  width: '100%',
-                                  minHeight: '48px',
-                                  padding: '12px 16px',
-                                  backgroundColor: '#e5e7eb',
-                                  color: '#6b7280',
-                                  border: '2px solid #d1d5db',
-                                  borderRadius: '12px',
-                                  cursor: 'not-allowed',
-                                  fontSize: '14px',
-                                  fontWeight: 700,
-                                  letterSpacing: '0.05em',
-                                  textTransform: 'uppercase',
-                                }
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '8px',
+                                width: '100%',
+                                minHeight: '48px',
+                                padding: '12px 16px',
+                                backgroundColor: '#e5e7eb',
+                                color: '#6b7280',
+                                border: '2px solid #d1d5db',
+                                borderRadius: '12px',
+                                cursor: 'not-allowed',
+                                fontSize: '14px',
+                                fontWeight: 700,
+                                letterSpacing: '0.05em',
+                                textTransform: 'uppercase',
+                              }
                               : addedProductId === product.id
-                              ? {
+                                ? {
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
@@ -348,7 +345,7 @@ export default function HomePage() {
                                   textTransform: 'uppercase',
                                   transition: 'all 0.2s ease',
                                 }
-                              : {
+                                : {
                                   display: 'flex',
                                   alignItems: 'center',
                                   justifyContent: 'center',
