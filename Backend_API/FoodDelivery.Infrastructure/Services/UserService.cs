@@ -96,4 +96,27 @@ public class UserService : IUserService
         await _context.SaveChangesAsync(ct);
         return true;
     }
+
+    /// <summary>
+    /// Cưỡng chế đặt lại mật khẩu người dùng bởi Admin.
+    /// - Không yêu cầu OldPassword.
+    /// - Dùng chung cơ chế HashPassword với luồng đăng ký để đồng bộ verify.
+    /// - Reset các trường reset-token để vô hiệu hóa mọi OTP reset cũ.
+    /// </summary>
+    public async Task<bool> AdminResetUserPasswordAsync(int userId, string newPassword, CancellationToken ct = default)
+    {
+        var user = await _context.AppUsers.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        if (user == null)
+        {
+            throw new NotFoundException($"Không tìm thấy người dùng với ID #{userId}.");
+        }
+
+        user.PasswordHash = AuthService.HashPassword(newPassword);
+        user.ResetPasswordToken = null;
+        user.ResetPasswordExpiry = null;
+
+        _context.AppUsers.Update(user);
+        await _context.SaveChangesAsync(ct);
+        return true;
+    }
 }

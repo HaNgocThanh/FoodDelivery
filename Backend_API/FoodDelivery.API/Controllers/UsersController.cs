@@ -72,4 +72,20 @@ public class UsersController : ControllerBase
         await _userService.UpdateUserByAdminAsync(id, request, ct);
         return Ok(new { message = $"Đã cập nhật thành công tài khoản người dùng #{id}." });
     }
+
+    /// <summary>
+    /// Cưỡng chế đặt lại mật khẩu người dùng (Admin only — không yêu cầu OldPassword).
+    /// POST /api/users/{id}/reset-password
+    /// </summary>
+    [HttpPost("{id:int}/reset-password")]
+    [Authorize(Roles = "Admin")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AdminResetUserPassword(int id, [FromBody] AdminResetUserPasswordDTO request, CancellationToken ct)
+    {
+        await _userService.AdminResetUserPasswordAsync(id, request.NewPassword, ct);
+        return Ok(new { message = $"Cập nhật mật khẩu thành công cho tài khoản #{id}." });
+    }
 }
