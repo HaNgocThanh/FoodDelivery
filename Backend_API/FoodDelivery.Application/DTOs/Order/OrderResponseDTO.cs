@@ -7,7 +7,8 @@ public record OrderDetailResponseDTO(
     string ProductName,
     int Quantity,
     decimal UnitPrice,
-    decimal Subtotal
+    decimal Subtotal,
+    bool IsReviewed
 );
 
 public record OrderResponseDTO(

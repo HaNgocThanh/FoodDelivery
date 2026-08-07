@@ -120,6 +120,7 @@ namespace FoodDelivery.Infrastructure.Data
                 entity.HasKey(od => new { od.OrderId, od.ProductId });
                 entity.Property(od => od.UnitPrice).HasColumnType("decimal(18,2)");
                 entity.Property(od => od.Quantity).IsRequired();
+                entity.Property(od => od.IsReviewed).HasDefaultValue(false);
 
                 entity.HasOne(od => od.Order)
                       .WithMany(o => o.OrderDetails)
@@ -148,6 +149,11 @@ namespace FoodDelivery.Infrastructure.Data
                       .WithMany(u => u.Reviews)
                       .HasForeignKey(r => r.UserId)
                       .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(r => r.Order)
+                      .WithMany()
+                      .HasForeignKey(r => r.OrderId)
+                      .OnDelete(DeleteBehavior.SetNull);
             });
 
             // 8. Cấu hình Fluent API cho ProductQuestion

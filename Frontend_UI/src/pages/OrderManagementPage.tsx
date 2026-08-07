@@ -26,6 +26,7 @@ export interface OrderItemDetail {
   quantity: number;
   unitPrice: number;
   subtotal: number;
+  isReviewed?: boolean;
 }
 
 export interface OrderItem {

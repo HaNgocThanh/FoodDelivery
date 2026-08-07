@@ -14,9 +14,11 @@ import {
   Package,
   Calendar,
   Ban,
-  Check
+  Check,
+  Star
 } from 'lucide-react';
 import type { OrderItem } from './OrderManagementPage';
+import ReviewModal from '../components/ReviewModal';
 
 const statusBadges: Record<number | string, { label: string; icon: React.ReactNode; bgClass: string }> = {
   1: {
@@ -80,6 +82,14 @@ export default function MyOrdersPage() {
   const [ticketSubject, setTicketSubject] = useState('');
   const [ticketMessage, setTicketMessage] = useState('');
 
+  // Review modal state
+  const [reviewModal, setReviewModal] = useState<{
+    isOpen: boolean;
+    orderId: number;
+    productId: number;
+    productName: string;
+  } | null>(null);
+
   // Fetch my orders
   const { data: orders = [], isLoading, isError, error, refetch } = useQuery<OrderItem[]>({
     queryKey: ['myOrders'],
@@ -130,6 +140,27 @@ export default function MyOrdersPage() {
       setNotification({
         type: 'error',
         message: err.message || 'Không thể gửi yêu cầu hỗ trợ. Vui lòng thử lại.',
+      });
+    },
+  });
+
+  // Create Review Mutation
+  const reviewMutation = useMutation({
+    mutationFn: async (payload: { orderId: number; productId: number; rating: number; comment: string }) => {
+      return await axiosClient.post('/api/reviews', payload);
+    },
+    onSuccess: () => {
+      setNotification({
+        type: 'success',
+        message: 'Đánh giá sản phẩm thành công! Đã cộng 10 điểm tích lũy.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['myOrders'] });
+      queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+    },
+    onError: (err: any) => {
+      setNotification({
+        type: 'error',
+        message: err?.message || 'Không thể gửi đánh giá. Vui lòng thử lại.',
       });
     },
   });
@@ -353,9 +384,35 @@ export default function MyOrdersPage() {
                                     </Link>
                                     <p className="text-sm text-slate-500 mt-0.5">x{detail.quantity}</p>
                                   </div>
-                                  <span className="ml-auto pl-3 text-sm font-semibold text-slate-700 tabular-nums whitespace-nowrap flex-shrink-0">
-                                    {detail.unitPrice.toLocaleString('vi-VN')} đ
-                                  </span>
+                                  <div className="flex flex-col items-end gap-1.5 shrink-0">
+                                    <span className="text-sm font-semibold text-slate-700 tabular-nums whitespace-nowrap">
+                                      {detail.unitPrice.toLocaleString('vi-VN')} đ
+                                    </span>
+                                    {/* REVIEW BUTTON - only for Completed orders */}
+                                    {(String(order.status).toLowerCase() === 'completed' ||
+                                      Number(order.status) === 4) &&
+                                     !(detail.isReviewed) && (
+                                      <button
+                                        onClick={() => setReviewModal({
+                                          isOpen: true,
+                                          orderId: order.id,
+                                          productId: detail.productId,
+                                          productName: detail.productName,
+                                        })}
+                                        className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 hover:border-amber-300 text-amber-700 hover:text-amber-800 text-[10px] font-bold rounded-lg transition flex items-center gap-1 whitespace-nowrap"
+                                      >
+                                        <Star className="w-3 h-3" />
+                                        Đánh giá +10 điểm
+                                      </button>
+                                    )}
+                                    {/* REVIEWED BADGE */}
+                                    {(detail.isReviewed) && (
+                                      <span className="px-2.5 py-1 bg-slate-100 border border-slate-200 text-slate-500 text-[10px] font-semibold rounded-lg flex items-center gap-1 whitespace-nowrap">
+                                        <Check className="w-3 h-3" />
+                                        Đã đánh giá
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               ))
                             ) : (
@@ -475,6 +532,25 @@ export default function MyOrdersPage() {
               </form>
             </div>
           </div>
+        )}
+
+        {/* REVIEW MODAL */}
+        {reviewModal && (
+          <ReviewModal
+            isOpen={reviewModal.isOpen}
+            onClose={() => setReviewModal(null)}
+            orderId={reviewModal.orderId}
+            productId={reviewModal.productId}
+            productName={reviewModal.productName}
+            onSuccess={() => {
+              queryClient.invalidateQueries({ queryKey: ['myOrders'] });
+              queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+            }}
+            onError={(msg) => {
+              setNotification({ type: 'error', message: msg });
+            }}
+            reviewMutation={reviewMutation}
+          />
         )}
 
       </div>

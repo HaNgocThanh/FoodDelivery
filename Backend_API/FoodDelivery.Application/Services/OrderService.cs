@@ -78,7 +78,8 @@ public class OrderService : IOrderService
                     product.Name,
                     item.Quantity,
                     product.Price,
-                    lineTotal
+                    lineTotal,
+                    IsReviewed: false
                 ));
             }
 
@@ -372,7 +373,8 @@ public class OrderService : IOrderService
                     od.Product?.Name ?? $"Sản phẩm #{od.ProductId}",
                     od.Quantity,
                     od.UnitPrice,
-                    od.Quantity * od.UnitPrice
+                    od.Quantity * od.UnitPrice,
+                    od.IsReviewed
                 )).ToList()
                 : new List<OrderDetailResponseDTO>();
 
@@ -409,7 +411,8 @@ public class OrderService : IOrderService
                     od.Product?.Name ?? $"Sản phẩm #{od.ProductId}",
                     od.Quantity,
                     od.UnitPrice,
-                    od.Quantity * od.UnitPrice
+                    od.Quantity * od.UnitPrice,
+                    od.IsReviewed
                 )).ToList()
                 : new List<OrderDetailResponseDTO>();
 
