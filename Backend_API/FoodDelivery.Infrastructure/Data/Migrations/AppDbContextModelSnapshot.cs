@@ -131,6 +131,12 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
                         .IsRequired()
                         .HasColumnType("NVARCHAR2(2000)");
 
+                    b.Property<decimal?>("PointDiscount")
+                        .HasColumnType("DECIMAL(18, 2)");
+
+                    b.Property<int?>("PointsUsed")
+                        .HasColumnType("NUMBER(10)");
+
                     b.Property<int?>("PromotionId")
                         .HasColumnType("NUMBER(10)");
 
@@ -171,6 +177,11 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
 
                     b.Property<int>("ProductId")
                         .HasColumnType("NUMBER(10)");
+
+                    b.Property<bool>("IsReviewed")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("BOOLEAN")
+                        .HasDefaultValue(false);
 
                     b.Property<int>("Quantity")
                         .HasColumnType("NUMBER(10)");
@@ -341,6 +352,9 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TIMESTAMP(7)");
 
+                    b.Property<int?>("OrderId")
+                        .HasColumnType("NUMBER(10)");
+
                     b.Property<int>("ProductId")
                         .HasColumnType("NUMBER(10)");
 
@@ -351,6 +365,8 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
                         .HasColumnType("NUMBER(10)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
 
                     b.HasIndex("ProductId");
 
@@ -485,6 +501,11 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("FoodDelivery.Domain.Entities.Review", b =>
                 {
+                    b.HasOne("FoodDelivery.Domain.Entities.Order", "Order")
+                        .WithMany()
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("FoodDelivery.Domain.Entities.Product", "Product")
                         .WithMany("Reviews")
                         .HasForeignKey("ProductId")
@@ -496,6 +517,8 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Order");
 
                     b.Navigation("Product");
 
