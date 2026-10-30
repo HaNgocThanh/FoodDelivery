@@ -20,6 +20,10 @@ public class OrderService : IOrderService
 
     public async Task<OrderResponseDTO> CreateOrderAsync(OrderRequestDTO request, CancellationToken ct = default)
     {
+        var validation = new FoodDelivery.Application.Validators.OrderRequestValidator().Validate(request);
+        if (!validation.IsValid)
+            throw new ArgumentException(string.Join(" ", validation.Errors.Select(e => e.ErrorMessage)));
+
         if (request.Items == null || !request.Items.Any())
         {
             throw new ArgumentException("Đơn hàng phải chứa ít nhất 1 sản phẩm.");
@@ -140,6 +144,8 @@ public class OrderService : IOrderService
                 _unitOfWork.Promotions.Update(promotion);
             }
 
+            discountAmount = decimal.Round(discountAmount, 2, MidpointRounding.AwayFromZero);
+
             // BƯỚC 4B: Xử lý điểm tích lũy (nếu khách chọn dùng + tier cho phép)
             int pointsUsed = 0;
             decimal pointDiscount = 0;
@@ -191,8 +197,13 @@ public class OrderService : IOrderService
                 }
             }
 
-            // BƯỚC 5: Tính TotalAmount = SubTotal - DiscountAmount - PointDiscount (Đảm bảo TotalAmount >= 0)
-            decimal totalAmount = Math.Max(subTotal - discountAmount - pointDiscount, 0m);
+            // Backend computes all charges; reject a stale client total before committing.
+            var shippingFee = subTotal >= 300000m ? 0m : 25000m;
+            const decimal toteDeposit = 15000m;
+            decimal totalAmount = decimal.Round(Math.Max(subTotal - discountAmount - pointDiscount, 0m)
+                + shippingFee + toteDeposit + request.TipAmount, 2, MidpointRounding.AwayFromZero);
+            if (totalAmount != request.ExpectedTotalAmount)
+                throw new InvalidOperationException("Giá hoặc ưu đãi đã thay đổi. Vui lòng tải lại giỏ hàng và xác nhận tổng tiền mới.");
 
             // BƯỚC 6: Tạo đối tượng Đơn hàng lưu giữ trạng thái tĩnh (Snapshot)
             var order = new Order
@@ -206,6 +217,15 @@ public class OrderService : IOrderService
                 PointsUsed = pointsUsed > 0 ? pointsUsed : null,
                 PointDiscount = pointDiscount > 0 ? pointDiscount : null,
                 TotalAmount = totalAmount,
+                RecipientName = request.RecipientName.Trim(),
+                RecipientPhone = request.RecipientPhone.Trim(),
+                DeliveryAddress = request.DeliveryAddress.Trim(),
+                DeliverySlot = request.DeliverySlot,
+                DeliveryNotes = request.DeliveryNotes?.Trim(),
+                LeaveAtDoorstep = request.LeaveAtDoorstep,
+                ShippingFee = shippingFee,
+                ToteDeposit = toteDeposit,
+                TipAmount = request.TipAmount,
                 PaymentMethod = request.PaymentMethod,
                 Status = OrderStatus.Pending,
                 OrderDetails = orderDetails
@@ -244,7 +264,9 @@ public class OrderService : IOrderService
                 order.PaymentMethod,
                 order.Status,
                 order.ShipperId,
-                responseDetails
+                responseDetails,
+                order.RecipientName, order.RecipientPhone, order.DeliveryAddress, order.DeliverySlot,
+                order.DeliveryNotes, order.LeaveAtDoorstep, order.ShippingFee, order.ToteDeposit, order.TipAmount
             );
         }
         catch (Exception)
@@ -253,6 +275,28 @@ public class OrderService : IOrderService
             await _unitOfWork.RollbackTransactionAsync(ct);
             throw;
         }
+    }
+
+    public async Task<decimal> GetPaymentAmountAsync(int orderId, int userId, CancellationToken ct = default)
+    {
+        var order = await _unitOfWork.Orders.GetByIdAsync(orderId, ct);
+        if (order == null || order.UserId != userId)
+            throw new NotFoundException("Không tìm thấy đơn hàng.");
+        if (order.PaymentMethod != PaymentMethod.Online || order.Status != OrderStatus.Pending)
+            throw new InvalidOperationException("Chỉ có thể thanh toán đơn trực tuyến đang chờ xử lý.");
+        return order.TotalAmount;
+    }
+
+    public async Task ConfirmMockPaymentAsync(int orderId, int userId, decimal amount, CancellationToken ct = default)
+    {
+        // Conditional UPDATE prevents a concurrent cancel from being overwritten.
+        if (await _unitOfWork.Orders.TryApproveOnlinePaymentAsync(orderId, userId, amount, ct)) return;
+        var order = await _unitOfWork.Orders.GetByIdAsync(orderId, ct);
+        if (order == null || order.UserId != userId)
+            throw new NotFoundException("Không tìm thấy đơn hàng.");
+        // Retrying the same verified result is idempotent; never regress later states.
+        if (order.PaymentMethod == PaymentMethod.Online && order.TotalAmount == amount && order.Status == OrderStatus.Approved) return;
+        throw new InvalidOperationException("Đơn hàng không còn đủ điều kiện xác nhận thanh toán.");
     }
 
     public async Task<bool> AssignShipperAsync(int orderId, int shipperId, CancellationToken ct = default)
@@ -391,7 +435,9 @@ public class OrderService : IOrderService
                 order.PaymentMethod,
                 order.Status,
                 order.ShipperId,
-                details
+                details,
+                order.RecipientName, order.RecipientPhone, order.DeliveryAddress, order.DeliverySlot,
+                order.DeliveryNotes, order.LeaveAtDoorstep, order.ShippingFee, order.ToteDeposit, order.TipAmount
             ));
         }
 
@@ -429,7 +475,9 @@ public class OrderService : IOrderService
                 order.PaymentMethod,
                 order.Status,
                 order.ShipperId,
-                details
+                details,
+                order.RecipientName, order.RecipientPhone, order.DeliveryAddress, order.DeliverySlot,
+                order.DeliveryNotes, order.LeaveAtDoorstep, order.ShippingFee, order.ToteDeposit, order.TipAmount
             ));
         }
 
@@ -442,7 +490,7 @@ public class OrderService : IOrderService
 
         try
         {
-            var order = await _unitOfWork.Orders.GetOrderWithDetailsAsync(orderId, ct);
+            var order = await _unitOfWork.Orders.GetOrderWithDetailsForUpdateAsync(orderId, ct);
 
             if (order == null)
             {
@@ -567,10 +615,11 @@ public class OrderService : IOrderService
                     <div style='background-color: #f9fafb; padding: 18px; border-radius: 12px; border: 1px solid #e5e7eb; margin-top: 25px;'>
                         <h3 style='margin: 0 0 10px 0; font-size: 14px; color: #111827; font-weight: bold;'>📍 Địa chỉ giao nhận</h3>
                         <p style='margin: 0; font-size: 13px; color: #4b5563; line-height: 1.4;'>
-                            <strong>Địa chỉ nhận:</strong> {user.Address1}{(string.IsNullOrEmpty(user.Address2) ? "" : $", {user.Address2}")}
+                            <strong>Người nhận:</strong> {System.Net.WebUtility.HtmlEncode(order.RecipientName ?? user.FullName)}<br/>
+                            <strong>Địa chỉ nhận:</strong> {System.Net.WebUtility.HtmlEncode(order.DeliveryAddress ?? string.Join(", ", new[] { user.Address1, user.Address2 }.Where(a => !string.IsNullOrWhiteSpace(a))))}
                         </p>
                         <p style='margin: 5px 0 0 0; font-size: 13px; color: #4b5563;'>
-                            <strong>Số điện thoại:</strong> {user.PhoneNumber}
+                            <strong>Số điện thoại:</strong> {System.Net.WebUtility.HtmlEncode(order.RecipientPhone ?? user.PhoneNumber)}
                         </p>
                     </div>
                 </div>
@@ -603,7 +652,7 @@ public class OrderService : IOrderService
         }
 
         // Validate phone khớp (so sánh cả 2 normalized để tránh format sai)
-        var storedNormalized = NormalizePhone(user.PhoneNumber);
+        var storedNormalized = NormalizePhone(order.RecipientPhone ?? user.PhoneNumber);
         if (!string.Equals(normalizedInput, storedNormalized, StringComparison.OrdinalIgnoreCase))
         {
             return null;
@@ -627,9 +676,9 @@ public class OrderService : IOrderService
             order.DiscountAmount,
             order.TotalAmount,
             order.PaymentMethod.ToString(),
-            user.FullName,
-            MaskPhone(user.PhoneNumber),
-            MaskAddress(user.Address1, user.Address2),
+            order.RecipientName ?? user.FullName,
+            MaskPhone(order.RecipientPhone ?? user.PhoneNumber),
+            MaskAddress(order.DeliveryAddress ?? user.Address1, order.DeliveryAddress == null ? user.Address2 : null),
             items
         );
     }

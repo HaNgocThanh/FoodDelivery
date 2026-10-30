@@ -1,3 +1,4 @@
+import { useAuthStore } from '../stores/useAuthStore';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import axiosClient from '../api/axiosClient';
@@ -49,13 +50,15 @@ export interface UserProfile {
 }
 
 export default function ProfilePage() {
+  const userId = useAuthStore(state => state.user?.id);
 
   const [activeTab, setActiveTab] = useState<TabKey>('info');
 
   const { data: profile, isLoading, isError, error, refetch } = useQuery<UserProfile>({
-    queryKey: ['userProfile'],
-    queryFn: async () => {
-      return await axiosClient.get<UserProfile, UserProfile>('/api/users/profile');
+    queryKey: ['userProfile', userId],
+    enabled: !!userId,
+    queryFn: async ({ signal }) => {
+      return await axiosClient.get<UserProfile, UserProfile>('/api/users/profile', { signal });
     },
   });
 

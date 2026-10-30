@@ -1,3 +1,4 @@
+import { useAuthStore } from '../stores/useAuthStore';
 import { CheckoutForm } from '../components/CheckoutForm';
 
 /**
@@ -6,9 +7,10 @@ import { CheckoutForm } from '../components/CheckoutForm';
  * Logic 100% từ CheckoutForm giữ nguyên; layout đơn giản.
  */
 export function CheckoutFormPage() {
+  const userId = useAuthStore(state => state.user?.id);
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <CheckoutForm />
+      <CheckoutForm key={userId ?? "guest"} />
     </div>
   );
 }

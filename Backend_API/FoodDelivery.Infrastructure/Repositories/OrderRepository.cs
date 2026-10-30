@@ -12,6 +12,25 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
     {
     }
 
+    public async Task<Order?> GetOrderWithDetailsForUpdateAsync(int orderId, CancellationToken ct = default)
+    {
+        var rows = await _dbSet.FromSqlInterpolated($"SELECT * FROM \"Orders\" WHERE \"Id\" = {orderId} FOR UPDATE")
+            .AsTracking().ToListAsync(ct);
+        var order = rows.SingleOrDefault();
+        if (order != null)
+            await _context.Entry(order).Collection(o => o.OrderDetails).LoadAsync(ct);
+        return order;
+    }
+
+    public async Task<bool> TryApproveOnlinePaymentAsync(int orderId, int userId, decimal amount, CancellationToken ct = default)
+    {
+        var updated = await _dbSet.Where(o => o.Id == orderId && o.UserId == userId
+            && o.PaymentMethod == PaymentMethod.Online && o.Status == OrderStatus.Pending
+            && o.TotalAmount == amount)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(o => o.Status, OrderStatus.Approved), ct);
+        return updated == 1;
+    }
+
     public async Task<bool> AssignShipperAsync(int orderId, int shipperId, CancellationToken ct = default)
     {
         var order = await _dbSet.FirstOrDefaultAsync(o => o.Id == orderId, ct);

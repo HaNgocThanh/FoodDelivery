@@ -11,7 +11,7 @@ export interface ProblemDetails {
 }
 
 const axiosClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5156',
+  baseURL: import.meta.env?.VITE_API_BASE_URL || 'http://localhost:5156',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -20,7 +20,7 @@ const axiosClient = axios.create({
 
 // Request Interceptor: Tự động đính kèm Bearer JWT Token từ Zustand useAuthStore
 axiosClient.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().token || localStorage.getItem('auth_token');
+  const token = useAuthStore.getState().token;
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

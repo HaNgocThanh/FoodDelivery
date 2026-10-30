@@ -1,3 +1,5 @@
+import { OrderDeliveryDetails, OrderCharges } from '../components/OrderDeliveryDetails';
+import { useAuthStore } from '../stores/useAuthStore';
 import { useMemo, useState } from 'react';
 import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../api/axiosClient';
@@ -74,6 +76,7 @@ const statusBadges: Record<number | string, { label: string; icon: React.ReactNo
 };
 
 export default function MyOrdersPage() {
+  const userId = useAuthStore(state => state.user?.id);
   const queryClient = useQueryClient();
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
@@ -92,9 +95,10 @@ export default function MyOrdersPage() {
 
   // Fetch my orders
   const { data: orders = [], isLoading, isError, error, refetch } = useQuery<OrderItem[]>({
-    queryKey: ['myOrders'],
-    queryFn: async () => {
-      return await axiosClient.get<OrderItem[], OrderItem[]>('/api/orders/my-orders');
+    queryKey: ['myOrders', userId],
+    enabled: !!userId,
+    queryFn: async ({ signal }) => {
+      return await axiosClient.get<OrderItem[], OrderItem[]>('/api/orders/my-orders', { signal });
     },
   });
 
@@ -346,6 +350,7 @@ export default function MyOrdersPage() {
                       </div>
                     </div>
 
+                    <OrderDeliveryDetails order={order} />
                     {/* ORDER DETAILS ITEMS TABLE */}
                     <section aria-label={`Chi tiết đơn hàng #${order.id}`} className="space-y-3">
                       <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
@@ -433,6 +438,7 @@ export default function MyOrdersPage() {
                               <span className="tabular-nums">-{order.discountAmount.toLocaleString('vi-VN')} đ</span>
                             </div>
                           ) : null}
+                          <OrderCharges order={order} />
                           <div className="flex items-center justify-between border-t border-slate-200 pt-1.5">
                             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700">Tổng thanh toán:</span>
                             <span className="text-sm font-bold text-emerald-600 tabular-nums">

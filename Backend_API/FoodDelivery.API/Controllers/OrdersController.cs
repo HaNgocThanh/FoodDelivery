@@ -115,14 +115,8 @@ public class OrdersController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> CreateOrder([FromBody] OrderRequestDTO request, CancellationToken ct)
     {
-        // Tự động lấy UserId từ JWT Token Claims nếu người dùng không truyền hoặc truyền <= 0
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        var effectiveUserId = request.UserId;
-
-        if (!string.IsNullOrEmpty(userIdClaim) && int.TryParse(userIdClaim, out var parsedUserId))
-        {
-            effectiveUserId = parsedUserId;
-        }
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var effectiveUserId))
+            return Unauthorized();
 
         var effectiveRequest = request with { UserId = effectiveUserId };
         var result = await _orderService.CreateOrderAsync(effectiveRequest, ct);
@@ -197,26 +191,20 @@ public class OrdersController : ControllerBase
     }
 
     /// <summary>
-    /// Xác nhận thanh toán trực tuyến thành công (Client)
+    /// Endpoint cũ đã ngừng hỗ trợ; không thay đổi trạng thái đơn hàng
     /// PUT /api/orders/{id}/pay-success
     /// </summary>
     [HttpPut("{id:int}/pay-success")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> PaySuccess(int id, CancellationToken ct)
+    public IActionResult PaySuccess(int id)
     {
-        var result = await _orderService.UpdateOrderStatusAsync(id, OrderStatus.Approved, ct);
-        if (!result)
+        return StatusCode(StatusCodes.Status410Gone, new ProblemDetails
         {
-            return NotFound(new ProblemDetails
-            {
-                Status = 404,
-                Title = "Không tìm thấy đơn hàng",
-                Detail = $"Không tìm thấy đơn hàng #{id}."
-            });
-        }
-        return Ok(new { message = $"Đơn hàng #{id} đã được xác nhận thanh toán thành công." });
+            Status = StatusCodes.Status410Gone,
+            Title = "Không hỗ trợ xác nhận thanh toán từ client",
+            Detail = "Kết quả thanh toán phải được máy chủ xác thực."
+        });
     }
 }
-

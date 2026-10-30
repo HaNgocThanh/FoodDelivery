@@ -1,3 +1,4 @@
+import { OrderDeliveryDetails, OrderCharges } from '../components/OrderDeliveryDetails';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axiosClient from '../api/axiosClient';
@@ -41,6 +42,16 @@ export interface OrderItem {
   status: string | number;
   promotionId?: number | null;
   shipperId?: number | null;
+  recipientName?: string | null;
+  recipientPhone?: string | null;
+  deliveryAddress?: string | null;
+  deliverySlot?: string | null;
+  deliveryNotes?: string | null;
+  leaveAtDoorstep?: boolean;
+  shippingFee?: number;
+  toteDeposit?: number;
+  tipAmount?: number;
+  pointDiscount?: number | null;
   details: OrderItemDetail[];
 }
 
@@ -587,6 +598,7 @@ export default function OrderManagementPage() {
                   </div>
                 </section>
 
+                <OrderDeliveryDetails order={detailModalOrder} />
                 <section aria-label="Danh sách sản phẩm" className="bg-white border border-slate-200 rounded-xl overflow-hidden">
                   <header className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-200 bg-slate-50">
                     <ShoppingBag className="w-4 h-4 text-emerald-600" />
@@ -635,6 +647,7 @@ export default function OrderManagementPage() {
                         <span className="tabular-nums">-{detailModalOrder.discountAmount.toLocaleString('vi-VN')} đ</span>
                       </div>
                     ) : null}
+                    <OrderCharges order={detailModalOrder} />
                     <div className="flex justify-between items-center border-t border-emerald-200/60 pt-2 text-base font-extrabold text-emerald-700">
                       <span>Tổng cộng đơn hàng:</span>
                       <span className="text-xl tabular-nums">

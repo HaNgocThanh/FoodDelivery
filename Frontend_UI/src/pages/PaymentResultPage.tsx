@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
@@ -20,7 +21,10 @@ function formatPayDate(raw: string | null): string {
 }
 
 export default function PaymentResultPage() {
+  const queryClient = useQueryClient();
+  const [confirmedAmount, setConfirmedAmount] = useState(0);
   const [searchParams] = useSearchParams();
+  const paymentToken = searchParams.get('paymentToken');
   const { clearCart } = useCartStore();
 
   const orderId = searchParams.get('orderId');
@@ -30,22 +34,28 @@ export default function PaymentResultPage() {
   const [errorMessage, setErrorMessage] = useState<string>('');
   
   // Dùng ref để đảm bảo chỉ gọi API xác nhận 1 lần duy nhất trong StrictMode
-  const hasCalledAPI = useRef(false);
+  const hasCalledAPI = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!orderId || responseCode !== '00') {
+    if (!orderId || !paymentToken || responseCode !== '00') {
       setStatus('error');
       setErrorMessage('Giao dịch thanh toán không thành công hoặc bị hủy bỏ.');
       return;
     }
 
-    if (hasCalledAPI.current) return;
-    hasCalledAPI.current = true;
+    const requestKey = `${orderId}:${paymentToken}`;
+    if (hasCalledAPI.current === requestKey) return;
+    hasCalledAPI.current = requestKey;
+    setStatus('loading');
 
     const confirmPayment = async () => {
       try {
         // Gọi API cập nhật trạng thái đơn hàng thành đã thanh toán (Approved)
-        await axiosClient.put(`/api/orders/${orderId}/pay-success`);
+        const result = await axiosClient.post<{ orderId: number; amount: number }, { orderId: number; amount: number }>(
+          '/api/payments/mock-confirm', { orderId: Number(orderId), paymentToken });
+        if (String(result.orderId) !== orderId) throw new Error('Kết quả thanh toán không khớp đơn hàng.');
+        setConfirmedAmount(result.amount);
+        void queryClient.invalidateQueries({ queryKey: ['myOrders'] });
         
         // Xóa dọn sạch giỏ hàng ở Client
         clearCart();
@@ -59,14 +69,13 @@ export default function PaymentResultPage() {
     };
 
     confirmPayment();
-  }, [orderId, responseCode, clearCart]);
+  }, [orderId, responseCode, paymentToken, clearCart, queryClient]);
 
   // Đọc thêm tham số VNPay trả về — CHỈ đọc URL param, không gọi API, không setState.
-  const vnpAmount = searchParams.get('vnp_Amount');
   const vnpBankCode = searchParams.get('vnp_BankCode');
   const vnpPayDate = searchParams.get('vnp_PayDate');
   const vnpTransactionNo = searchParams.get('vnp_TransactionNo');
-  const amountVND = vnpAmount ? Number(vnpAmount) / 100 : 0;
+  const amountVND = confirmedAmount;
 
   return (
     <main
@@ -94,7 +103,7 @@ export default function PaymentResultPage() {
                 Thanh toán thành công!
               </h1>
               <p className="text-slate-500 text-sm leading-relaxed">
-                Đơn hàng <span className="font-mono font-bold text-emerald-600">#{orderId}</span> đã được thanh toán trực tuyến qua cổng VNPay.
+                Đơn hàng <span className="font-mono font-bold text-emerald-600">#{orderId}</span> đã được xác nhận trong môi trường thanh toán thử nghiệm.
               </p>
             </div>
 
@@ -122,7 +131,7 @@ export default function PaymentResultPage() {
                   <CreditCard className="w-3.5 h-3.5" /> Phương thức
                 </span>
                 <span className="font-semibold text-slate-900">
-                  VNPay{vnpBankCode ? ` · ${vnpBankCode}` : ''}
+                  Thanh toán thử nghiệm{vnpBankCode ? ` · ${vnpBankCode}` : ''}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">

@@ -24,5 +24,14 @@ public record OrderResponseDTO(
     PaymentMethod PaymentMethod,
     OrderStatus Status,
     int? ShipperId,
-    List<OrderDetailResponseDTO> Details
+    List<OrderDetailResponseDTO> Details,
+    string? RecipientName = null,
+    string? RecipientPhone = null,
+    string? DeliveryAddress = null,
+    string? DeliverySlot = null,
+    string? DeliveryNotes = null,
+    bool LeaveAtDoorstep = false,
+    decimal ShippingFee = 0,
+    decimal ToteDeposit = 0,
+    decimal TipAmount = 0
 );

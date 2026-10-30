@@ -119,10 +119,25 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("NVARCHAR2(50)");
 
+                    b.Property<string>("DeliveryAddress")
+                        .HasMaxLength(1000)
+                        .HasColumnType("NVARCHAR2(1000)");
+
+                    b.Property<string>("DeliveryNotes")
+                        .HasMaxLength(500)
+                        .HasColumnType("NVARCHAR2(500)");
+
+                    b.Property<string>("DeliverySlot")
+                        .HasMaxLength(20)
+                        .HasColumnType("NVARCHAR2(20)");
+
                     b.Property<decimal>("DiscountAmount")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("decimal(18,2)")
                         .HasDefaultValue(0m);
+
+                    b.Property<int>("LeaveAtDoorstep")
+                        .HasColumnType("NUMBER(1)");
 
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("TIMESTAMP(7)");
@@ -140,8 +155,21 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
                     b.Property<int?>("PromotionId")
                         .HasColumnType("NUMBER(10)");
 
+                    b.Property<string>("RecipientName")
+                        .HasMaxLength(150)
+                        .HasColumnType("NVARCHAR2(150)");
+
+                    b.Property<string>("RecipientPhone")
+                        .HasMaxLength(20)
+                        .HasColumnType("NVARCHAR2(20)");
+
                     b.Property<int?>("ShipperId")
                         .HasColumnType("NUMBER(10)");
+
+                    b.Property<decimal>("ShippingFee")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -150,8 +178,18 @@ namespace FoodDelivery.Infrastructure.Data.Migrations
                     b.Property<decimal>("SubTotal")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<decimal>("TipAmount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
+
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ToteDeposit")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("decimal(18,2)")
+                        .HasDefaultValue(0m);
 
                     b.Property<int>("UserId")
                         .HasColumnType("NUMBER(10)");

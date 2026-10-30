@@ -19,70 +19,23 @@ import {
   Sprout,
   Calendar,
 } from 'lucide-react';
-import type { ProductItem } from './ProductManagementPage';
-
-// 3 sản phẩm mua thêm 1 chạm (Quick 1-Tap additions)
-const QUICK_ADDONS: ProductItem[] = [
-  {
-    id: 991,
-    name: 'Rau Bạc Hà Hữu Cơ Tươi',
-    price: 15000,
-    stockQuantity: 40,
-    isAvailable: true,
-    isHot: false,
-    categoryId: 1,
-    origin: 'Đà Lạt Organics',
-    categoryName: 'Thảo Mộc',
-    imageUrl: 'https://images.unsplash.com/photo-1628556270448-4d4e4148e1b1?w=400&auto=format&fit=crop&q=80',
-    description: 'Bó 100g • Hái sáng nay, thơm ngát mùi tinh dầu tự nhiên.',
-  },
-  {
-    id: 992,
-    name: 'Muối Biển Hầm Tự Nhiên',
-    price: 25000,
-    stockQuantity: 50,
-    isAvailable: true,
-    isHot: false,
-    categoryId: 5,
-    origin: 'Sa Huỳnh Khai Thác',
-    categoryName: 'Gia Vị',
-    imageUrl: 'https://images.unsplash.com/photo-1518110925495-5fe2fda0442c?w=400&auto=format&fit=crop&q=80',
-    description: 'Hũ 200g • Muối hầm hạt mịn, giàu khoáng chất đại dương.',
-  },
-  {
-    id: 993,
-    name: 'Bơ Đồng Cỏ Đánh Tay Lát Mỏng',
-    price: 35000,
-    stockQuantity: 30,
-    isAvailable: true,
-    isHot: false,
-    categoryId: 3,
-    origin: 'Clover Pasture',
-    categoryName: 'Bơ Sữa',
-    imageUrl: 'https://images.unsplash.com/photo-1589985270826-4b7bb135bc9d?w=400&auto=format&fit=crop&q=80',
-    description: 'Gói 100g • Bơ béo ngậy 86% từ bò ăn cỏ tự nhiên.',
-  },
-];
+import { CartAddons } from '../components/CartAddons';
 
 const FREE_SHIPPING_THRESHOLD = 300000; // 300.000 đ để được freeship
 
 export default function CartPage() {
   const navigate = useNavigate();
-  const { items, updateQuantity, removeFromCart, clearCart, getTotalOriginalPrice, addToCart } =
+  const { items, updateQuantity, removeFromCart, clearCart, getTotalOriginalPrice } =
     useCartStore();
 
-  const [packagingPref, setPackagingPref] = useState<'returnable' | 'kraft'>('returnable');
   const [deliverySlot, setDeliverySlot] = useState('Hôm nay • 10:30 AM – 11:30 AM');
   const [isChangingSlot, setIsChangingSlot] = useState(false);
 
   const subtotal = getTotalOriginalPrice();
   const totalItemsCount = items.reduce((acc, cur) => acc + cur.quantity, 0);
 
-  // Phí dịch vụ chuỗi lạnh & bảo quản
-  const coldChainLogisticsFee = items.length > 0 ? 15000 : 0;
-
   // Tiền đặt cọc khay sinh thái tuần hoàn (hoàn tiền khi trả túi)
-  const insulatedBoxDeposit = packagingPref === 'returnable' && items.length > 0 ? 15000 : 0;
+  const insulatedBoxDeposit = items.length > 0 ? 15000 : 0;
 
   // Phí vận chuyển xe điện
   const isFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
@@ -93,7 +46,7 @@ export default function CartPage() {
   // Tổng cộng (mã giảm giá sẽ được áp dụng ở bước Checkout tiếp theo)
   const finalTotal = Math.max(
     0,
-    subtotal + coldChainLogisticsFee + insulatedBoxDeposit + shippingFee
+    subtotal + insulatedBoxDeposit + shippingFee
   );
 
   // Fallback image helper
@@ -393,127 +346,13 @@ export default function CartPage() {
               </div>
             </div>
 
-            {/* Sustainable Dispatch Preference */}
-            <div className="bg-white p-6 rounded-3xl shadow-sm border border-emerald-100 flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <h3 className="font-syne text-lg font-bold text-slate-900">
-                  Tùy Chọn Đóng Gói Sinh Thái Bền Vững
-                </h3>
-                <span className="text-xs uppercase text-[#006c49] font-extrabold bg-emerald-100 px-3 py-0.5 rounded-full">
-                  100% Không Rác Thải Nhựa
-                </span>
-              </div>
+            <section aria-label="Đóng gói đơn hàng" className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-2">
+              <h3 className="text-lg font-bold text-slate-900">Khay giữ nhiệt tuần hoàn</h3>
+              <p className="text-sm text-slate-600">Tiền cọc khay giữ nhiệt: 15.000 đ cho mỗi đơn hàng.</p>
+              <p className="text-xs text-slate-500">Khung giờ và thông tin nhận hàng được xác nhận ở bước thanh toán.</p>
+            </section>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Option 1 */}
-                <label
-                  className={`flex items-start gap-3.5 p-4 rounded-2xl cursor-pointer transition-all border ${
-                    packagingPref === 'returnable'
-                      ? 'bg-[#ebf6f1] border-emerald-300 shadow-sm'
-                      : 'bg-white hover:bg-slate-50 border-slate-200'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="packaging_pref"
-                    checked={packagingPref === 'returnable'}
-                    onChange={() => setPackagingPref('returnable')}
-                    className="mt-1 accent-[#006c49] w-4 h-4"
-                  />
-                  <div className="flex flex-col text-left">
-                    <span className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
-                      <Recycle className="w-4 h-4 text-[#006c49]" />
-                      Túi Giữ Nhiệt Tuần Hoàn 100%
-                    </span>
-                    <span className="text-xs text-slate-600 mt-1 leading-relaxed">
-                      Làm lạnh bằng lớp lót sợi bông tự nhiên. Trả lại túi cho shipper ở chuyến giao tiếp theo.
-                    </span>
-                    <span className="text-[11px] font-bold text-[#006c49] mt-2">
-                      Đặt cọc 15.000 đ (Hoàn tiền tức thì khi trả túi)
-                    </span>
-                  </div>
-                </label>
-
-                {/* Option 2 */}
-                <label
-                  className={`flex items-start gap-3.5 p-4 rounded-2xl cursor-pointer transition-all border ${
-                    packagingPref === 'kraft'
-                      ? 'bg-[#ebf6f1] border-emerald-300 shadow-sm'
-                      : 'bg-white hover:bg-slate-50 border-slate-200'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="packaging_pref"
-                    checked={packagingPref === 'kraft'}
-                    onChange={() => setPackagingPref('kraft')}
-                    className="mt-1 accent-[#006c49] w-4 h-4"
-                  />
-                  <div className="flex flex-col text-left">
-                    <span className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
-                      <Leaf className="w-4 h-4 text-[#006c49]" />
-                      Túi Giấy Kraft Tự Phân Hủy
-                    </span>
-                    <span className="text-xs text-slate-600 mt-1 leading-relaxed">
-                      100% giấy tái chế không hạt vi nhựa, đá gel tinh bột ngô tự phân hủy hữu cơ trong sân vườn.
-                    </span>
-                    <span className="text-[11px] font-bold text-slate-500 mt-2">
-                      Không Yêu Cầu Đặt Cọc
-                    </span>
-                  </div>
-                </label>
-              </div>
-            </div>
-
-            {/* Quick 1-Tap Drawer: Forget Something Fresh? */}
-            <div className="bg-[#ebf6f1] p-6 rounded-3xl shadow-sm border border-emerald-100 flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-xs uppercase text-[#006c49] font-extrabold tracking-wider">
-                    Gia Vị & Thảo Mộc Tuyển Chọn
-                  </span>
-                  <h3 className="font-syne text-lg font-bold text-slate-900">
-                    Bạn Có Quên Thêm Món Tươi Sạch Này?
-                  </h3>
-                </div>
-                <span className="text-xs text-slate-500 bg-white px-3 py-1 rounded-full border border-emerald-100">
-                  Thêm Nhanh 1 Chạm
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {QUICK_ADDONS.map((addon) => (
-                  <div
-                    key={addon.id}
-                    className="bg-white p-3.5 rounded-2xl flex flex-col justify-between shadow-sm hover:shadow-md transition-all border border-emerald-100/70"
-                  >
-                    <div className="flex items-center gap-3 mb-3">
-                      <img
-                        src={addon.imageUrl || ''}
-                        alt={addon.name}
-                        className="w-12 h-12 rounded-xl object-cover shrink-0"
-                      />
-                      <div className="flex flex-col min-w-0 text-left">
-                        <span className="font-bold text-xs text-slate-900 truncate">
-                          {addon.name}
-                        </span>
-                        <span className="text-xs text-[#006c49] font-extrabold mt-0.5">
-                          {addon.price.toLocaleString('vi-VN')} đ
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => addToCart(addon, 1)}
-                      className="w-full bg-[#b4efd6] hover:bg-[#10b981] text-[#15503e] hover:text-white text-xs font-bold py-1.5 rounded-full transition-colors flex items-center justify-center gap-1 cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                      <span>Thêm</span>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <CartAddons />
           </section>
 
           {/* ================= RIGHT COLUMN: 5 Cols (Sticky) ================= */}
@@ -538,17 +377,6 @@ export default function CartPage() {
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center text-slate-600">
-                  <span className="flex items-center gap-1">
-                    <span>Đóng gói & Chuỗi lạnh bảo quản</span>
-                    <span title="Kiểm soát nhiệt độ 4°C và phân loại trực tiếp tại vườn" className="inline-flex cursor-help">
-                      <Info className="w-3.5 h-3.5 text-slate-400" />
-                    </span>
-                  </span>
-                  <span className="font-bold text-slate-900">
-                    {coldChainLogisticsFee.toLocaleString('vi-VN')} đ
-                  </span>
-                </div>
 
                 <div className="flex justify-between items-center text-slate-600">
                   <span className="flex items-center gap-1">

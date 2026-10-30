@@ -87,7 +87,17 @@ namespace FoodDelivery.Infrastructure.Data
                 entity.Property(o => o.SubTotal).HasColumnType("decimal(18,2)");
                 entity.Property(o => o.DiscountAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
                 entity.Property(o => o.AppliedCouponCode).HasMaxLength(50).IsRequired(false);
+                entity.Property(o => o.PointDiscount).HasColumnType("DECIMAL(18, 2)");
                 entity.Property(o => o.TotalAmount).HasColumnType("decimal(18,2)");
+                entity.Property(o => o.LeaveAtDoorstep).HasConversion<int>().HasColumnType("NUMBER(1)");
+                entity.Property(o => o.RecipientName).HasMaxLength(150).IsRequired(false);
+                entity.Property(o => o.RecipientPhone).HasMaxLength(20).IsRequired(false);
+                entity.Property(o => o.DeliveryAddress).HasMaxLength(1000).IsRequired(false);
+                entity.Property(o => o.DeliverySlot).HasMaxLength(20).IsRequired(false);
+                entity.Property(o => o.DeliveryNotes).HasMaxLength(500).IsRequired(false);
+                entity.Property(o => o.ShippingFee).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+                entity.Property(o => o.ToteDeposit).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
+                entity.Property(o => o.TipAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
                 entity.Property(o => o.PaymentMethod).HasConversion<string>(); // Lưu Enum dưới dạng String (COD, Online)
                 entity.Property(o => o.Status).HasConversion<string>();
 

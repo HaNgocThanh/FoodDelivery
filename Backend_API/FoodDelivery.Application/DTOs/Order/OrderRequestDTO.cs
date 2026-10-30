@@ -8,5 +8,13 @@ public record OrderRequestDTO(
     string? CouponCode,
     bool UsePoints,
     int UserPointsAvailable,
-    List<OrderItemRequestDTO> Items
+    List<OrderItemRequestDTO> Items,
+    string RecipientName,
+    string RecipientPhone,
+    string DeliveryAddress,
+    string DeliverySlot,
+    string? DeliveryNotes,
+    bool LeaveAtDoorstep,
+    decimal TipAmount,
+    decimal ExpectedTotalAmount
 );

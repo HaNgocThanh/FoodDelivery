@@ -1,3 +1,4 @@
+import { clearSessionCache } from '../api/queryClient';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
@@ -8,6 +9,9 @@ export interface UserInfo {
   fullName: string;
   email: string;
   role: string;
+  phoneNumber?: string;
+  address1?: string;
+  address2?: string;
   loyaltyPoints?: number;
   tier?: MembershipTier;
 }
@@ -67,10 +71,14 @@ export const useAuthStore = create<AuthStoreState>()(
       user: null,
 
       login: (token: string, user: UserInfo) => {
+        clearSessionCache();
+        localStorage.removeItem('auth_token');
         set({ token, user });
       },
 
       logout: () => {
+        clearSessionCache();
+        localStorage.removeItem('auth_token');
         set({ token: null, user: null });
       },
 

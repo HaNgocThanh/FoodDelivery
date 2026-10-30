@@ -5,6 +5,8 @@ namespace FoodDelivery.Domain.Interfaces;
 
 public interface IOrderRepository : IGenericRepository<Order>
 {
+    Task<Order?> GetOrderWithDetailsForUpdateAsync(int orderId, CancellationToken ct = default);
+    Task<bool> TryApproveOnlinePaymentAsync(int orderId, int userId, decimal amount, CancellationToken ct = default);
     Task<bool> AssignShipperAsync(int orderId, int shipperId, CancellationToken ct = default);
     Task<bool> UpdateOrderStatusAsync(int orderId, OrderStatus status, CancellationToken ct = default);
     Task<List<Order>> GetUserOrdersAsync(int userId, CancellationToken ct = default);

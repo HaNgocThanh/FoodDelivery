@@ -1,26 +1,12 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from './api/queryClient';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { HelmetProvider } from 'react-helmet-async';
 import App from './App';
 import './index.css';
-
-// ─── React Query Client ────────────────────────────────────────────────────────
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime:            1000 * 60 * 5, // 5 phút – data được coi là fresh
-      gcTime:               1000 * 60 * 10, // 10 phút – cache giữ lại sau khi unmount
-      retry:                1,              // Retry 1 lần khi query fail
-      refetchOnWindowFocus: false,          // Không refetch khi switch tab
-    },
-    mutations: {
-      retry: 0, // Mutation không retry tự động
-    },
-  },
-});
 
 // ─── Root Mount ───────────────────────────────────────────────────────────────
 const rootEl = document.getElementById('root');

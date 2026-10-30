@@ -14,6 +14,7 @@ using FoodDelivery.Infrastructure.Settings;
 using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -201,6 +202,11 @@ builder.Services.AddSignalR(options =>
 // =============================================
 // BUILD APP
 // =============================================
+var dataProtection = builder.Services.AddDataProtection();
+var keyPath = builder.Configuration["DataProtection:KeyPath"];
+if (!string.IsNullOrWhiteSpace(keyPath))
+    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(keyPath));
+
 var app = builder.Build();
 
 // Seed dữ liệu ban đầu khi ứng dụng khởi động

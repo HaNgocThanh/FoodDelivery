@@ -18,6 +18,16 @@ public class Order
     public OrderStatus Status { get; set; }
     public int? ShipperId { get; set; }
 
+    public string? RecipientName { get; set; }
+    public string? RecipientPhone { get; set; }
+    public string? DeliveryAddress { get; set; }
+    public string? DeliverySlot { get; set; }
+    public string? DeliveryNotes { get; set; }
+    public bool LeaveAtDoorstep { get; set; }
+    public decimal ShippingFee { get; set; }
+    public decimal ToteDeposit { get; set; }
+    public decimal TipAmount { get; set; }
+
     // Navigation properties
     public AppUser? User { get; set; }
     public AppUser? Shipper { get; set; }

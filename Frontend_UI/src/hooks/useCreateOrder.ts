@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient, type QueryClient, type UseMutationOptions } from '@tanstack/react-query';
 import axiosClient from '../api/axiosClient';
 
 export interface OrderItemPayload {
@@ -13,6 +13,14 @@ export interface OrderRequestPayload {
   usePoints?: boolean;
   userPointsAvailable?: number;
   items: OrderItemPayload[];
+  recipientName: string;
+  recipientPhone: string;
+  deliveryAddress: string;
+  deliverySlot: string;
+  deliveryNotes: string;
+  leaveAtDoorstep: boolean;
+  tipAmount: number;
+  expectedTotalAmount: number;
 }
 
 export interface OrderDetailResponse {
@@ -42,11 +50,21 @@ export interface OrderResponse {
 /**
  * Custom Hook đặt hàng sử dụng useMutation từ @tanstack/react-query
  */
-export function useCreateOrder() {
-  return useMutation<OrderResponse, Error, OrderRequestPayload>({
+export function createOrderMutationOptions(queryClient: QueryClient): UseMutationOptions<OrderResponse, Error, OrderRequestPayload> {
+  return {
+    onSuccess: async (_, payload) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['myOrders', payload.userId] }),
+        queryClient.invalidateQueries({ queryKey: ['userProfile', payload.userId] }),
+      ]);
+    },
     mutationFn: async (payload: OrderRequestPayload) => {
       const response = await axiosClient.post<OrderResponse, OrderResponse>('/api/orders', payload);
       return response;
     },
-  });
+  };
+}
+
+export function useCreateOrder() {
+  return useMutation(createOrderMutationOptions(useQueryClient()));
 }

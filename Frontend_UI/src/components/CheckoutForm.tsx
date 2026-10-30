@@ -1,3 +1,4 @@
+import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect, type FormEvent } from 'react';
 import { useCreateOrder, type OrderItemPayload } from '../hooks/useCreateOrder';
 import { useCartStore } from '../stores/useCartStore';
@@ -26,6 +27,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import type { UserProfile } from '../pages/ProfilePage';
 
 export interface ValidateResponse {
   id: number;
@@ -70,7 +72,11 @@ const POINT_VALUE_VND = 1000; // 1 điểm = 1000đ
 const FREE_SHIPPING_THRESHOLD = 300000;
 
 export const CheckoutForm: React.FC = () => {
-  const [userId] = useState<number>(1);
+  const { data: paymentMethods } = useQuery({
+    queryKey: ['paymentMethods'],
+    queryFn: ({ signal }) => axiosClient.get<{ mockOnline: boolean }, { mockOnline: boolean }>('/api/payments/methods', { signal }),
+  });
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<number>(1); // 1 = COD, 2 = Online, 3 = 1-Tap
 
   // Form Thông tin nhận hàng (Step 1)
@@ -78,20 +84,20 @@ export const CheckoutForm: React.FC = () => {
   const user = useAuthStore((state) => state.user);
   const updateUser = useAuthStore((state) => state.updateUser);
 
-  const [isEditingAddress, setIsEditingAddress] = useState<boolean>(false);
-  const [recipientName, setRecipientName] = useState<string>(user?.fullName || 'Elena Vance');
-  const [recipientPhone, setRecipientPhone] = useState<string>((user as any)?.phoneNumber || '(415) 890-2341');
+  const [isEditingAddress, setIsEditingAddress] = useState<boolean>(true);
+  const [recipientName, setRecipientName] = useState<string>(user?.fullName || '');
+  const [recipientPhone, setRecipientPhone] = useState<string>(user?.phoneNumber || '');
   const [deliveryAddress, setDeliveryAddress] = useState<string>(
-    (user as any)?.address || '742 Evergreen Terrace, Apt 4B, Quận 1, TP. Hồ Chí Minh'
+    [user?.address1, user?.address2].filter(Boolean).join(', ')
   );
   const [leaveAtDoorstep, setLeaveAtDoorstep] = useState<boolean>(true);
-  const [gateCode, setGateCode] = useState<string>('#4821');
+  const [gateCode, setGateCode] = useState<string>('');
 
   // Ca giao Eco-Courier (Step 2)
   const [selectedSlot, setSelectedSlot] = useState<'slot-a' | 'slot-b' | 'slot-c'>('slot-a');
 
   // Tiền tip tài xế
-  const [currentTip, setCurrentTip] = useState<number>(20000); // 20.000 đ mặc định
+  const [currentTip, setCurrentTip] = useState<number>(0); // Tiền tip do khách chủ động chọn
 
   // Đọc giỏ hàng từ Zustand
   const { items: cartItems, clearCart, getTotalOriginalPrice } = useCartStore();
@@ -109,18 +115,22 @@ export const CheckoutForm: React.FC = () => {
   // Sync profile data
   useEffect(() => {
     let cancelled = false;
-    if (token && (user?.loyaltyPoints == null || user?.tier == null)) {
+    if (token) {
       axiosClient
-        .get('/api/users/profile')
-        .then((profile: any) => {
+        .get<UserProfile, UserProfile>('/api/users/profile')
+        .then((profile) => {
           if (cancelled) return;
           updateUser({
+            fullName: profile.fullName,
+            phoneNumber: profile.phoneNumber,
+            address1: profile.address1,
+            address2: profile.address2,
             loyaltyPoints: profile?.loyaltyPoints ?? 0,
             tier: normalizeTier(profile?.tier),
           });
-          if (profile?.fullName) setRecipientName(profile.fullName);
-          if (profile?.phoneNumber) setRecipientPhone(profile.phoneNumber);
-          if (profile?.address) setDeliveryAddress(profile.address);
+          setRecipientName(current => current || profile.fullName);
+          setRecipientPhone(current => current || profile.phoneNumber);
+          setDeliveryAddress(current => current || [profile.address1, profile.address2].filter(Boolean).join(', '));
         })
         .catch(() => {
           /* silent */
@@ -129,7 +139,7 @@ export const CheckoutForm: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, updateUser]);
 
   const { mutate: createOrder, isPending, isSuccess, isError, error, data: orderResult } = useCreateOrder();
 
@@ -138,7 +148,7 @@ export const CheckoutForm: React.FC = () => {
 
   // Phí vận chuyển và tiền cọc khay giữ nhiệt tuần hoàn
   const isFreeShipping = originalTotal >= FREE_SHIPPING_THRESHOLD;
-  const shippingFee = originalTotal === 0 ? 0 : isFreeShipping ? 0 : 25000;
+  const shippingFee = cartItems.length === 0 || isFreeShipping ? 0 : 25000;
   const toteDeposit = cartItems.length > 0 ? 15000 : 0;
 
   // Tính giảm giá từ voucher
@@ -156,6 +166,8 @@ export const CheckoutForm: React.FC = () => {
     }
   }
 
+  discountAmount = Math.round((discountAmount + Number.EPSILON) * 100) / 100;
+
   // Tính điểm tích lũy
   const userPointsAvailable: number = user?.loyaltyPoints ?? 0;
   const userTier: MembershipTier = normalizeTier(user?.tier);
@@ -171,10 +183,10 @@ export const CheckoutForm: React.FC = () => {
   const pointDiscount = pointsToUse * POINT_VALUE_VND;
 
   // Tổng cộng cuối cùng
-  const finalTotal = Math.max(
+  const finalTotal = Math.round((Math.max(
     0,
-    originalTotal + shippingFee + toteDeposit + currentTip - discountAmount - pointDiscount
-  );
+    originalTotal - discountAmount - pointDiscount
+  ) + shippingFee + toteDeposit + currentTip + Number.EPSILON) * 100) / 100;
 
   // Toggle điểm tích lũy
   const handleTogglePoints = (next: boolean) => {
@@ -234,7 +246,17 @@ export const CheckoutForm: React.FC = () => {
   // Gửi đơn hàng
   const handleSubmitOrder = (e: FormEvent) => {
     e.preventDefault();
-    if (cartItems.length === 0) return;
+    if (cartItems.length === 0 || isPending) return;
+    setValidationError(null);
+    if (!token || !user) {
+      setValidationError('Vui lòng đăng nhập trước khi đặt hàng.');
+      return;
+    }
+    if (!recipientName.trim() || !/^\+?[0-9][0-9 .()-]{6,19}$/.test(recipientPhone.trim()) || !deliveryAddress.trim()) {
+      setIsEditingAddress(true);
+      setValidationError('Vui lòng nhập họ tên, số điện thoại hợp lệ và địa chỉ nhận hàng.');
+      return;
+    }
 
     const itemsPayload: OrderItemPayload[] = cartItems.map((item) => ({
       productId: item.id,
@@ -245,7 +267,15 @@ export const CheckoutForm: React.FC = () => {
 
     createOrder(
       {
-        userId,
+        userId: user.id,
+        recipientName: recipientName.trim(),
+        recipientPhone: recipientPhone.trim(),
+        deliveryAddress: deliveryAddress.trim(),
+        deliverySlot: selectedSlot,
+        deliveryNotes: gateCode.trim(),
+        leaveAtDoorstep,
+        tipAmount: currentTip,
+        expectedTotalAmount: finalTotal,
         paymentMethod: finalPaymentMethod,
         couponCode: appliedPromotion?.code ?? null,
         usePoints,
@@ -264,7 +294,6 @@ export const CheckoutForm: React.FC = () => {
             try {
               const res = await axiosClient.post<{ payUrl: string }, { payUrl: string }>('/api/payments/mock-url', {
                 orderId: data.id,
-                amount: data.totalAmount,
               });
               if (res?.payUrl) {
                 window.location.href = res.payUrl;
@@ -298,7 +327,7 @@ export const CheckoutForm: React.FC = () => {
   };
 
   // ────────────────────────── NHÁNH 1: ĐẶT HÀNG THÀNH CÔNG (COD) ──────────────────────────
-  if (isSuccess && orderResult && (paymentMethod === 1 || paymentMethod === 3)) {
+  if (isSuccess && orderResult && paymentMethod === 1) {
     return (
       <div className="w-full max-w-3xl mx-auto my-8 bg-white rounded-3xl p-8 sm:p-12 shadow-sm border border-emerald-100 text-center space-y-6">
         <div className="w-20 h-20 mx-auto rounded-full bg-[#ebf6f1] text-[#006c49] flex items-center justify-center border border-emerald-200 shadow-sm">
@@ -449,6 +478,7 @@ export const CheckoutForm: React.FC = () => {
         </nav>
       </div>
 
+      {validationError && <p role="alert" className="rounded-lg bg-red-50 p-4 text-red-700">{validationError}</p>}
       {/* Thông báo Lỗi Đặt hàng (nếu có) */}
       {isError && error && (
         <div
@@ -499,6 +529,7 @@ export const CheckoutForm: React.FC = () => {
                   <label className="block text-[11px] font-bold text-slate-600 mb-1">Họ tên người nhận:</label>
                   <input
                     type="text"
+                    maxLength={150}
                     value={recipientName}
                     onChange={(e) => setRecipientName(e.target.value)}
                     className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#006c49]"
@@ -508,6 +539,7 @@ export const CheckoutForm: React.FC = () => {
                   <label className="block text-[11px] font-bold text-slate-600 mb-1">Số điện thoại:</label>
                   <input
                     type="text"
+                    maxLength={20}
                     value={recipientPhone}
                     onChange={(e) => setRecipientPhone(e.target.value)}
                     className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#006c49]"
@@ -517,6 +549,7 @@ export const CheckoutForm: React.FC = () => {
                   <label className="block text-[11px] font-bold text-slate-600 mb-1">Địa chỉ giao hàng:</label>
                   <input
                     type="text"
+                    maxLength={1000}
                     value={deliveryAddress}
                     onChange={(e) => setDeliveryAddress(e.target.value)}
                     className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900 focus:outline-none focus:border-[#006c49]"
@@ -526,6 +559,7 @@ export const CheckoutForm: React.FC = () => {
                   <label className="block text-[11px] font-bold text-slate-600 mb-1">Mã vào cổng / Ghi chú giao hàng:</label>
                   <input
                     type="text"
+                    maxLength={500}
                     value={gateCode}
                     onChange={(e) => setGateCode(e.target.value)}
                     placeholder="Ví dụ: #4821 hoặc Gọi trước khi giao"
@@ -837,7 +871,7 @@ export const CheckoutForm: React.FC = () => {
                 </div>
               </div>
 
-              {/* Online Payment (VNPAY / Credit Card) */}
+              {paymentMethods?.mockOnline && (
               <div
                 onClick={() => setPaymentMethod(2)}
                 className={`p-4 rounded-2xl cursor-pointer transition-all border ${
@@ -858,56 +892,21 @@ export const CheckoutForm: React.FC = () => {
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-sm text-slate-900">
-                          Thanh toán trực tuyến (VNPAY / Thẻ Visa / ATM)
+                          Thanh toán trực tuyến thử nghiệm
                         </span>
                         <span className="text-[10px] font-bold bg-emerald-100 text-[#006c49] px-2 py-0.2 rounded uppercase">
-                          Cổng bảo mật
+                          Thử nghiệm
                         </span>
                       </div>
                       <p className="text-xs text-slate-500 mt-0.5">
-                        Xử lý tức thì qua cổng ngân hàng hoặc thẻ thanh toán quốc tế
+                        Mô phỏng thanh toán, không trừ tiền trong tài khoản ngân hàng
                       </p>
                     </div>
                   </div>
                   <CreditCard className="w-5 h-5 text-[#006c49]" />
                 </div>
               </div>
-
-              {/* Digital Wallet / 1-Tap */}
-              <div
-                onClick={() => setPaymentMethod(3)}
-                className={`p-4 rounded-2xl cursor-pointer transition-all border ${
-                  paymentMethod === 3
-                    ? 'bg-[#ebf6f1] border-emerald-300 shadow-sm'
-                    : 'bg-white hover:bg-slate-50 border-slate-200'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={`w-5 h-5 rounded-full flex items-center justify-center text-white ${
-                        paymentMethod === 3 ? 'bg-[#006c49]' : 'border border-slate-300'
-                      }`}
-                    >
-                      {paymentMethod === 3 && <Check className="w-3.5 h-3.5" />}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm text-slate-900">
-                          Ví Điện Tử 1-Chạm (Apple Pay / Google Pay / MoMo)
-                        </span>
-                        <span className="text-[10px] font-bold bg-slate-100 text-slate-600 px-2 py-0.2 rounded-full">
-                          Sinh trắc học
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        Xác thực vân tay hoặc khuôn mặt nhanh chóng
-                      </p>
-                    </div>
-                  </div>
-                  <Zap className="w-5 h-5 text-[#006c49]" />
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Tip the Courier & Pack Crew */}

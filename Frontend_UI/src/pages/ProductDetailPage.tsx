@@ -118,9 +118,9 @@ export default function ProductDetailPage() {
 
   // Query check purchase status
   const { data: myOrders = [] } = useQuery<any[]>({
-    queryKey: ['myOrders'],
-    queryFn: async () => {
-      return await axiosClient.get<any[], any[]>('/api/orders/my-orders');
+    queryKey: ['myOrders', user?.id],
+    queryFn: async ({ signal }) => {
+      return await axiosClient.get<any[], any[]>('/api/orders/my-orders', { signal });
     },
     enabled: !!user,
   });
