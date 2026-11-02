@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-30T09:33:38.289305+00:00",
+  "generatedAt": "2026-11-02T07:56:48.6558112+00:00",
   "title": "Design System: FoodDelivery",
   "extensions": {
     "colorMeta": {
@@ -162,27 +162,27 @@
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "Homepage and public shell display role."
+        "purpose": "Homepage, public shell and shared catalog display role."
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Homepage and public shell headline role."
+        "purpose": "Homepage, public shell and shared catalog headline role."
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Homepage and public shell title role."
+        "purpose": "Homepage, public shell and shared catalog title role."
       },
       "price": {
         "displayName": "Price",
-        "purpose": "Homepage and public shell price role."
+        "purpose": "Homepage, public shell and shared catalog price role."
       },
       "body": {
         "displayName": "Body",
-        "purpose": "Homepage and public shell body role."
+        "purpose": "Homepage, public shell and shared catalog body role."
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Homepage and public shell label role."
+        "purpose": "Homepage, public shell and shared catalog label role."
       }
     },
     "shadows": [],
@@ -205,6 +205,14 @@
       {
         "name": "compact-desktop",
         "value": "1199px"
+      },
+      {
+        "name": "catalog-filters-inline",
+        "value": "1023px"
+      },
+      {
+        "name": "catalog-filters-stacked",
+        "value": "479px"
       }
     ]
   },
@@ -213,7 +221,7 @@
       "name": "Add button",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "Add button from the implemented homepage/public shell.",
+      "description": "Add button from the implemented homepage/public shell/shared catalog.",
       "html": "<button class=\"ds-add\">Thêm</button>",
       "css": ".ds-add{font-family:var(--font-sans,Inter,sans-serif);font-size:13px;background:#047857;color:white;padding:10px 14px;min-height:44px;border:0;border-radius:8px;font-weight:600}.ds-add:hover{background:#065f46}.ds-add:focus-visible{outline:2px solid #047857;outline-offset:3px}.ds-add:disabled{background:#e2e8f0;color:#475569}"
     },
@@ -221,7 +229,7 @@
       "name": "Shopping action",
       "kind": "button",
       "refersTo": "button-shopping",
-      "description": "Shopping action from the implemented homepage/public shell.",
+      "description": "Shopping action from the implemented homepage/public shell/shared catalog.",
       "html": "<a class=\"ds-shopping\" href=\"#\">Mua sắm ngay</a>",
       "css": ".ds-shopping{font-family:var(--font-sans,Inter,sans-serif);font-size:13px;display:inline-flex;background:var(--color-cta,#f59e0b);color:var(--color-text,#0f172a);padding:13px 18px;border-radius:8px;text-decoration:none;font-weight:700}.ds-shopping:hover{background:#fbbf24}.ds-shopping:focus-visible{outline:2px solid #047857;outline-offset:3px}"
     },
@@ -229,7 +237,7 @@
       "name": "Search field",
       "kind": "input",
       "refersTo": "search-input",
-      "description": "Search field from the implemented homepage/public shell.",
+      "description": "Search field from the implemented homepage/public shell/shared catalog.",
       "html": "<input class=\"ds-search\" aria-label=\"Tìm sản phẩm\" placeholder=\"Tìm sản phẩm…\">",
       "css": ".ds-search{font-family:var(--font-sans,Inter,sans-serif);font-size:13px;padding:11px 16px;background:var(--color-bg,#f8fafc);border:1px solid #cbd5e1;border-radius:8px;color:var(--color-text,#0f172a);caret-color:#047857}.ds-search::placeholder{color:#475569}.ds-search:focus-visible{outline:2px solid #047857;outline-offset:3px}"
     },
@@ -237,7 +245,7 @@
       "name": "Selected category",
       "kind": "chip",
       "refersTo": "category-selected",
-      "description": "Selected category from the implemented homepage/public shell.",
+      "description": "Selected category from the implemented homepage/public shell/shared catalog.",
       "html": "<button class=\"ds-category\" aria-pressed=\"true\">Tất cả</button>",
       "css": ".ds-category{font-family:var(--font-sans,Inter,sans-serif);font-size:13px;background:#047857;color:white;padding:11px 18px;min-height:44px;border:0;border-radius:8px}.ds-category:hover{background:#065f46}.ds-category:focus-visible{outline:2px solid #047857;outline-offset:3px}"
     },
@@ -245,7 +253,7 @@
       "name": "Product card",
       "kind": "card",
       "refersTo": "product-card",
-      "description": "Product card from the implemented homepage/public shell.",
+      "description": "Product card from the implemented homepage/public shell/shared catalog.",
       "html": "<article class=\"ds-card\"><h3>Tên sản phẩm</h3><strong>Giá sản phẩm</strong><p>Tồn kho từ catalog</p></article>",
       "css": ".ds-card{font-family:var(--font-sans,Inter,sans-serif);font-size:13px;background:white;border:1px solid var(--color-border,#e2e8f0);border-radius:14px;padding:18px;max-width:250px}.ds-card h3{font-size:16px;font-weight:600;line-height:1.5;margin:0 0 10px}.ds-card strong{font-size:21px;color:#047857}.ds-card p{font-size:12px;color:#475569}"
     },
@@ -253,14 +261,14 @@
       "name": "Public navigation",
       "kind": "nav",
       "refersTo": "navigation",
-      "description": "Public navigation from the implemented homepage/public shell.",
+      "description": "Public navigation from the implemented homepage/public shell/shared catalog.",
       "html": "<nav class=\"ds-nav\"><a href=\"#\">Tra cứu đơn</a><a href=\"#\">Đăng nhập</a></nav>",
       "css": ".ds-nav{font-family:var(--font-sans,Inter,sans-serif);font-size:13px;display:flex;gap:18px;color:var(--color-text,#0f172a)}.ds-nav a{padding:12px 0;text-decoration:none;color:inherit}.ds-nav a:hover{color:#047857}.ds-nav a:focus-visible{outline:2px solid #047857;outline-offset:3px}"
     }
   ],
   "narrative": {
     "northStar": "FoodDelivery — clear shopping",
-    "overview": "A concise shopping interface: real food photography, clear prices and available stock. Emerald carries navigation and shopping feedback; amber marks the main shopping action. Short Vietnamese labels replace promotional paragraphs.\n\nThis records the redesigned homepage and shared public header/footer. Search, product details, cart, checkout and admin interiors retain their existing styling. Global legacy tokens remain intact: root primary is Emerald-500, while this surface uses its existing darker Emerald-700 token for readable controls and prices.",
+    "overview": "A concise shopping interface: real food photography, clear prices and available stock. Emerald carries navigation and shopping feedback; amber marks the main shopping action. Short Vietnamese labels replace promotional paragraphs.\n\nThis records the redesigned homepage, shared public header/footer and shared catalog primitives used by the product list (/products) and search (/search). Product details, cart, checkout and admin interiors retain their existing styling. Global legacy tokens remain intact: root primary is Emerald-500, while these surfaces use its existing darker Emerald-700 token for readable controls and prices.",
     "keyCharacteristics": [
       "Concise Vietnamese copy",
       "Real catalog photography and prices",
@@ -274,7 +282,7 @@
       },
       {
         "name": "The Flat Surface Rule",
-        "body": "Homepage cards use a fine border without decorative shadows.",
+        "body": "Shared product cards use a fine border without decorative shadows.",
         "section": "elevation"
       }
     ],
@@ -286,7 +294,7 @@
     "donts": [
       "Don't replace API failures with purchasable sample products.",
       "Don't add unsupported ratings, certifications or delivery promises.",
-      "Don't extend the new homepage styling to legacy interiors without reviewing them."
+      "Don't extend the shared shopping styling to remaining legacy interiors without reviewing them."
     ]
   }
 }

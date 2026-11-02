@@ -19,7 +19,7 @@ FoodDelivery phục vụ chọn và đặt thực phẩm. Người dùng đã x�
 - React, TypeScript, Vite, TanStack Query và Zustand; ASP.NET Core API với Oracle.
 - Giữ các luồng đăng nhập, giỏ hàng, checkout và các bản sửa P1/P2 đã hoàn thiện.
 - Dữ liệu mua được phải đến từ catalog API; không giới thiệu dữ liệu minh họa như sản phẩm có thể đặt.
-- Phạm vi thiết kế đầu tiên: trang chủ và phần điều hướng/khung trang liên quan; chưa thiết kế lại checkout hay quản trị.
+- Phạm vi đã triển khai: trang chủ, khung điều hướng công khai, danh sách sản phẩm và tìm kiếm dùng chung thành phần catalog. Các bước chi tiết sản phẩm, giỏ, checkout, tài khoản và quản trị thuộc những đợt tiếp theo.
 - Thanh toán online hiện là mock trong Development.
 
 ## Brand Commitments

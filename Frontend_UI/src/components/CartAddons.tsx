@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Plus, Loader2 } from 'lucide-react';
 import axiosClient from '../api/axiosClient';
 import { useCartStore } from '../stores/useCartStore';
-import type { ProductItem } from '../pages/ProductManagementPage';
+import type { ProductItem } from '../types/catalog';
 
 export function CartAddons() {
   const items = useCartStore(state => state.items);

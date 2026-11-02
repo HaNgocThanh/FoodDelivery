@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Header } from './Header';
 import { Footer } from './Footer';
 
@@ -17,7 +17,11 @@ interface PublicLayoutProps {
  * navigate đi kèm. Mọi page bên trong đều có thể search từ header.
  */
 export function PublicLayout({ children }: PublicLayoutProps) {
-  const [searchInput, setSearchInput] = useState('');
+  const location = useLocation();
+  const [searchDraft, setSearchDraft] = useState<{ key: string; value: string } | null>(null);
+  const routeKeyword = location.pathname === '/search' || location.pathname === '/products'
+    ? new URLSearchParams(location.search).get('keyword') ?? '' : '';
+  const searchInput = searchDraft?.key === location.key ? searchDraft.value : routeKeyword;
   const navigate = useNavigate();
 
   const handleSearch = (e: React.FormEvent) => {
@@ -31,7 +35,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
     <div className="min-h-screen bg-white text-slate-900 font-sans flex flex-col">
       <Header
         searchInput={searchInput}
-        onSearchInputChange={setSearchInput}
+        onSearchInputChange={(value) => setSearchDraft({ key: location.key, value })}
         onSearchSubmit={handleSearch}
       />
       <main className="flex-1 w-full">{children}</main>
