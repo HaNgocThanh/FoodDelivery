@@ -2,11 +2,10 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, ImageOff, Minus, Plus, ShoppingCart } from 'lucide-react';
 import type { ProductItem } from '../../types/catalog';
+import { formatCurrency } from '../../utils/formatCurrency';
 import '../../styles/shop.css';
 
-const currency = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' });
-
-function ProductPhoto({ product, priority = false }: { product: ProductItem; priority?: boolean }) {
+export function ProductPhoto({ product, priority = false }: { product: ProductItem; priority?: boolean }) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   return product.imageUrl && failedUrl !== product.imageUrl ? (
     <img src={product.imageUrl} alt={product.name} loading={priority ? 'eager' : 'lazy'} width="400" height="300" onError={() => setFailedUrl(product.imageUrl || null)} />
@@ -28,7 +27,7 @@ export function ProductCard({ product, quantity, remaining, added, featured, onS
     </Link>
     <div className="shop-product-body">
       <h3><Link to={`/products/${product.id}`}>{product.name}</Link></h3>
-      <strong className="shop-price">{currency.format(product.price)}</strong>
+      <strong className="shop-price">{formatCurrency(product.price)}</strong>
       <span className="shop-stock">{available ? `Còn ${product.stockQuantity} sản phẩm` : 'Tạm hết hàng'}</span>
       <div className="shop-product-actions">
         <div className="shop-quantity" aria-label={`Số lượng ${product.name}`}>

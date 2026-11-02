@@ -1,11 +1,11 @@
 ---
 name: "FoodDelivery"
-description: "Concise grocery shopping UI — homepage, public shell and shared catalog"
+description: "Concise grocery shopping UI — homepage, public shell, catalog and product details"
 colors: {"primary": "#047857", "primary-deep": "#065f46", "primary-ink": "#064e3b", "primary-tint": "#ecfdf5", "cta": "#f59e0b", "cta-hover": "#fbbf24", "surface": "#ffffff", "surface-soft": "#f8fafc", "border": "#e2e8f0", "text": "#0f172a", "text-muted": "#475569"}
 typography: {"display": {"fontFamily": "Inter, sans-serif", "fontSize": "clamp(28px, 3vw, 44px)", "fontWeight": 800, "lineHeight": 1.16, "letterSpacing": "-0.04em"}, "headline": {"fontFamily": "Inter, sans-serif", "fontSize": "28px", "fontWeight": 700, "letterSpacing": "-0.03em"}, "title": {"fontFamily": "Inter, sans-serif", "fontSize": "16px", "fontWeight": 600, "lineHeight": 1.5}, "price": {"fontFamily": "Inter, sans-serif", "fontSize": "21px", "fontWeight": 750, "lineHeight": 1.4}, "body": {"fontFamily": "Inter, sans-serif", "fontSize": "14px"}, "label": {"fontFamily": "Inter, sans-serif", "fontSize": "13px", "fontWeight": 600}}
 rounded: {"control": "8px", "card": "14px", "hero": "16px"}
 spacing: {"xs": "8px", "sm": "14px", "md": "16px", "lg": "24px", "xl": "32px", "desktop-gutter": "48px"}
-components: {"button-primary": {"backgroundColor": "{colors.primary}", "textColor": "{colors.surface}", "rounded": "{rounded.control}", "padding": "10px 14px", "typography": "{typography.label}"}, "button-shopping": {"backgroundColor": "{colors.cta}", "textColor": "{colors.text}", "rounded": "{rounded.control}", "padding": "13px 18px"}, "search-input": {"backgroundColor": "{colors.surface-soft}", "textColor": "{colors.text}", "rounded": "{rounded.control}"}, "category-selected": {"backgroundColor": "{colors.primary}", "textColor": "{colors.surface}", "rounded": "{rounded.control}", "padding": "11px 18px"}, "product-card": {"backgroundColor": "{colors.surface}", "rounded": "{rounded.card}", "padding": "18px"}, "navigation": {"textColor": "{colors.text}", "typography": "{typography.label}"}}
+components: {"button-primary":{"backgroundColor":"{colors.primary}","textColor":"{colors.surface}","rounded":"{rounded.control}","padding":"10px 14px","typography":"{typography.label}"},"button-shopping":{"backgroundColor":"{colors.cta}","textColor":"{colors.text}","rounded":"{rounded.control}","padding":"13px 18px"},"search-input":{"backgroundColor":"{colors.surface-soft}","textColor":"{colors.text}","rounded":"{rounded.control}"},"category-selected":{"backgroundColor":"{colors.primary}","textColor":"{colors.surface}","rounded":"{rounded.control}","padding":"11px 18px"},"product-card":{"backgroundColor":"{colors.surface}","rounded":"{rounded.card}","padding":"18px"},"navigation":{"textColor":"{colors.text}","typography":"{typography.label}"},"community-tabs":{"textColor":"{colors.primary}"},"community-input":{"rounded":"{rounded.control}","padding":"12px 14px","textColor":"{colors.text}","backgroundColor":"{colors.surface}"}}
 ---
 
 ## Overview
@@ -14,7 +14,7 @@ components: {"button-primary": {"backgroundColor": "{colors.primary}", "textColo
 
 A concise shopping interface: real food photography, clear prices and available stock. Emerald carries navigation and shopping feedback; amber marks the main shopping action. Short Vietnamese labels replace promotional paragraphs.
 
-This records the redesigned homepage, shared public header/footer and shared catalog primitives used by the product list (/products) and search (/search). Product details, cart, checkout and admin interiors retain their existing styling. Global legacy tokens remain intact: root primary is Emerald-500, while these surfaces use its existing darker Emerald-700 token for readable controls and prices.
+This records the redesigned homepage, shared public header/footer, shared catalog primitives used by the product list (/products) and search (/search), and product details (/products/:slug). Cart, checkout, account and admin interiors retain their existing styling. Global legacy tokens remain intact: root primary is Emerald-500, while these surfaces use its existing darker Emerald-700 token for readable controls and prices.
 
 **Key Characteristics:**
 - Concise Vietnamese copy
@@ -29,11 +29,15 @@ Primary: emerald controls and prices; deeper emerald hover; darkest emerald disp
 
 Inter is the pinned brand font for display, body and controls. The frontmatter records desktop roles. Featured titles use 14px; mobile catalog titles use 14px, prices 20px, and section headings 23px. The mobile hero uses a 25–34px clamp, with a 30px heading below 361px. Product names wrap to two visible lines and remain complete in link text. Prices use tabular numerals.
 
+Product detail names wrap completely rather than using the card's two-line limit. They use a 28–38px clamp on desktop, 30px below 1200px, 28px on phone and 25px at 360px or narrower. Detail prices use 32px on desktop and 30px on phone. Descriptions and community posts use 14px with 1.8 line-height; descriptions stay within 75ch.
+
 **The Content First Rule.** Use photographs, prices and stock to explain the offer; avoid long promotional sections.
 
 ## Layout
 
 Homepage, catalog pages and header cap at 1440px. Horizontal gutters are 48px on desktop, 32px below 1200px, and 20px below 768px; the narrowest homepage/catalog/header use 16px. The homepage catalog uses four columns on desktop and two below 768px. Product list and search pair a sticky filter sidebar with four product columns on desktop; below 1200px they use three product columns, and below 1024px filters expand inline above results. Below 768px the product grid uses two columns; expanded filters stack into one column below 480px. Card gaps are 24px, then 18px, then 14px. Shared footer bottom aligns to its content gutters. Route-specific opening composition belongs in the surface brief.
+
+Product details share the 1440px cap and gutter steps, with 16px gutters at 360px or narrower. Desktop pairs a 4:3 photograph with purchase information in a 1.1:1 split and a 64px gap, reduced to 40px below 1200px. Below 768px, photograph and information stack with a 24px gap; community form and posts also stack. Below 480px quantity and add controls become separate full-width rows. Description and community sections use fine top rules and spacing instead of additional promotional panels.
 
 ## Elevation & Depth
 
@@ -51,6 +55,9 @@ Controls use gently curved corners, cards larger corners, and photographic intro
 - Search: pale field with fine border, emerald icon and focus-within outline. It remains available on mobile. On product list and search routes, the shared header reflects the URL keyword after navigation, browser history changes and reload; local edits remain a draft until submitted.
 - Categories: horizontally scrollable buttons; pressed state uses emerald with white text.
 - Product cards: photo, two-line linked name, price, stock, quantity and add action. Missing photographs have an explicit placeholder. Out-of-stock controls disable. Quantity controls clamp to remaining stock after cart contents.
+- Product details: one API photograph uses the shared photo component and missing-image treatment; no fabricated gallery or bundle. The name, actual price, stock and available origin/category precede stock-aware quantity, add action and subtotal. The same catalog selection logic subtracts cart contents, disables unavailable purchases and announces additions. A full-cart notice links to the cart. Local product drafts reset on route changes.
+- Descriptions: render the actual API description with preserved line breaks; descriptions longer than 360 characters sit inside native expandable details. Missing descriptions have a concise explicit message.
+- Community: real reviews and questions appear in compact underline tabs. The selected tab has emerald text and rule; Left/Right switch tabs and Home/End reach the first/last tab while moving focus. Review stars are a native labeled radio group with 44px targets and visible keyboard focus. Guests see login links; review forms require a completed purchase, while authenticated users can ask questions. Account changes reset community drafts. Submission disables pending controls and provides success/error feedback; product, purchase-history and Q&A loading failures expose retry actions. Empty lists remain explicit rather than becoming sample content.
 - Catalog filters: real API categories, applied minimum/maximum prices and sort order live in the URL alongside the keyword, so applied browsing state survives reload and Back/Forward. Active category and price filters can be removed individually; clearing filters preserves the keyword and sort. Invalid price ranges show an explicit error. Tablet and phone filters expand inline rather than covering results.
 - Navigation: compact brand, tracking, account and cart. Mobile hides secondary text while keeping accessible names. Support launcher sits beside search on mobile; the open panel remains fixed. Desktop retains floating support.
 - Footer: concise brand, public links and existing contact details; no implementation jargon or unsupported policy links.

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-02T07:56:48.6558112+00:00",
+  "generatedAt": "2026-11-02T15:29:55.2326943+07:00",
   "title": "Design System: FoodDelivery",
   "extensions": {
     "colorMeta": {
@@ -162,27 +162,27 @@
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "Homepage, public shell and shared catalog display role."
+        "purpose": "Homepage, public shell and shared catalog and product detail display role."
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Homepage, public shell and shared catalog headline role."
+        "purpose": "Homepage, public shell and shared catalog and product detail headline role."
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Homepage, public shell and shared catalog title role."
+        "purpose": "Homepage, public shell and shared catalog and product detail title role."
       },
       "price": {
         "displayName": "Price",
-        "purpose": "Homepage, public shell and shared catalog price role."
+        "purpose": "Homepage, public shell and shared catalog and product detail price role."
       },
       "body": {
         "displayName": "Body",
-        "purpose": "Homepage, public shell and shared catalog body role."
+        "purpose": "Homepage, public shell and shared catalog and product detail body role."
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Homepage, public shell and shared catalog label role."
+        "purpose": "Homepage, public shell and shared catalog and product detail label role."
       }
     },
     "shadows": [],
@@ -264,11 +264,27 @@
       "description": "Public navigation from the implemented homepage/public shell/shared catalog.",
       "html": "<nav class=\"ds-nav\"><a href=\"#\">Tra cứu đơn</a><a href=\"#\">Đăng nhập</a></nav>",
       "css": ".ds-nav{font-family:var(--font-sans,Inter,sans-serif);font-size:13px;display:flex;gap:18px;color:var(--color-text,#0f172a)}.ds-nav a{padding:12px 0;text-decoration:none;color:inherit}.ds-nav a:hover{color:#047857}.ds-nav a:focus-visible{outline:2px solid #047857;outline-offset:3px}"
+    },
+    {
+      "refersTo": "community-tabs",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\" aria-label=\"Đánh giá và hỏi đáp\"><button role=\"tab\" aria-selected=\"true\">Đánh giá (0)</button><button role=\"tab\" aria-selected=\"false\" tabindex=\"-1\">Hỏi đáp (0)</button></div>",
+      "name": "Community tabs",
+      "kind": "custom",
+      "css": ".ds-tabs{display:flex;gap:28px;border-bottom:1px solid #e2e8f0;font-family:var(--font-sans,Inter,sans-serif)}.ds-tabs button{background:transparent;border:0;border-bottom:2px solid transparent;min-height:48px;padding:12px 0;color:#475569;font-size:16px;font-weight:600}.ds-tabs button[aria-selected=\"true\"]{color:#047857;border-bottom-color:#047857}.ds-tabs button:hover{color:#047857}.ds-tabs button:focus-visible{outline:2px solid #047857;outline-offset:3px}",
+      "description": "Review and Q&A tabs use emerald selection, underline and roving keyboard focus; Left/Right and Home/End move between tabs."
+    },
+    {
+      "refersTo": "community-input",
+      "html": "<label class=\"ds-community-label\">Câu hỏi của bạn<textarea class=\"ds-community-input\" rows=\"4\" placeholder=\"Bạn muốn biết thêm điều gì?\"></textarea></label>",
+      "name": "Community text field",
+      "kind": "input",
+      "css": ".ds-community-label{font-family:var(--font-sans,Inter,sans-serif);font-size:13px;color:#475569}.ds-community-input{display:block;width:100%;margin-top:8px;padding:12px 14px;border:1px solid #cbd5e1;background:white;border-radius:8px;font-family:var(--font-sans,Inter,sans-serif);font-size:14px;color:#0f172a;resize:vertical;min-height:112px}.ds-community-input::placeholder{color:#475569}.ds-community-input:focus-visible{outline:2px solid #047857;outline-offset:3px}.ds-community-input:disabled{cursor:wait}",
+      "description": "Labeled review or question text area; submissions show pending, success and error states."
     }
   ],
   "narrative": {
     "northStar": "FoodDelivery — clear shopping",
-    "overview": "A concise shopping interface: real food photography, clear prices and available stock. Emerald carries navigation and shopping feedback; amber marks the main shopping action. Short Vietnamese labels replace promotional paragraphs.\n\nThis records the redesigned homepage, shared public header/footer and shared catalog primitives used by the product list (/products) and search (/search). Product details, cart, checkout and admin interiors retain their existing styling. Global legacy tokens remain intact: root primary is Emerald-500, while these surfaces use its existing darker Emerald-700 token for readable controls and prices.",
+    "overview": "A concise shopping interface: real food photography, clear prices and available stock. Emerald carries navigation and shopping feedback; amber marks the main shopping action. Short Vietnamese labels replace promotional paragraphs.\n\nThis records the redesigned homepage, shared public header/footer, shared catalog primitives used by the product list (/products) and search (/search), and product details (/products/:slug). Cart, checkout, account and admin interiors retain their existing styling. Global legacy tokens remain intact: root primary is Emerald-500, while these surfaces use its existing darker Emerald-700 token for readable controls and prices.",
     "keyCharacteristics": [
       "Concise Vietnamese copy",
       "Real catalog photography and prices",
