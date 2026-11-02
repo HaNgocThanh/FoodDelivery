@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-02T08:55:40.842Z",
+  "generatedAt": "2026-11-02T09:31:05.420Z",
   "title": "Design System: FoodDelivery",
   "extensions": {
     "colorMeta": {
@@ -162,27 +162,27 @@
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "Homepage, public shell and shared catalog, product detail and cart display role."
+        "purpose": "Homepage, public shell and shared catalog, product detail, cart and checkout display role."
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Homepage, public shell and shared catalog, product detail and cart headline role."
+        "purpose": "Homepage, public shell and shared catalog, product detail, cart and checkout headline role."
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Homepage, public shell and shared catalog, product detail and cart title role."
+        "purpose": "Homepage, public shell and shared catalog, product detail, cart and checkout title role."
       },
       "price": {
         "displayName": "Price",
-        "purpose": "Homepage, public shell and shared catalog, product detail and cart price role."
+        "purpose": "Homepage, public shell and shared catalog, product detail, cart and checkout price role."
       },
       "body": {
         "displayName": "Body",
-        "purpose": "Homepage, public shell and shared catalog, product detail and cart body role."
+        "purpose": "Homepage, public shell and shared catalog, product detail, cart and checkout body role."
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Homepage, public shell and shared catalog, product detail and cart label role."
+        "purpose": "Homepage, public shell and shared catalog, product detail, cart and checkout label role."
       }
     },
     "shadows": [],
@@ -216,6 +216,10 @@
       },
       {
         "name": "cart-summary-stacked",
+        "value": "900px"
+      },
+      {
+        "name": "checkout-summary-stacked",
         "value": "900px"
       }
     ]
@@ -291,11 +295,18 @@
       "description": "Compact cart purchase controls place a stock-capped quantity beside an emerald line total; minus at one removes the row.",
       "html": "<div class=\"ds-cart-purchase\"><div class=\"ds-cart-quantity\" aria-label=\"Số lượng sản phẩm\"><button type=\"button\" aria-label=\"Giảm số lượng\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M5 12h14\"/></svg></button><span>2</span><button type=\"button\" aria-label=\"Tăng số lượng\" disabled><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M5 12h14M12 5v14\"/></svg></button></div><strong class=\"ds-cart-line-total\">300.000 ₫</strong></div>",
       "css": ".ds-cart-purchase{display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:var(--font-sans,Inter,sans-serif)}.ds-cart-quantity{display:flex;align-items:center;width:132px;height:44px;border:1px solid var(--color-border,#e2e8f0);border-radius:8px;color:#0f172a}.ds-cart-quantity button{display:grid;place-items:center;width:44px;height:42px;flex-shrink:0;border:0;background:transparent;color:#475569;border-radius:8px}.ds-cart-quantity button:hover:not(:disabled){background:#ecfdf5;color:#047857}.ds-cart-quantity button:focus-visible{outline:2px solid #047857;outline-offset:3px}.ds-cart-quantity button:disabled{color:#94a3b8;cursor:not-allowed}.ds-cart-quantity span{min-width:21px;text-align:center;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}.ds-cart-line-total{color:#047857;font-size:16px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}"
+    },
+    {
+      "name": "Checkout delivery choice",
+      "kind": "custom",
+      "description": "Native delivery and payment radios use labeled rows, an emerald selected border and pale emerald ground; pending submission disables choices.",
+      "html": "<fieldset class=\"ds-checkout-options\"><legend>Giờ giao hàng</legend><label><input type=\"radio\" name=\"ds-delivery-slot\" value=\"slot-a\" checked><span>11:00 – 12:00 ngày đặt hàng</span></label><label><input type=\"radio\" name=\"ds-delivery-slot\" value=\"slot-b\"><span>16:30 – 17:30 ngày đặt hàng</span></label></fieldset>",
+      "css": ".ds-checkout-options{border:0;border-top:1px solid #e2e8f0;padding:28px 0;font-family:Inter,sans-serif;color:#0f172a;min-width:0}.ds-checkout-options legend{font-size:19px;font-weight:700;letter-spacing:-.02em;line-height:1.5;margin-bottom:20px;padding:0}.ds-checkout-options label{display:flex;align-items:center;gap:12px;min-height:52px;padding:14px 16px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;margin-bottom:10px;font-size:14px;font-weight:500}.ds-checkout-options label:has(input:checked){border-color:#047857;background:#ecfdf5;color:#064e3b}.ds-checkout-options label:hover{border-color:#047857}.ds-checkout-options input{accent-color:#047857;width:18px;height:18px;flex-shrink:0}.ds-checkout-options input:focus-visible{outline:2px solid #047857;outline-offset:3px}.ds-checkout-options:disabled{opacity:.65}.ds-checkout-options:disabled label{cursor:default}@media(max-width:767px){.ds-checkout-options legend{font-size:18px}.ds-checkout-options label{font-size:13px}}"
     }
   ],
   "narrative": {
     "northStar": "FoodDelivery — clear shopping",
-    "overview": "A concise shopping interface: real food photography, clear prices and available stock. Emerald carries navigation and shopping feedback; amber marks the main shopping action. Short Vietnamese labels replace promotional paragraphs.\n\nThis records the redesigned homepage, shared public header/footer, shared catalog primitives used by the product list (/products) and search (/search), product details (/products/:slug), and cart (/cart). Checkout, account and admin interiors retain their existing styling. Global legacy tokens remain intact: root primary is Emerald-500, while these surfaces use its existing darker Emerald-700 token for readable controls and prices.",
+    "overview": "A concise shopping interface: real food photography, clear prices and available stock. Emerald carries navigation and shopping feedback; amber marks the main shopping action. Short Vietnamese labels replace promotional paragraphs.\n\nThis records the redesigned homepage, shared public header/footer, shared catalog primitives used by the product list (/products) and search (/search), product details (/products/:slug), cart (/cart), and the shared form on both checkout routes. Checkout includes COD success and the online-created-order outcome with payment-link retry. PaymentResultPage, account and admin interiors retain their existing styling and belong to later stages. Global legacy tokens remain intact: root primary is Emerald-500, while these surfaces use its existing darker Emerald-700 token for readable controls and prices.",
     "keyCharacteristics": [
       "Concise Vietnamese copy",
       "Real catalog photography and prices",

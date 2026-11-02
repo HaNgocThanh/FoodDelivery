@@ -2,7 +2,7 @@
 
 Trạng thái: kế hoạch triển khai, 30/10/2026. Chuẩn thị giác: trang chủ đã được người dùng chấp nhận và `DESIGN.md`. Phương pháp: code-first, xem bản chạy thật theo từng đợt.
 
-Tiến độ 02/11/2026: đã lưu mốc trang chủ (`11eb20d`), tách thẻ sản phẩm/ảnh, xử lý số lượng/giỏ và type catalog dùng chung; đã triển khai danh sách/tìm kiếm (`b72af4b`) và chi tiết sản phẩm (`409ac66`). Giỏ hàng đã triển khai giao diện gọn, dùng ảnh thật, tính tiền và kiểm tra tồn kho giữ nguyên. Giữ các thành phần dùng chung còn lại cho đợt có nhu cầu thực tế. Checkout là bước tiếp theo; các đợt phía sau chưa triển khai lại giao diện.
+Tiến độ 02/11/2026: đã lưu mốc trang chủ (`11eb20d`), tách thẻ sản phẩm/ảnh, xử lý số lượng/giỏ và type catalog dùng chung; đã triển khai danh sách/tìm kiếm (`b72af4b`) và chi tiết sản phẩm (`409ac66`). Giỏ hàng đã triển khai giao diện gọn, dùng ảnh thật, tính tiền và kiểm tra tồn kho giữ nguyên. Giữ các thành phần dùng chung còn lại cho đợt có nhu cầu thực tế. Thanh toán (`/checkout`, `/checkout-form`) và kết quả tạo đơn trong form đã được đồng bộ. Trang `/payment-result` là bước tiếp theo; các đợt phía sau chưa triển khai lại giao diện.
 
 ## Mục tiêu và phạm vi
 
