@@ -1,0 +1,292 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-30T09:33:38.289305+00:00",
+  "title": "Design System: FoodDelivery",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "Primary",
+        "tonalRamp": [
+          "#022c22",
+          "#064e3b",
+          "#065f46",
+          "#047857",
+          "#059669",
+          "#34d399",
+          "#a7f3d0",
+          "#ecfdf5"
+        ]
+      },
+      "primary-deep": {
+        "role": "primary",
+        "displayName": "Primary Deep",
+        "tonalRamp": [
+          "#022c22",
+          "#064e3b",
+          "#065f46",
+          "#047857",
+          "#059669",
+          "#34d399",
+          "#a7f3d0",
+          "#ecfdf5"
+        ]
+      },
+      "primary-ink": {
+        "role": "primary",
+        "displayName": "Primary Ink",
+        "tonalRamp": [
+          "#022c22",
+          "#064e3b",
+          "#065f46",
+          "#047857",
+          "#059669",
+          "#34d399",
+          "#a7f3d0",
+          "#ecfdf5"
+        ]
+      },
+      "primary-tint": {
+        "role": "primary",
+        "displayName": "Primary Tint",
+        "tonalRamp": [
+          "#022c22",
+          "#064e3b",
+          "#065f46",
+          "#047857",
+          "#059669",
+          "#34d399",
+          "#a7f3d0",
+          "#ecfdf5"
+        ]
+      },
+      "cta": {
+        "role": "secondary",
+        "displayName": "Cta",
+        "tonalRamp": [
+          "#451a03",
+          "#78350f",
+          "#92400e",
+          "#b45309",
+          "#d97706",
+          "#f59e0b",
+          "#fcd34d",
+          "#fffbeb"
+        ]
+      },
+      "cta-hover": {
+        "role": "secondary",
+        "displayName": "Cta Hover",
+        "tonalRamp": [
+          "#451a03",
+          "#78350f",
+          "#92400e",
+          "#b45309",
+          "#d97706",
+          "#f59e0b",
+          "#fcd34d",
+          "#fffbeb"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "tonalRamp": [
+          "#020617",
+          "#0f172a",
+          "#1e293b",
+          "#334155",
+          "#475569",
+          "#94a3b8",
+          "#e2e8f0",
+          "#f8fafc"
+        ]
+      },
+      "surface-soft": {
+        "role": "neutral",
+        "displayName": "Surface Soft",
+        "tonalRamp": [
+          "#020617",
+          "#0f172a",
+          "#1e293b",
+          "#334155",
+          "#475569",
+          "#94a3b8",
+          "#e2e8f0",
+          "#f8fafc"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Border",
+        "tonalRamp": [
+          "#020617",
+          "#0f172a",
+          "#1e293b",
+          "#334155",
+          "#475569",
+          "#94a3b8",
+          "#e2e8f0",
+          "#f8fafc"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Text",
+        "tonalRamp": [
+          "#020617",
+          "#0f172a",
+          "#1e293b",
+          "#334155",
+          "#475569",
+          "#94a3b8",
+          "#e2e8f0",
+          "#f8fafc"
+        ]
+      },
+      "text-muted": {
+        "role": "neutral",
+        "displayName": "Text Muted",
+        "tonalRamp": [
+          "#020617",
+          "#0f172a",
+          "#1e293b",
+          "#334155",
+          "#475569",
+          "#94a3b8",
+          "#e2e8f0",
+          "#f8fafc"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Homepage and public shell display role."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Homepage and public shell headline role."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Homepage and public shell title role."
+      },
+      "price": {
+        "displayName": "Price",
+        "purpose": "Homepage and public shell price role."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Homepage and public shell body role."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Homepage and public shell label role."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "add-confirmation",
+        "value": "650ms cubic-bezier(.16,1,.3,1)",
+        "purpose": "Expanding confirmation border; disabled for reduced motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "narrow",
+        "value": "360px"
+      },
+      {
+        "name": "mobile",
+        "value": "767px"
+      },
+      {
+        "name": "compact-desktop",
+        "value": "1199px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Add button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Add button from the implemented homepage/public shell.",
+      "html": "<button class=\"ds-add\">Thêm</button>",
+      "css": ".ds-add{font-family:var(--font-sans,Inter,sans-serif);font-size:13px;background:#047857;color:white;padding:10px 14px;min-height:44px;border:0;border-radius:8px;font-weight:600}.ds-add:hover{background:#065f46}.ds-add:focus-visible{outline:2px solid #047857;outline-offset:3px}.ds-add:disabled{background:#e2e8f0;color:#475569}"
+    },
+    {
+      "name": "Shopping action",
+      "kind": "button",
+      "refersTo": "button-shopping",
+      "description": "Shopping action from the implemented homepage/public shell.",
+      "html": "<a class=\"ds-shopping\" href=\"#\">Mua sắm ngay</a>",
+      "css": ".ds-shopping{font-family:var(--font-sans,Inter,sans-serif);font-size:13px;display:inline-flex;background:var(--color-cta,#f59e0b);color:var(--color-text,#0f172a);padding:13px 18px;border-radius:8px;text-decoration:none;font-weight:700}.ds-shopping:hover{background:#fbbf24}.ds-shopping:focus-visible{outline:2px solid #047857;outline-offset:3px}"
+    },
+    {
+      "name": "Search field",
+      "kind": "input",
+      "refersTo": "search-input",
+      "description": "Search field from the implemented homepage/public shell.",
+      "html": "<input class=\"ds-search\" aria-label=\"Tìm sản phẩm\" placeholder=\"Tìm sản phẩm…\">",
+      "css": ".ds-search{font-family:var(--font-sans,Inter,sans-serif);font-size:13px;padding:11px 16px;background:var(--color-bg,#f8fafc);border:1px solid #cbd5e1;border-radius:8px;color:var(--color-text,#0f172a);caret-color:#047857}.ds-search::placeholder{color:#475569}.ds-search:focus-visible{outline:2px solid #047857;outline-offset:3px}"
+    },
+    {
+      "name": "Selected category",
+      "kind": "chip",
+      "refersTo": "category-selected",
+      "description": "Selected category from the implemented homepage/public shell.",
+      "html": "<button class=\"ds-category\" aria-pressed=\"true\">Tất cả</button>",
+      "css": ".ds-category{font-family:var(--font-sans,Inter,sans-serif);font-size:13px;background:#047857;color:white;padding:11px 18px;min-height:44px;border:0;border-radius:8px}.ds-category:hover{background:#065f46}.ds-category:focus-visible{outline:2px solid #047857;outline-offset:3px}"
+    },
+    {
+      "name": "Product card",
+      "kind": "card",
+      "refersTo": "product-card",
+      "description": "Product card from the implemented homepage/public shell.",
+      "html": "<article class=\"ds-card\"><h3>Tên sản phẩm</h3><strong>Giá sản phẩm</strong><p>Tồn kho từ catalog</p></article>",
+      "css": ".ds-card{font-family:var(--font-sans,Inter,sans-serif);font-size:13px;background:white;border:1px solid var(--color-border,#e2e8f0);border-radius:14px;padding:18px;max-width:250px}.ds-card h3{font-size:16px;font-weight:600;line-height:1.5;margin:0 0 10px}.ds-card strong{font-size:21px;color:#047857}.ds-card p{font-size:12px;color:#475569}"
+    },
+    {
+      "name": "Public navigation",
+      "kind": "nav",
+      "refersTo": "navigation",
+      "description": "Public navigation from the implemented homepage/public shell.",
+      "html": "<nav class=\"ds-nav\"><a href=\"#\">Tra cứu đơn</a><a href=\"#\">Đăng nhập</a></nav>",
+      "css": ".ds-nav{font-family:var(--font-sans,Inter,sans-serif);font-size:13px;display:flex;gap:18px;color:var(--color-text,#0f172a)}.ds-nav a{padding:12px 0;text-decoration:none;color:inherit}.ds-nav a:hover{color:#047857}.ds-nav a:focus-visible{outline:2px solid #047857;outline-offset:3px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "FoodDelivery — clear shopping",
+    "overview": "A concise shopping interface: real food photography, clear prices and available stock. Emerald carries navigation and shopping feedback; amber marks the main shopping action. Short Vietnamese labels replace promotional paragraphs.\n\nThis records the redesigned homepage and shared public header/footer. Search, product details, cart, checkout and admin interiors retain their existing styling. Global legacy tokens remain intact: root primary is Emerald-500, while this surface uses its existing darker Emerald-700 token for readable controls and prices.",
+    "keyCharacteristics": [
+      "Concise Vietnamese copy",
+      "Real catalog photography and prices",
+      "Flat white surfaces and fine borders"
+    ],
+    "rules": [
+      {
+        "name": "The Content First Rule",
+        "body": "Use photographs, prices and stock to explain the offer; avoid long promotional sections.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Surface Rule",
+        "body": "Homepage cards use a fine border without decorative shadows.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do preserve FoodDelivery, emerald/amber and Inter.",
+      "Do show real catalog data and explicit loading, error, empty and unavailable states.",
+      "Do keep mobile search and support accessible without covering purchasing controls."
+    ],
+    "donts": [
+      "Don't replace API failures with purchasable sample products.",
+      "Don't add unsupported ratings, certifications or delivery promises.",
+      "Don't extend the new homepage styling to legacy interiors without reviewing them."
+    ]
+  }
+}

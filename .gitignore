@@ -87,3 +87,7 @@ ehthumbs.db
 Thumbs.db
 *.tmp
 *.bak
+
+# Impeccable local visual experiments and browser evidence
+.impeccable/mocks/
+.impeccable/review/
