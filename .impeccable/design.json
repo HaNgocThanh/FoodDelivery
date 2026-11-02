@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-11-02T15:29:55.2326943+07:00",
+  "generatedAt": "2026-11-02T08:55:40.842Z",
   "title": "Design System: FoodDelivery",
   "extensions": {
     "colorMeta": {
@@ -162,27 +162,27 @@
     "typographyMeta": {
       "display": {
         "displayName": "Display",
-        "purpose": "Homepage, public shell and shared catalog and product detail display role."
+        "purpose": "Homepage, public shell and shared catalog, product detail and cart display role."
       },
       "headline": {
         "displayName": "Headline",
-        "purpose": "Homepage, public shell and shared catalog and product detail headline role."
+        "purpose": "Homepage, public shell and shared catalog, product detail and cart headline role."
       },
       "title": {
         "displayName": "Title",
-        "purpose": "Homepage, public shell and shared catalog and product detail title role."
+        "purpose": "Homepage, public shell and shared catalog, product detail and cart title role."
       },
       "price": {
         "displayName": "Price",
-        "purpose": "Homepage, public shell and shared catalog and product detail price role."
+        "purpose": "Homepage, public shell and shared catalog, product detail and cart price role."
       },
       "body": {
         "displayName": "Body",
-        "purpose": "Homepage, public shell and shared catalog and product detail body role."
+        "purpose": "Homepage, public shell and shared catalog, product detail and cart body role."
       },
       "label": {
         "displayName": "Label",
-        "purpose": "Homepage, public shell and shared catalog and product detail label role."
+        "purpose": "Homepage, public shell and shared catalog, product detail and cart label role."
       }
     },
     "shadows": [],
@@ -213,6 +213,10 @@
       {
         "name": "catalog-filters-stacked",
         "value": "479px"
+      },
+      {
+        "name": "cart-summary-stacked",
+        "value": "900px"
       }
     ]
   },
@@ -280,11 +284,18 @@
       "kind": "input",
       "css": ".ds-community-label{font-family:var(--font-sans,Inter,sans-serif);font-size:13px;color:#475569}.ds-community-input{display:block;width:100%;margin-top:8px;padding:12px 14px;border:1px solid #cbd5e1;background:white;border-radius:8px;font-family:var(--font-sans,Inter,sans-serif);font-size:14px;color:#0f172a;resize:vertical;min-height:112px}.ds-community-input::placeholder{color:#475569}.ds-community-input:focus-visible{outline:2px solid #047857;outline-offset:3px}.ds-community-input:disabled{cursor:wait}",
       "description": "Labeled review or question text area; submissions show pending, success and error states."
+    },
+    {
+      "name": "Cart quantity row",
+      "kind": "custom",
+      "description": "Compact cart purchase controls place a stock-capped quantity beside an emerald line total; minus at one removes the row.",
+      "html": "<div class=\"ds-cart-purchase\"><div class=\"ds-cart-quantity\" aria-label=\"Số lượng sản phẩm\"><button type=\"button\" aria-label=\"Giảm số lượng\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M5 12h14\"/></svg></button><span>2</span><button type=\"button\" aria-label=\"Tăng số lượng\" disabled><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" aria-hidden=\"true\"><path d=\"M5 12h14M12 5v14\"/></svg></button></div><strong class=\"ds-cart-line-total\">300.000 ₫</strong></div>",
+      "css": ".ds-cart-purchase{display:flex;align-items:center;justify-content:space-between;gap:12px;font-family:var(--font-sans,Inter,sans-serif)}.ds-cart-quantity{display:flex;align-items:center;width:132px;height:44px;border:1px solid var(--color-border,#e2e8f0);border-radius:8px;color:#0f172a}.ds-cart-quantity button{display:grid;place-items:center;width:44px;height:42px;flex-shrink:0;border:0;background:transparent;color:#475569;border-radius:8px}.ds-cart-quantity button:hover:not(:disabled){background:#ecfdf5;color:#047857}.ds-cart-quantity button:focus-visible{outline:2px solid #047857;outline-offset:3px}.ds-cart-quantity button:disabled{color:#94a3b8;cursor:not-allowed}.ds-cart-quantity span{min-width:21px;text-align:center;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}.ds-cart-line-total{color:#047857;font-size:16px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}"
     }
   ],
   "narrative": {
     "northStar": "FoodDelivery — clear shopping",
-    "overview": "A concise shopping interface: real food photography, clear prices and available stock. Emerald carries navigation and shopping feedback; amber marks the main shopping action. Short Vietnamese labels replace promotional paragraphs.\n\nThis records the redesigned homepage, shared public header/footer, shared catalog primitives used by the product list (/products) and search (/search), and product details (/products/:slug). Cart, checkout, account and admin interiors retain their existing styling. Global legacy tokens remain intact: root primary is Emerald-500, while these surfaces use its existing darker Emerald-700 token for readable controls and prices.",
+    "overview": "A concise shopping interface: real food photography, clear prices and available stock. Emerald carries navigation and shopping feedback; amber marks the main shopping action. Short Vietnamese labels replace promotional paragraphs.\n\nThis records the redesigned homepage, shared public header/footer, shared catalog primitives used by the product list (/products) and search (/search), product details (/products/:slug), and cart (/cart). Checkout, account and admin interiors retain their existing styling. Global legacy tokens remain intact: root primary is Emerald-500, while these surfaces use its existing darker Emerald-700 token for readable controls and prices.",
     "keyCharacteristics": [
       "Concise Vietnamese copy",
       "Real catalog photography and prices",

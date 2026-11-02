@@ -5,7 +5,7 @@ import type { ProductItem } from '../../types/catalog';
 import { formatCurrency } from '../../utils/formatCurrency';
 import '../../styles/shop.css';
 
-export function ProductPhoto({ product, priority = false }: { product: ProductItem; priority?: boolean }) {
+export function ProductPhoto({ product, priority = false }: { product: Pick<ProductItem, 'name' | 'imageUrl'>; priority?: boolean }) {
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
   return product.imageUrl && failedUrl !== product.imageUrl ? (
     <img src={product.imageUrl} alt={product.name} loading={priority ? 'eager' : 'lazy'} width="400" height="300" onError={() => setFailedUrl(product.imageUrl || null)} />

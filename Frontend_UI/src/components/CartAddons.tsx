@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, Loader2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ProductPhoto } from './catalog/ProductCard';
+import { formatCurrency } from '../utils/formatCurrency';
 import axiosClient from '../api/axiosClient';
 import { useCartStore } from '../stores/useCartStore';
 import type { ProductItem } from '../types/catalog';
@@ -35,34 +38,25 @@ export function CartAddons() {
         return;
       }
       addToCart(product, 1);
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Không thể thêm sản phẩm. Vui lòng thử lại.');
+    } catch {
+      setError('Không thể thêm sản phẩm. Vui lòng thử lại.');
     } finally {
       setAddingId(null);
     }
   };
 
   if (!catalog.isPending && !catalog.isError && suggestions.length === 0 && !error) return null;
-  return (
-    <section aria-label="Sản phẩm mua thêm" className="rounded-xl border border-emerald-100 bg-emerald-50 p-6 space-y-4">
-      <h3 className="text-lg font-bold text-slate-900">Bạn muốn mua thêm món nào?</h3>
-      {catalog.isPending && <p role="status" className="text-sm text-slate-600">Đang tải sản phẩm...</p>}
-      {catalog.isError && <div className="text-sm text-red-700" role="alert">
-        Không tải được sản phẩm mua thêm. <button type="button" onClick={() => void catalog.refetch()} className="underline">Thử lại</button>
-      </div>}
-      {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {suggestions.map(product => <article key={product.id} className="rounded-xl border border-slate-200 bg-white p-4 flex flex-col gap-3">
-          {product.imageUrl && <img src={product.imageUrl} alt={product.name} className="h-24 w-full object-cover rounded-lg" />}
-          <h4 className="text-sm font-bold text-slate-900">{product.name}</h4>
-          <p className="text-sm font-bold text-emerald-700 tabular-nums">{product.price.toLocaleString('vi-VN')} đ</p>
-          <button type="button" disabled={addingId !== null} onClick={() => void addProduct(product.id)}
-            aria-label={'Thêm ' + product.name + ' vào giỏ'}
-            className="mt-auto rounded-lg bg-emerald-600 hover:bg-emerald-700 px-3 py-2 text-sm font-bold text-white inline-flex justify-center items-center gap-1 disabled:opacity-50">
-            {addingId === product.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Thêm
-          </button>
-        </article>)}
-      </div>
-    </section>
-  );
+  return <section aria-label="Sản phẩm mua thêm" className="cart-addons">
+    <div className="cart-addons-heading"><h2>Bạn có thể mua thêm</h2><Link to="/products">Xem tất cả</Link></div>
+    {catalog.isPending && <p role="status" className="cart-addons-status">Đang tải sản phẩm...</p>}
+    {catalog.isError && <div className="cart-addons-error" role="alert">Không tải được sản phẩm mua thêm.<button type="button" onClick={() => void catalog.refetch()}>Thử lại</button></div>}
+    {error && <p role="alert" className="cart-addons-error">{error}</p>}
+    <div className="cart-addon-grid">{suggestions.map(product => <article key={product.id} className="cart-addon">
+      <Link to={`/products/${product.id}`} className="cart-addon-photo" tabIndex={-1} aria-hidden="true"><ProductPhoto product={product} /></Link>
+      <h3><Link to={`/products/${product.id}`}>{product.name}</Link></h3><strong>{formatCurrency(product.price)}</strong>
+      <button type="button" disabled={addingId !== null} onClick={() => void addProduct(product.id)} aria-label={`Thêm ${product.name} vào giỏ`}>
+        {addingId === product.id ? <Loader2 size={16} className="animate-spin" aria-hidden="true" /> : <Plus size={16} aria-hidden="true" />} Thêm
+      </button>
+    </article>)}</div>
+  </section>;
 }
