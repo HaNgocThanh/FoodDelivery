@@ -1,12 +1,4 @@
-// =============================================
-// Order Tracking (Public) — Tra cứu đơn hàng không cần đăng nhập
-// =============================================
-// STATUS mapping (Từ backend enum → UI display):
-//   Backend enum: 'Pending' | 'Approved' | 'Shipping' | 'Completed'
-//   UI hiển thị tương ứng: Pending→Processing / Shipping→Shipped / Completed→Delivered
-//   (Mapping thông qua `displayStatus` ở component stepper.)
-
-export type TrackingStatus = 'Pending' | 'Approved' | 'Shipping' | 'Completed';
+export type TrackingStatus = 'Pending' | 'Approved' | 'Shipping' | 'Completed' | 'Cancelled';
 
 export interface TrackingItem {
   productId: number;

@@ -2,7 +2,7 @@
 
 Trạng thái: kế hoạch triển khai, 30/10/2026. Chuẩn thị giác: trang chủ đã được người dùng chấp nhận và `DESIGN.md`. Phương pháp: code-first, xem bản chạy thật theo từng đợt.
 
-Tiến độ 02/11/2026: đã lưu mốc trang chủ (`11eb20d`), tách thẻ sản phẩm/ảnh, xử lý số lượng/giỏ và type catalog dùng chung; đã triển khai danh sách/tìm kiếm (`b72af4b`) và chi tiết sản phẩm (`409ac66`). Giỏ hàng đã triển khai giao diện gọn, dùng ảnh thật, tính tiền và kiểm tra tồn kho giữ nguyên. Giữ các thành phần dùng chung còn lại cho đợt có nhu cầu thực tế. Thanh toán (`/checkout`, `/checkout-form`) và kết quả tạo đơn trong form đã được đồng bộ. Trang `/payment-result` đã được đồng bộ với xác minh backend, trạng thái chưa xác nhận/đăng nhập/đang chờ/thành công/lỗi và retry trên cùng đơn. Bước tiếp theo là tra cứu đơn và đơn của tôi; các đợt phía sau chưa triển khai lại giao diện.
+Tiến độ 03/11/2026: đã lưu mốc trang chủ (`11eb20d`), tách thẻ sản phẩm/ảnh, xử lý số lượng/giỏ và type catalog dùng chung; đã triển khai danh sách/tìm kiếm (`b72af4b`) và chi tiết sản phẩm (`409ac66`). Giỏ hàng đã triển khai giao diện gọn, dùng ảnh thật, tính tiền và kiểm tra tồn kho giữ nguyên. Giữ các thành phần dùng chung còn lại cho đợt có nhu cầu thực tế. Thanh toán (`/checkout`, `/checkout-form`) và kết quả tạo đơn trong form đã được đồng bộ. Trang `/payment-result` đã được đồng bộ với xác minh backend, trạng thái chưa xác nhận/đăng nhập/đang chờ/thành công/lỗi và retry trên cùng đơn. Tra cứu đơn và đơn hàng của tôi đã triển khai: form tra cứu gọn, trạng thái dùng chung, danh sách tóm tắt và chi tiết mở rộng; hủy/hỗ trợ/đánh giá có trạng thái gửi và lỗi đúng API. Bước tiếp theo là nhóm xác thực và hồ sơ tài khoản.
 
 ## Mục tiêu và phạm vi
 
