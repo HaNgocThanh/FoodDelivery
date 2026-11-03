@@ -2,7 +2,7 @@
 
 Trạng thái: kế hoạch triển khai, 30/10/2026. Chuẩn thị giác: trang chủ đã được người dùng chấp nhận và `DESIGN.md`. Phương pháp: code-first, xem bản chạy thật theo từng đợt.
 
-Tiến độ 03/11/2026: đã lưu mốc trang chủ (`11eb20d`), tách thẻ sản phẩm/ảnh, xử lý số lượng/giỏ và type catalog dùng chung; đã triển khai danh sách/tìm kiếm (`b72af4b`) và chi tiết sản phẩm (`409ac66`). Giỏ hàng đã triển khai giao diện gọn, dùng ảnh thật, tính tiền và kiểm tra tồn kho giữ nguyên. Giữ các thành phần dùng chung còn lại cho đợt có nhu cầu thực tế. Thanh toán (`/checkout`, `/checkout-form`) và kết quả tạo đơn trong form đã được đồng bộ. Trang `/payment-result` đã được đồng bộ với xác minh backend, trạng thái chưa xác nhận/đăng nhập/đang chờ/thành công/lỗi và retry trên cùng đơn. Tra cứu đơn và đơn hàng của tôi đã triển khai: form tra cứu gọn, trạng thái dùng chung, danh sách tóm tắt và chi tiết mở rộng; hủy/hỗ trợ/đánh giá có trạng thái gửi và lỗi đúng API. Bước tiếp theo là nhóm xác thực và hồ sơ tài khoản.
+Tiến độ 03/11/2026: đã lưu mốc trang chủ (`11eb20d`), tách thẻ sản phẩm/ảnh, xử lý số lượng/giỏ và type catalog dùng chung; đã triển khai danh sách/tìm kiếm (`b72af4b`) và chi tiết sản phẩm (`409ac66`). Giỏ hàng đã triển khai giao diện gọn, dùng ảnh thật, tính tiền và kiểm tra tồn kho giữ nguyên. Giữ các thành phần dùng chung còn lại cho đợt có nhu cầu thực tế. Thanh toán (`/checkout`, `/checkout-form`) và kết quả tạo đơn trong form đã được đồng bộ. Trang `/payment-result` đã được đồng bộ với xác minh backend, trạng thái chưa xác nhận/đăng nhập/đang chờ/thành công/lỗi và retry trên cùng đơn. Tra cứu đơn và đơn hàng của tôi đã triển khai: form tra cứu gọn, trạng thái dùng chung, danh sách tóm tắt và chi tiết mở rộng; hủy/hỗ trợ/đánh giá có trạng thái gửi và lỗi đúng API. Nhóm xác thực và hồ sơ đã được đồng bộ: form chung, lỗi theo trường, trạng thái gửi và phục hồi qua OTP. Hồ sơ chỉ xem theo API hiện có; không bổ sung thao tác lưu giả. Bước tiếp theo là chat hỗ trợ và các hộp thoại còn dùng, sau đó đến quản trị.
 
 ## Mục tiêu và phạm vi
 
@@ -154,7 +154,7 @@ Nguồn: `ProfilePage.tsx` và các form liên quan.
 
 - Điều hướng gọn cho Thông tin / Địa chỉ / Mật khẩu; mobile không tràn tab.
 - Hạng thành viên và điểm thật được giữ như thông tin phụ, không làm lu mờ form chính.
-- Nút lưu gần form đang sửa, lỗi theo trường, thành công rõ; giữ quyền tài khoản và chính sách cache.
+- Kết quả rà API: khách chỉ có GET hồ sơ; PUT người dùng thuộc Admin. Hiển thị thông tin/địa chỉ chỉ xem, dẫn đổi mật khẩu qua OTP; giữ quyền tài khoản và chính sách cache. Muốn tự sửa hồ sơ cần một đợt bổ sung API riêng.
 
 ### 14. Chat và các hộp thoại liên quan
 
@@ -162,7 +162,7 @@ Nguồn: `ProfilePage.tsx` và các form liên quan.
 - Giữ vị trí nút chat trong hàng tìm kiếm mobile; không che nút đặt hàng.
 - Kiểm tra focus, Escape, tên truy cập và đóng/mở; giữ SignalR và nghiệp vụ gửi tin hiện có.
 
-Nghiệm thu đợt: đăng nhập sai/đúng, đăng ký lỗi, quên/đặt lại mật khẩu, sửa hồ sơ/địa chỉ, đổi mật khẩu và đăng xuất; kiểm tra không lẫn dữ liệu tài khoản.
+Nghiệm thu đợt: đăng nhập sai/đúng, đăng ký lỗi, quên/đặt lại mật khẩu, xem hồ sơ/địa chỉ, phục hồi mật khẩu qua OTP và đăng xuất; kiểm tra không lẫn dữ liệu tài khoản.
 
 ## Đợt 5 — Quản trị
 
