@@ -88,6 +88,39 @@ Thumbs.db
 *.tmp
 *.bak
 
-# Impeccable local visual experiments and browser evidence
-.impeccable/mocks/
-.impeccable/review/
+
+# -------------------------------------------------------------------------
+# 5. LOCAL DOCUMENTATION & AI / DESIGN WORKSPACE
+# -------------------------------------------------------------------------
+# Keep internal plans/reviews on disk, outside version control.
+*.md
+!README.md
+!LICENSE.md
+!CHANGELOG.md
+
+# Local design state, screenshots and agent configuration.
+/.impeccable/
+/.agents/
+/.claude/
+/.codex/
+
+# -------------------------------------------------------------------------
+# 6. GENERATED CACHE & TEST RESULTS (keep test source and fixtures)
+# -------------------------------------------------------------------------
+*.tsbuildinfo
+coverage/
+TestResults/
+test-results/
+playwright-report/
+*.trx
+*.coverage
+*.coveragexml
+
+# Ignore environment variants while retaining safe configuration templates.
+.env.*
+!.env.example
+!.env.*.example
+!.env.sample
+!.env.*.sample
+!.env.template
+!.env.*.template
