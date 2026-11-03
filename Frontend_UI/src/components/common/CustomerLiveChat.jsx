@@ -1,450 +1,72 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import * as signalR from '@microsoft/signalr';
-import { MessageCircle, Send, X, Wifi, WifiOff, Loader2 } from 'lucide-react';
-
-/**
- * CustomerLiveChat
- * ----------------------------------------------------------------------
- * Widget chat nổi cho khách hàng (entry point phía User).
- *
- * - Hiển thị nút chat tròn ở góc dưới-phải mọi trang.
- * - Click mở khung chat mặc định.
- * - Khách gõ tên hiển thị (lưu localStorage) → JoinCustomerGroup.
- * - Gửi `SendMessageToAdmin(message)`, nhận `ReceiveMessage` từ Admin.
- * - Không lưu DB (theo yêu cầu).
- *
- * Props:
- * - hubUrl: URL SignalR Hub
- *   Mặc định trỏ về dev profile http của backend (port 5156).
- *   Để dùng https backend, set VITE_SIGNALR_HUB_URL trong .env hoặc truyền prop.
- * - defaultSenderName: tên mặc định nếu chưa có (lấy từ localStorage / user)
- * - positionClass: tuỳ chỉnh vị trí (mặc định 'bottom-6 right-6')
- */
-const DEFAULT_HUB_URL = 'http://localhost:5156/supporthub';
-const STORAGE_KEY = 'fooddelivery_chat_sender_name';
-const STORAGE_OPEN_KEY = 'fooddelivery_chat_open';
-
-/**
- * Kiểm tra một chuỗi có phải là tên hiển thị hợp lệ hay không.
- * Hợp lệ = có ít nhất 1 chữ cái/số và không phải toàn ký tự đặc biệt (như "/", "-", "?"...).
- */
-function isValidSenderName(name) {
-  if (!name || typeof name !== 'string') return false;
-  const trimmed = name.trim();
-  if (trimmed.length === 0) return false;
-  // Bỏ qua nếu chỉ chứa ký tự đặc biệt / dấu câu / whitespace
-  if (!/[\p{L}\p{N}]/u.test(trimmed)) return false;
-  return true;
-}
-
-function getDefaultSenderName(propsDefault) {
-  // Ưu tiên 1: prop defaultSenderName (từ parent component)
-  if (isValidSenderName(propsDefault)) return propsDefault.trim();
-  try {
-    // Ưu tiên 2: localStorage đã lưu từ phiên trước
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (isValidSenderName(saved)) return saved.trim();
-
-    // Ưu tiên 3: user profile từ localStorage (nếu đã đăng nhập)
-    const userJson = localStorage.getItem('userProfile') || localStorage.getItem('user');
-    if (userJson) {
-      const u = JSON.parse(userJson);
-      const candidate =
-        u?.fullName || u?.name || u?.FullName || u?.userName || '';
-      if (isValidSenderName(candidate)) return candidate.trim();
-    }
-  } catch {
-    /* ignore */
-  }
-  return '';
-}
-
-export default function CustomerLiveChat({
-  hubUrl = DEFAULT_HUB_URL,
-  defaultSenderName = '',
-  positionClass = 'bottom-24 right-6',
-}) {
-  // ====== UI state ====================================================
-  const [isOpen, setIsOpen] = useState(() => {
-    try {
-      return localStorage.getItem(STORAGE_OPEN_KEY) === '1';
-    } catch {
-      return false;
-    }
+import { useEffect, useRef, useState } from 'react';
+import { createSupportConnection } from '../../utils/supportConnection';
+import { MessageCircle, Send, X, Loader2 } from 'lucide-react';
+import { useAuthStore } from '../../stores/useAuthStore';
+import { CHAT_STATUS, createSendGate, isValidSenderName, receivedMessage } from '../../utils/supportChat';
+import '../../styles/support-chat.css';
+const NAME_KEY='fooddelivery_chat_sender_name', OPEN_KEY='fooddelivery_chat_open';
+const browserStorage={getItem:key=>{try{return localStorage.getItem(key);}catch{return null;}},setItem:(key,value)=>{try{localStorage.setItem(key,value);}catch{/* Memory state still works when storage is unavailable. */}}};
+export function SupportChat({hubUrl='http://localhost:5156/supporthub',defaultSenderName='',storage=browserStorage,createConnection=createSupportConnection}){
+ const initialName=()=>isValidSenderName(defaultSenderName)?defaultSenderName.trim():storage.getItem(NAME_KEY)||'';
+ const[isOpen,setOpen]=useState(()=>storage.getItem(OPEN_KEY)==='1');
+ const[enabled,setEnabled]=useState(isOpen),[retry,setRetry]=useState(0),[unread,setUnread]=useState(false);
+ const[messages,setMessages]=useState([]),[draft,setDraft]=useState(''),[senderName,setSenderName]=useState(initialName),[nameConfirmed,setNameConfirmed]=useState(()=>isValidSenderName(initialName()));
+ const[status,setStatus]=useState('disconnected'),[error,setError]=useState(''),[nameError,setNameError]=useState(''),[sending,setSending]=useState(false),[joining,setJoining]=useState(false);
+ const connectionRef=useRef(null),alive=useRef(true),openRef=useRef(isOpen),nameRef=useRef(nameConfirmed?senderName:''),launcher=useRef(null),entry=useRef(null),log=useRef(null),nearEnd=useRef(true),sendGate=useRef(createSendGate()),joinLock=useRef(false);
+ openRef.current=isOpen;
+ useEffect(()=>{alive.current=true;return()=>{alive.current=false;};},[]);
+ useEffect(()=>{
+  if(!enabled)return;
+  let cancelled=false;
+  const connection=createConnection(hubUrl);connectionRef.current=connection;
+  const active=()=>!cancelled;
+  const join=async()=>{if(nameRef.current)await connection.invoke('JoinCustomerGroup',nameRef.current);};
+  connection.on('ReceiveMessage',(name,text,id)=>{if(!active())return;setMessages(previous=>[...previous,receivedMessage(name,text,id)]);if(!openRef.current)setUnread(true);});
+  connection.onreconnecting(()=>{if(active())setStatus('reconnecting');});
+  connection.onreconnected(async()=>{if(!active())return;setStatus('reconnecting');try{await join();if(active()){setStatus('connected');setError('');}}catch{if(active()){setStatus('error');setError('Chưa khôi phục được phiên hỗ trợ. Kết nối lại để tiếp tục.');}}});
+  connection.onclose(()=>{if(active())setStatus('disconnected');});
+  const start=async()=>{setStatus('connecting');try{await connection.start();if(!active())return;await join();if(active()){setStatus('connected');setError('');}}catch{if(active())setStatus('error');}};
+  void start();
+  return()=>{cancelled=true;connection.off('ReceiveMessage');void connection.stop().catch(()=>{});if(connectionRef.current===connection)connectionRef.current=null;};
+ },[hubUrl,enabled,retry,createConnection]);
+ useEffect(()=>{storage.setItem(OPEN_KEY,isOpen?'1':'0');if(isOpen){setUnread(false);entry.current?.focus();}},[isOpen,nameConfirmed,storage]);
+ useEffect(()=>{if(isOpen&&nearEnd.current&&log.current)log.current.scrollTop=log.current.scrollHeight;},[messages,isOpen]);
+ const close=()=>{setOpen(false);launcher.current?.focus();};
+ const saveName=async(event)=>{
+  event.preventDefault();if(joinLock.current)return;
+  if(!isValidSenderName(senderName)){setNameError('Nhập tên có ít nhất một chữ hoặc số.');entry.current?.focus();return;}
+  const connection=connectionRef.current;if(status!=='connected'||!connection)return;
+  joinLock.current=true;setJoining(true);setNameError('');const name=senderName.trim();
+  try{await connection.invoke('JoinCustomerGroup',name);if(alive.current&&connectionRef.current===connection){nameRef.current=name;setNameConfirmed(true);setSenderName(name);storage.setItem(NAME_KEY,name);setError('');}}catch{if(alive.current)setNameError('Chưa bắt đầu được cuộc trò chuyện. Hãy thử lại.');}finally{joinLock.current=false;if(alive.current)setJoining(false);}
+ };
+ const send=async(event,failed)=>{
+  event?.preventDefault();const text=failed?.text??draft.trim();const connection=connectionRef.current;
+  if(!text||!nameConfirmed||status!=='connected'||!connection)return;
+  await sendGate.current(async()=>{
+   const message=failed??{id:crypto.randomUUID(),sender:'customer',text,ts:Date.now()};
+   setSending(true);setError('');nearEnd.current=true;
+   setMessages(previous=>failed?previous.map(item=>item.id===message.id?{...item,state:'pending'}:item):[...previous,{...message,state:'pending'}]);
+   if(!failed)setDraft('');
+   try{await connection.invoke('SendMessageToAdmin',text);if(alive.current&&connectionRef.current===connection)setMessages(previous=>previous.map(item=>item.id===message.id?{...item,state:'sent'}:item));}
+   catch{if(alive.current&&connectionRef.current===connection){setMessages(previous=>previous.map(item=>item.id===message.id?{...item,state:'failed'}:item));setError('Tin nhắn chưa được xác nhận. Bạn có thể gửi lại.');}}
+   finally{if(alive.current)setSending(false);}
   });
-
-  const [hasUnread, setHasUnread] = useState(false);
-  const [messages, setMessages] = useState([]);
-  const [draft, setDraft] = useState('');
-  const [senderName, setSenderName] = useState(() => getDefaultSenderName(defaultSenderName));
-  // Auto-confirm tên khi đã có sẵn (đăng nhập hoặc đã lưu trước đó):
-  // - reload trang với localStorage 'fooddelivery_chat_sender_name' → skip form đặt tên
-  // - user mới lần đầu chưa có tên → false → hiện form đặt tên
-  const [nameConfirmed, setNameConfirmed] = useState(() => {
-    return !!getDefaultSenderName(defaultSenderName);
-  });
-  const [connectionStatus, setConnectionStatus] = useState('disconnected');
-  const [error, setError] = useState(null);
-
-  const connectionRef = useRef(null);
-  const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
-
-  // ====== Connect / reconnect =========================================
-  useEffect(() => {
-    let cancelled = false;
-    const connection = new signalR.HubConnectionBuilder()
-      .withUrl(hubUrl, {
-        skipNegotiation: false,
-        transport:
-          signalR.HttpTransportType.WebSockets | signalR.HttpTransportType.LongPolling,
-      })
-      .configureLogging(signalR.LogLevel.Warning)
-      .withAutomaticReconnect({
-        nextRetryDelayInMilliseconds: (ctx) =>
-          Math.min(1000 * 2 ** ctx.previousRetryCount, 15000),
-      })
-      .build();
-
-    connectionRef.current = connection;
-
-    const setStatusSafe = (s) => !cancelled && setConnectionStatus(s);
-    connection.onreconnecting(() => setStatusSafe('reconnecting'));
-    connection.onreconnected(() => setStatusSafe('connected'));
-    connection.onclose(() => setStatusSafe('disconnected'));
-
-    // Nhận message (từ khách khác gửi broadcast? không — chỉ từ Admin hoặc hệ thống)
-    connection.on('ReceiveMessage', (senderNameArg, message, _connectionId) => {
-      if (cancelled) return;
-      const newMsg = {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        sender: senderNameArg?.startsWith('[Admin]')
-          ? 'admin'
-          : senderNameArg?.startsWith('🔔') || senderNameArg?.startsWith('🛟')
-          ? 'system'
-          : 'admin',
-        senderName: senderNameArg,
-        text: message,
-        ts: Date.now(),
-      };
-      setMessages((prev) => [...prev, newMsg]);
-      setHasUnread(true);
-    });
-
-    const start = async () => {
-      try {
-        setStatusSafe('connecting');
-        await connection.start();
-        if (cancelled) return;
-
-        // Nếu đã có tên (từ localStorage/userProfile) → auto JoinCustomerGroup
-        // để admin thấy được khách. Form đặt tên sẽ KHÔNG hiện trong trường hợp này.
-        const existingName = getDefaultSenderName(defaultSenderName);
-        if (existingName) {
-          try {
-            await connection.invoke('JoinCustomerGroup', existingName);
-          } catch {
-            /* noop */
-          }
-        }
-        setStatusSafe('connected');
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error('[CustomerLiveChat] Connect error:', err);
-        if (!cancelled) setStatusSafe('error');
-      }
-    };
-    start();
-
-    return () => {
-      cancelled = true;
-      connection.off('ReceiveMessage');
-      connection.stop().catch(() => {});
-      connectionRef.current = null;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hubUrl]);
-
-  // ====== Persist open state ==========================================
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_OPEN_KEY, isOpen ? '1' : '0');
-    } catch {
-      /* noop */
-    }
-    if (isOpen) {
-      setHasUnread(false);
-      setTimeout(() => inputRef.current?.focus(), 100);
-    }
-  }, [isOpen]);
-
-  // ====== Auto-scroll =================================================
-  useEffect(() => {
-    if (isOpen && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  }, [messages, isOpen]);
-
-  // ====== Send ========================================================
-  const handleSend = async (e) => {
-    e?.preventDefault?.();
-    const text = draft.trim();
-    if (!text || !connectionRef.current) return;
-
-    const connection = connectionRef.current;
-    if (connection.state !== signalR.HubConnectionState.Connected) {
-      setError('Chưa kết nối được với máy chủ. Vui lòng đợi...');
-      return;
-    }
-
-    const optimistic = {
-      id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      sender: 'customer',
-      senderName: senderName || 'Bạn',
-      text,
-      ts: Date.now(),
-    };
-    setMessages((prev) => [...prev, optimistic]);
-    setDraft('');
-    setError(null);
-
-    try {
-      await connection.invoke('SendMessageToAdmin', text);
-    } catch (err) {
-      setMessages((prev) =>
-        prev.map((m) =>
-          m.id === optimistic.id ? { ...m, failed: true } : m
-        )
-      );
-      setError(err?.message || 'Không gửi được tin nhắn.');
-    }
-  };
-
-  // ====== Update tên (lưu localStorage) =============================
-  const handleSaveName = () => {
-    const name = senderName.trim() || 'Khách hàng';
-    setSenderName(name);
-    setNameConfirmed(true);
-    try {
-      localStorage.setItem(STORAGE_KEY, name);
-    } catch {
-      /* noop */
-    }
-    // Re-invoke JoinCustomerGroup với tên mới
-    if (connectionRef.current?.state === signalR.HubConnectionState.Connected) {
-      connectionRef.current.invoke('JoinCustomerGroup', name).catch(() => {});
-    }
-  };
-
-  // ====== Status Badge ================================================
-  const statusDot = useMemo(() => {
-    const map = {
-      connected: 'bg-emerald-500',
-      connecting: 'bg-amber-500 animate-pulse',
-      reconnecting: 'bg-amber-500 animate-pulse',
-      disconnected: 'bg-slate-400',
-      error: 'bg-red-500',
-    };
-    return map[connectionStatus] || map.disconnected;
-  }, [connectionStatus]);
-
-  // ====== RENDER ======================================================
-  return (
-    <>
-      {/* ===== Floating button ===== */}
-      {!isOpen && (
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          aria-label="Mở chat hỗ trợ"
-          data-testid="customer-chat-toggle"
-          className={`fixed ${positionClass} z-40 w-14 h-14 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 active:from-blue-800 active:to-blue-900 text-white shadow-xl shadow-blue-600/40 hover:shadow-2xl hover:shadow-blue-600/50 ring-4 ring-blue-100/60 transition-all flex items-center justify-center ${
-            hasUnread ? 'animate-bounce' : ''
-          }`}
-        >
-          <MessageCircle className="w-6 h-6" />
-          {hasUnread && (
-            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
-              !
-            </span>
-          )}
-        </button>
-      )}
-
-      {/* ===== Chat panel ===== */}
-      {isOpen && (
-        <div
-          role="dialog"
-          aria-label="Chat hỗ trợ khách hàng"
-          data-testid="customer-chat-panel"
-          className={`fixed ${positionClass} z-50 w-[calc(100vw-3rem)] sm:w-96 max-w-[24rem] h-[32rem] max-h-[80vh] bg-white border border-slate-200 rounded-2xl shadow-2xl flex flex-col overflow-hidden`}
-        >
-          {/* Header */}
-          <header className="bg-gradient-to-br from-blue-600 to-blue-800 text-white p-3 flex items-center gap-2.5">
-            <div className="relative">
-              <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-base font-bold">
-                <MessageCircle className="w-4 h-4" />
-              </div>
-              <span
-                className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-blue-800 ${statusDot}`}
-                title={connectionStatus}
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-sm leading-tight">Hỗ trợ trực tuyến</p>
-              <p className="text-[11px] text-emerald-100">
-                {connectionStatus === 'connected'
-                  ? '🟢 Đang hoạt động'
-                  : connectionStatus === 'connecting' || connectionStatus === 'reconnecting'
-                  ? '🟡 Đang kết nối...'
-                  : connectionStatus === 'error'
-                  ? '🔴 Mất kết nối'
-                  : '⚪ Chưa kết nối'}
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              aria-label="Đóng"
-              className="p-1.5 rounded hover:bg-white/20 transition"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </header>
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-slate-50/40">
-            {messages.length === 0 && (
-              <div className="text-center py-8 text-slate-500">
-                <MessageCircle className="w-8 h-8 mx-auto mb-2 text-slate-300" />
-                <p className="text-xs font-semibold text-slate-700">
-                  Xin chào! 👋
-                </p>
-                <p className="text-[11px] mt-1 text-slate-500 max-w-[18rem] mx-auto">
-                  Bạn có câu hỏi nào không? Hãy nhắn cho Admin ngay nhé — chúng
-                  tôi phản hồi trong vài phút.
-                </p>
-              </div>
-            )}
-
-            {messages.map((m) => {
-              const isMe = m.sender === 'customer' || m.senderName === 'Bạn';
-              const isSys = m.sender === 'system';
-              if (isSys) {
-                return (
-                  <div
-                    key={m.id}
-                    className="text-center text-[11px] text-slate-500 italic py-1"
-                  >
-                    {m.text}
-                  </div>
-                );
-              }
-              return (
-                <div
-                  key={m.id}
-                  className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[80%] px-3 py-2 rounded-2xl text-xs leading-relaxed shadow-sm ${
-                      isMe
-                        ? 'bg-emerald-600 text-white rounded-br-md'
-                        : 'bg-white text-slate-800 border border-slate-200 rounded-bl-md'
-                    } ${m.failed ? 'opacity-60 ring-1 ring-red-300' : ''}`}
-                  >
-                    {!isMe && (
-                      <p className="text-[10px] font-bold text-emerald-700 mb-0.5">
-                        {m.senderName?.replace(/^\[Admin\]\s*/, '')}
-                      </p>
-                    )}
-                    <p className="whitespace-pre-wrap break-words">{m.text}</p>
-                    <p
-                      className={`text-[9px] mt-1 ${
-                        isMe ? 'text-emerald-100' : 'text-slate-400'
-                      }`}
-                    >
-                      {new Date(m.ts).toLocaleTimeString('vi-VN', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </p>
-                  </div>
-                </div>
-              );
-            })}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Error */}
-          {error && (
-            <div className="mx-3 mt-2 p-2 bg-red-50 border border-red-200 text-red-700 text-[11px] rounded-lg flex items-center gap-1.5">
-              <WifiOff className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="flex-1">{error}</span>
-              <button onClick={() => setError(null)} aria-label="Đóng" className="text-red-700/70 hover:text-red-900">
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          )}
-
-          {/* Form nhập */}
-          {!nameConfirmed ? (
-            <div className="border-t border-slate-200 p-3 bg-white space-y-2">
-              <label
-                htmlFor="customer-name-input"
-                className="block text-[11px] font-semibold text-slate-700"
-              >
-                Tên hiển thị của bạn:
-              </label>
-              <div className="flex gap-2">
-                <input
-                  id="customer-name-input"
-                  type="text"
-                  value={senderName}
-                  onChange={(e) => setSenderName(e.target.value)}
-                  placeholder="VD: Nguyễn Văn A"
-                  className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500"
-                />
-                <button
-                  type="button"
-                  onClick={handleSaveName}
-                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg"
-                >
-                  Bắt đầu
-                </button>
-              </div>
-            </div>
-          ) : (
-            <form
-              onSubmit={handleSend}
-              className="border-t border-slate-200 p-2.5 bg-white flex items-center gap-2"
-            >
-              <input
-                ref={inputRef}
-                id="customer-chat-input"
-                type="text"
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                placeholder="Nhập tin nhắn..."
-                disabled={connectionStatus !== 'connected'}
-                autoComplete="off"
-                className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs outline-none focus:bg-white focus:ring-2 focus:ring-emerald-500 disabled:opacity-50"
-              />
-              <button
-                type="submit"
-                disabled={!draft.trim() || connectionStatus !== 'connected'}
-                className="inline-flex items-center justify-center w-9 h-9 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white rounded-lg transition shadow-sm"
-                aria-label="Gửi tin nhắn"
-              >
-                {connectionStatus !== 'connected' ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-              </button>
-            </form>
-          )}
-        </div>
-      )}
-    </>
-  );
+ };
+ const waiting=status==='connecting'||status==='reconnecting';
+ return <><button ref={launcher} type="button" className="support-launcher" data-testid="customer-chat-toggle" aria-label={isOpen?'Thu gọn chat hỗ trợ':unread?'Mở chat hỗ trợ, có tin mới':'Mở chat hỗ trợ'} aria-expanded={isOpen} aria-controls={isOpen?'customer-support-panel':undefined} onClick={()=>{if(isOpen)close();else{setEnabled(true);setOpen(true);}}}><MessageCircle size={22} aria-hidden="true"/><span className="support-launcher-label">Hỗ trợ</span>{unread&&<span className="support-unread" aria-hidden="true"/>}</button>
+ {isOpen&&<section id="customer-support-panel" role="dialog" aria-modal="false" aria-labelledby="customer-support-title" data-testid="customer-chat-panel" className="support-panel" onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();close();}}}>
+  <header className="support-heading"><div><h2 id="customer-support-title">Chat hỗ trợ</h2><p role="status">{waiting&&<Loader2 size={13} className="support-spin" aria-hidden="true"/>}{CHAT_STATUS[status]}</p></div><button type="button" className="support-icon" aria-label="Đóng chat hỗ trợ" onClick={close}><X size={20}/></button></header>
+  {(status==='error'||status==='disconnected')&&<div className="support-connection"><p>Chưa kết nối được với hỗ trợ.</p><button type="button" onClick={()=>setRetry(value=>value+1)}>Kết nối lại</button></div>}
+  <div className="support-log" ref={log} role="log" aria-label="Tin nhắn hỗ trợ" aria-live="polite" aria-relevant="additions text" tabIndex={0} onScroll={()=>{const element=log.current;nearEnd.current=element.scrollHeight-element.scrollTop-element.clientHeight<64;}}>
+   {messages.length===0&&<div className="support-empty"><MessageCircle size={28} aria-hidden="true"/><p>Bạn cần hỗ trợ gì?</p><span>Gửi câu hỏi về sản phẩm hoặc đơn hàng.</span></div>}
+   {messages.map(message=>message.sender==='system'?<p className="support-system" key={message.id}>{message.text}</p>:<article key={message.id} className={`support-message${message.sender==='customer'?' support-mine':''}`}><p className="support-author">{message.sender==='customer'?'Bạn':message.senderName||'Hỗ trợ'}</p><p className="support-text">{message.text}</p><footer><time>{new Date(message.ts).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</time>{message.sender==='customer'&&<span>{message.state==='pending'?'Đang gửi…':message.state==='failed'?'Chưa xác nhận':'Đã gửi'}</span>}</footer>{message.state==='failed'&&<button type="button" className="support-resend" disabled={sending||status!=='connected'} onClick={event=>void send(event,message)}>Gửi lại</button>}</article>)}
+  </div>
+  {error&&<p className="support-error" role="alert">{error}</p>}
+  <p className="support-note">Tin nhắn không được lưu sau khi tải lại trang.</p>
+  {!nameConfirmed?<form onSubmit={saveName} className="support-form"><label htmlFor="customer-name-input">Tên hiển thị</label><div className="support-compose"><input ref={entry} id="customer-name-input" value={senderName} onChange={event=>setSenderName(event.target.value)} autoComplete="name" aria-invalid={!!nameError} aria-describedby={nameError?'support-name-error':undefined} disabled={joining}/><button type="submit" disabled={status!=='connected'||joining}>{joining?'Đang mở…':'Bắt đầu'}</button></div>{nameError&&<p className="support-error" id="support-name-error" role="alert">{nameError}</p>}</form>:<form onSubmit={send} className="support-form"><label htmlFor="customer-chat-input">Tin nhắn</label><div className="support-compose"><input ref={entry} id="customer-chat-input" value={draft} onChange={event=>setDraft(event.target.value)} placeholder="Nhập tin nhắn…" autoComplete="off"/><button type="submit" className="support-send" disabled={!draft.trim()||status!=='connected'||sending} aria-label="Gửi tin nhắn">{sending?<Loader2 size={19} className="support-spin"/>:<Send size={19}/>}</button></div></form>}
+ </section>}</>;
+}
+export default function CustomerLiveChat(props){
+ const userId=useAuthStore(state=>state.user?.id),token=useAuthStore(state=>state.token),name=useAuthStore(state=>state.user?.fullName);
+ return <SupportChat key={JSON.stringify([userId,token])} {...props} defaultSenderName={name||props.defaultSenderName||''}/>;
 }

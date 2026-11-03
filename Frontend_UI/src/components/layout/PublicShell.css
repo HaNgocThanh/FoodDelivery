@@ -21,9 +21,6 @@
 @media (max-width: 767px) {
   .public-header-inner .public-search { flex-basis: calc(100% - 54px); }
   .public-support { order: 5; width: 44px; min-height: 44px; }
-  .public-support [data-testid="customer-chat-toggle"] { position: static; width: 44px; height: 44px; border-radius: 8px; background: #ecfdf5; color: #047857; box-shadow: none; --tw-ring-shadow: 0 0 #0000; animation: none; }
-  .public-support [data-testid="customer-chat-toggle"]:hover { background: #d1fae5; }
-  .public-support [data-testid="customer-chat-panel"] { bottom: 16px; right: 16px; }
   .public-footer-bottom { width: calc(100% - 40px); }
 }
 @media (max-width: 1199px) { .public-header-inner { padding: 20px 32px; gap: 20px; }.public-nav { gap: 10px; }.public-nav-link span { display: none; }.public-nav-link { width: 44px; justify-content: center; }.public-footer-inner { padding-inline: 32px; }.public-footer-bottom { margin-inline: 32px; } }
