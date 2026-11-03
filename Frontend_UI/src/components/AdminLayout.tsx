@@ -1,129 +1,56 @@
-import { useLocation, Link } from 'react-router-dom';
-import {
-  LayoutDashboard,
-  ClipboardList,
-  Boxes,
-  Ticket,
-  Users,
-  ArrowLeft,
-  ChevronRight,
-  Utensils,
-  HelpCircle,
-} from 'lucide-react';
-
-interface AdminLayoutProps {
-  children: React.ReactNode;
-}
+import { useEffect, useRef, useState, type ReactNode, type MouseEvent } from 'react';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, ClipboardList, Boxes, Ticket, Users, ArrowLeft, MessageCircle, Menu, X, LogOut } from 'lucide-react';
+import { useAuthStore } from '../stores/useAuthStore';
+import '../styles/admin-shell.css';
 
 const NAV_ITEMS = [
-  {
-    to: '/admin/dashboard',
-    icon: <LayoutDashboard className="w-4 h-4" />,
-    label: 'Dashboard',
-    iconColor: 'text-emerald-600',
-  },
-  {
-    to: '/admin/orders',
-    icon: <ClipboardList className="w-4 h-4" />,
-    label: 'Quản lý Đơn hàng',
-    iconColor: 'text-emerald-600',
-  },
-  {
-    to: '/admin/products',
-    icon: <Boxes className="w-4 h-4" />,
-    label: 'Quản lý Sản phẩm',
-    iconColor: 'text-emerald-600',
-  },
-  {
-    to: '/admin/promotions',
-    icon: <Ticket className="w-4 h-4" />,
-    label: 'Khuyến mãi (Voucher)',
-    iconColor: 'text-amber-600',
-  },
-  {
-    to: '/admin/users',
-    icon: <Users className="w-4 h-4" />,
-    label: 'Khách hàng & Hạng thẻ',
-    iconColor: 'text-sky-600',
-  },
-  {
-    to: '/admin/support',
-    icon: <HelpCircle className="w-4 h-4" />,
-    label: 'Chăm sóc Khách hàng',
-    iconColor: 'text-rose-600',
-  },
+  { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Tổng quan' },
+  { to: '/admin/orders', icon: ClipboardList, label: 'Đơn hàng' },
+  { to: '/admin/products', icon: Boxes, label: 'Sản phẩm' },
+  { to: '/admin/promotions', icon: Ticket, label: 'Khuyến mãi' },
+  { to: '/admin/users', icon: Users, label: 'Khách hàng' },
+  { to: '/admin/support', icon: MessageCircle, label: 'Hỗ trợ' },
 ];
 
-export default function AdminLayout({ children }: AdminLayoutProps) {
+export default function AdminLayout({ children }: { children: ReactNode }) {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
+  const userName = useAuthStore(state => state.user?.fullName);
+  const logout = useAuthStore(state => state.logout);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const content = useRef<HTMLDivElement>(null);
 
-  return (
-    <div className="min-h-screen bg-slate-50 text-slate-700 font-sans flex">
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
+  const closeMenu = () => { setMenuOpen(false); menuButton.current?.focus(); };
+  const followLink = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    setMenuOpen(false);
+    content.current?.focus({ preventScroll: true });
+  };
+  const signOut = () => { logout(); navigate('/login', { replace: true }); };
 
-      {/* ──────────────── SIDEBAR ──────────────── */}
-      <aside className="w-64 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col py-6 px-4 gap-1 sticky top-0 h-screen overflow-y-auto z-30 shadow-sm">
-
-        {/* Logo */}
-        <Link to="/" className="flex items-center gap-2.5 mb-6 px-2 group">
-          <div className="w-9 h-9 bg-gradient-to-tr from-emerald-500 to-emerald-700 rounded-lg flex items-center justify-center shadow-md shadow-emerald-500/30 group-hover:scale-105 transition-transform">
-            <Utensils className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <span className="text-base font-extrabold text-slate-900 tracking-tight">
-              Food<span className="text-emerald-600">Delivery</span>
-            </span>
-            <span className="block text-[10px] text-emerald-600 font-bold uppercase tracking-wider">
-              Admin Panel
-            </span>
-          </div>
-        </Link>
-
-        {/* Nav items */}
-        <nav className="flex-1 space-y-0.5">
-          {NAV_ITEMS.map((item) => {
-            const isActive = pathname === item.to;
-            return (
-              <Link
-                key={item.to}
-                to={item.to}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold transition-all duration-150 group ${
-                  isActive
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm'
-                    : 'text-slate-600 hover:text-emerald-700 hover:bg-slate-50 border border-transparent'
-                }`}
-              >
-                <span
-                  className={`transition-colors ${
-                    isActive ? item.iconColor : 'text-slate-400 group-hover:text-emerald-600'
-                  }`}
-                >
-                  {item.icon}
-                </span>
-                <span className="flex-1">{item.label}</span>
-                {isActive && (
-                  <ChevronRight className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-                )}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Footer link */}
-        <div className="pt-4 border-t border-slate-200">
-          <Link
-            to="/"
-            className="flex items-center gap-2 px-3 py-2 text-xs text-slate-500 hover:text-emerald-700 rounded-lg hover:bg-slate-50 transition-colors"
-          >
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Về Trang chủ
-          </Link>
-        </div>
-      </aside>
-
-      {/* ──────────────── PAGE CONTENT ──────────────── */}
-      <div className="flex-1 min-w-0 overflow-auto">
-        {children}
+  return <div className="admin-shell">
+    <a className="admin-skip" href="#admin-content">Đến nội dung</a>
+    <aside className="admin-sidebar" aria-label="Quản trị" onKeyDown={event => {
+      if (event.key === 'Escape' && menuOpen) { event.preventDefault(); closeMenu(); }
+    }}>
+      <div className="admin-sidebar-header">
+        <div className="admin-identity"><Link to="/" className="admin-brand" aria-label="FoodDelivery — Cửa hàng">Food<span>Delivery</span><i aria-hidden="true" /></Link><p>Quản trị</p></div>
+        <button ref={menuButton} type="button" className="admin-menu-toggle" aria-label={menuOpen ? 'Đóng điều hướng quản trị' : 'Mở điều hướng quản trị'} aria-expanded={menuOpen} aria-controls="admin-navigation" onClick={() => setMenuOpen(open => !open)}>{menuOpen ? <X size={20} aria-hidden="true" /> : <Menu size={20} aria-hidden="true" />}<span>Menu</span></button>
       </div>
-    </div>
-  );
+      <div id="admin-navigation" className="admin-navigation" data-open={menuOpen}>
+        <nav aria-label="Điều hướng quản trị">
+          {NAV_ITEMS.map(({ to, icon: Icon, label }) => <NavLink key={to} to={to} className="admin-nav-link" onClick={followLink}><Icon size={20} aria-hidden="true" /><span>{label}</span></NavLink>)}
+        </nav>
+        <div className="admin-sidebar-footer">
+          <Link to="/" className="admin-store-link"><ArrowLeft size={18} aria-hidden="true" />Xem cửa hàng</Link>
+          {userName && <p className="admin-user-name">{userName}</p>}
+          <button type="button" className="admin-sign-out" onClick={signOut}><LogOut size={18} aria-hidden="true" />Đăng xuất</button>
+        </div>
+      </div>
+    </aside>
+    <div className="admin-content" id="admin-content" ref={content} tabIndex={-1}>{children}</div>
+  </div>;
 }
