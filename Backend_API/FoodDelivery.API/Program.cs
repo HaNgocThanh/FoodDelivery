@@ -93,6 +93,19 @@ var secretKey = jwtSettings["SecretKey"]
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var request = context.HttpContext.Request;
+                if (request.Path == "/supporthub" && !request.Headers.ContainsKey("Authorization"))
+                {
+                    var token = request.Query["access_token"];
+                    if (!string.IsNullOrEmpty(token)) context.Token = token;
+                }
+                return Task.CompletedTask;
+            }
+        };
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -261,6 +274,6 @@ app.MapHealthChecks("/health");
 app.MapControllers();
 
 // SignalR Hub mapping
-app.MapHub<SupportHub>("/supporthub");
+app.MapHub<SupportHub>("/supporthub", options => options.CloseOnAuthenticationExpiration = true);
 
 app.Run();

@@ -10,8 +10,11 @@ declare module '@/components/admin/AdminLiveChat' {
   import type { ComponentType } from 'react';
 
   interface AdminLiveChatProps {
-    hubUrl?: string;
-    accessToken?: string | null;
+    hubUrl: string;
+    accessToken: string;
+    active: boolean;
+    createConnection?: (hubUrl: string, accessToken: string) => Pick<import('@microsoft/signalr').HubConnection,
+      'state' | 'start' | 'stop' | 'invoke' | 'on' | 'off' | 'onreconnecting' | 'onreconnected' | 'onclose'>;
   }
 
   const AdminLiveChat: ComponentType<AdminLiveChatProps>;
@@ -22,8 +25,11 @@ declare module '@/components/admin/AdminLiveChat.jsx' {
   import type { ComponentType } from 'react';
 
   interface AdminLiveChatProps {
-    hubUrl?: string;
-    accessToken?: string | null;
+    hubUrl: string;
+    accessToken: string;
+    active: boolean;
+    createConnection?: (hubUrl: string, accessToken: string) => Pick<import('@microsoft/signalr').HubConnection,
+      'state' | 'start' | 'stop' | 'invoke' | 'on' | 'off' | 'onreconnecting' | 'onreconnected' | 'onclose'>;
   }
 
   const AdminLiveChat: ComponentType<AdminLiveChatProps>;
@@ -60,8 +66,11 @@ declare module '../components/admin/AdminLiveChat' {
   import type { ComponentType } from 'react';
 
   interface AdminLiveChatProps {
-    hubUrl?: string;
-    accessToken?: string | null;
+    hubUrl: string;
+    accessToken: string;
+    active: boolean;
+    createConnection?: (hubUrl: string, accessToken: string) => Pick<import('@microsoft/signalr').HubConnection,
+      'state' | 'start' | 'stop' | 'invoke' | 'on' | 'off' | 'onreconnecting' | 'onreconnected' | 'onclose'>;
   }
 
   const AdminLiveChat: ComponentType<AdminLiveChatProps>;
@@ -72,8 +81,11 @@ declare module '../components/admin/AdminLiveChat.jsx' {
   import type { ComponentType } from 'react';
 
   interface AdminLiveChatProps {
-    hubUrl?: string;
-    accessToken?: string | null;
+    hubUrl: string;
+    accessToken: string;
+    active: boolean;
+    createConnection?: (hubUrl: string, accessToken: string) => Pick<import('@microsoft/signalr').HubConnection,
+      'state' | 'start' | 'stop' | 'invoke' | 'on' | 'off' | 'onreconnecting' | 'onreconnected' | 'onclose'>;
   }
 
   const AdminLiveChat: ComponentType<AdminLiveChatProps>;

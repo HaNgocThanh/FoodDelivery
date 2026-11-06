@@ -23,7 +23,6 @@ namespace FoodDelivery.API.Hubs;
 /// Tin nhắn KHÔNG lưu DB theo yêu cầu (chỉ forward realtime).
 /// Khi server restart, toàn bộ lịch sử chat bị mất.
 /// </summary>
-[AllowAnonymous]
 public class SupportHub : Hub
 {
     private const string AdminGroup = "admin-group";
@@ -52,6 +51,7 @@ public class SupportHub : Hub
     /// <summary>
     /// Admin đăng ký nhận broadcast tin nhắn từ tất cả khách.
     /// </summary>
+    [Authorize(Roles = "Admin")]
     public async Task JoinAdminGroup()
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, AdminGroup);
@@ -104,6 +104,7 @@ public class SupportHub : Hub
     /// <summary>
     /// Admin phản hồi lại một khách cụ thể theo connectionId.
     /// </summary>
+    [Authorize(Roles = "Admin")]
     public async Task ReplyToClient(string connectionId, string message)
     {
         if (string.IsNullOrWhiteSpace(connectionId) || string.IsNullOrWhiteSpace(message))
