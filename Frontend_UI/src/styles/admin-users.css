@@ -1,0 +1,76 @@
+.admin-users { font-size: 14px; line-height: 1.6; }
+.au-heading, .au-pagination, .au-dialog header, .au-dialog footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+}
+.au-heading { margin-bottom: 24px; }
+.au-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 44px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 8px;
+  background: #fff; color: #334155; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.au-button:hover { background: #f8fafc; }
+.au-button:disabled { opacity: .55; cursor: not-allowed; }
+.au-primary { background: #047857; color: #fff; border-color: #047857; }
+.au-primary:hover { background: #065f46; }
+.au-icon { min-width: 44px; padding: 8px; }
+.admin-users :focus-visible { outline: 2px solid #047857; outline-offset: 3px; }
+.au-search { border-block: 1px solid #e2e8f0; padding: 20px 0; }
+.au-search label, .au-dialog label { display: block; font-weight: 600; font-size: 13px; }
+.au-search input, .au-dialog input:not([type=checkbox]), .au-dialog select {
+  display: block; width: 100%; min-width: 0; min-height: 44px; margin-top: 6px;
+  border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 12px;
+  background: white; color: #0f172a; font: inherit; font-weight: 400;
+}
+.au-search input { max-width: 480px; }
+.au-search input::placeholder { color: #64748b; }
+.au-count { margin: 20px 0 12px; color: #475569; font-size: 13px; }
+.au-table { width: 100%; table-layout: fixed; text-align: left; border-collapse: collapse; }
+.au-table th { background: #f8fafc; font-size: 12px; font-weight: 600; color: #475569; }
+.au-table th:first-child { width: 34%; }
+.au-table th:nth-child(2) { width: 17%; }
+.au-table th:nth-child(3) { width: 18%; }
+.au-table th, .au-table td { padding: 14px; overflow-wrap: anywhere; }
+.au-table td { border-bottom: 1px solid #e2e8f0; }
+.au-muted { color: #475569; font-size: 13px; overflow-wrap: anywhere; }
+.au-role { display: inline-block; padding: 4px 8px; background: #ecfdf5; color: #065f46; border-radius: 6px; font-size: 12px; }
+.au-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.au-pagination { justify-content: flex-end; margin-top: 20px; }
+.au-state { padding: 40px 0; text-align: center; color: #475569; }
+.au-notice, .au-error { padding: 12px; border-radius: 8px; margin-top: 16px; overflow-wrap: anywhere; }
+.au-notice { color: #065f46; background: #ecfdf5; }
+.au-error { color: #991b1b; background: #fef2f2; }
+.au-error .au-button { margin-top: 8px; }
+.au-dialog {
+  position: fixed; inset: 0; margin: auto; width: min(680px, calc(100% - 32px));
+  max-height: calc(100dvh - 32px); padding: 0; border: 1px solid #e2e8f0; border-radius: 14px;
+  overflow: hidden; color: #0f172a; background: white;
+}
+.au-dialog::backdrop { background: rgb(15 23 42 / .45); }
+.au-dialog header, .au-dialog footer { padding: 16px 20px; }
+.au-dialog header { border-bottom: 1px solid #e2e8f0; }
+.au-dialog footer { border-top: 1px solid #e2e8f0; justify-content: flex-end; flex-wrap: wrap; }
+.au-dialog footer .au-error { width: 100%; margin: 0; }
+.au-dialog h2 { color: #064e3b; font-size: 20px; font-weight: 700; line-height: 1.4; }
+.au-dialog form {
+  display: flex; flex-direction: column; max-height: calc(100dvh - 34px);
+}
+.au-dialog header, .au-dialog footer { flex-shrink: 0; }
+.au-dialog-body { min-height: 0; padding: 20px; overflow-y: auto; overscroll-behavior: contain; }
+.au-subject { margin-bottom: 16px; color: #475569; overflow-wrap: anywhere; }
+.au-dialog fieldset { min-width: 0; border: 0; padding: 0; }
+.au-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.au-dialog .au-confirm { display: flex; align-items: center; gap: 10px; min-height: 44px; margin-top: 16px; }
+.au-confirm input { flex: none; width: 18px; height: 18px; accent-color: #047857; }
+.au-password-actions { margin: 12px 0; }
+@media (max-width: 767px) {
+  .au-table, .au-table tbody { display: block; }
+  .au-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .au-table tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; padding: 16px 0; border-bottom: 1px solid #e2e8f0; }
+  .au-table td { border: 0; padding: 0; }
+  .au-table td:first-child, .au-table td:last-child { grid-column: 1 / -1; }
+  .au-pagination { justify-content: space-between; flex-wrap: wrap; }
+}
+@media (max-width: 480px) {
+  .au-fields { grid-template-columns: 1fr; }
+  .au-dialog header, .au-dialog footer, .au-dialog-body { padding: 14px; }
+}
