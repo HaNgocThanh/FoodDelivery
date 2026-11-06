@@ -33,5 +33,7 @@ public record OrderResponseDTO(
     bool LeaveAtDoorstep = false,
     decimal ShippingFee = 0,
     decimal ToteDeposit = 0,
-    decimal TipAmount = 0
+    decimal TipAmount = 0,
+    DateTime? OnlinePaymentConfirmedAt = null,
+    DateTimeOffset? PaymentExpiresAt = null
 );

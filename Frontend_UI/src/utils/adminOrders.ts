@@ -7,6 +7,32 @@ export const adminOrderStates = [
 ];
 export function adminOrderState(raw:string|number){return adminOrderStates.find(state=>state.key===raw||String(state.value)===String(raw))??{key:String(raw),value:0,label:String(raw)||'Chưa có trạng thái',tone:'unknown'};}
 export function adminPayment(raw:string|number){return raw===1||raw==='1'||raw==='COD'?'Tiền mặt (COD)':raw===2||raw==='2'||raw==='Online'?'Trực tuyến':String(raw)||'Chưa có thông tin';}
+type OrderWorkflow = {
+  status: string | number;
+  paymentMethod: string | number;
+  shipperId?: number | null;
+  onlinePaymentConfirmedAt?: string | null;
+};
+
+function isCod(order: OrderWorkflow) {
+  return order.paymentMethod === 'COD' || String(order.paymentMethod) === '1';
+}
+
+export function canAssignOrder(order: OrderWorkflow) {
+  const status = adminOrderState(order.status).key;
+  const paidOnline = (order.paymentMethod === 'Online' || String(order.paymentMethod) === '2')
+    && !!order.onlinePaymentConfirmedAt;
+  return (status === 'Approved' || status === 'Shipping') && (isCod(order) || paidOnline);
+}
+
+export function availableOrderStatuses(order: OrderWorkflow) {
+  const status = adminOrderState(order.status).key;
+  return adminOrderStates.filter(state =>
+    (status === 'Pending' && (state.key === 'Cancelled' || (state.key === 'Approved' && isCod(order))))
+    || (status === 'Approved' && isCod(order) && state.key === 'Cancelled')
+    || (status === 'Shipping' && !!order.shipperId && canAssignOrder(order) && state.key === 'Completed')
+  );
+}
 export function orderMoney(value:number){return `${value.toLocaleString('vi-VN')} đ`;}
 export function orderDate(value:string){const date=new Date(value);return Number.isNaN(date.getTime())?'Chưa có ngày đặt':date.toLocaleString('vi-VN',{dateStyle:'short',timeStyle:'short'});}
 const record=(value:unknown):value is Record<string,unknown>=>!!value&&typeof value==='object'&&!Array.isArray(value);
@@ -21,7 +47,7 @@ function validOrder(row:Record<string,unknown>){
  // Undefined fees keep their existing optional display behavior; present money must be usable.
  if(!['subTotal','discountAmount','shippingFee','toteDeposit','tipAmount'].every(key=>row[key]===undefined||money(row[key])))return false;
  if(row.pointDiscount!=null&&!money(row.pointDiscount))return false;
- return ['recipientName','recipientPhone','deliveryAddress','deliverySlot','deliveryNotes','appliedCouponCode'].every(key=>row[key]==null||typeof row[key]==='string');
+ return ['recipientName','recipientPhone','deliveryAddress','deliverySlot','deliveryNotes','appliedCouponCode','onlinePaymentConfirmedAt'].every(key=>row[key]==null||typeof row[key]==='string');
 }
 export function readAdminList<T>(data:unknown,kind:'orders'|'shippers'):T[]{
  if(!Array.isArray(data)||data.some(row=>!record(row)||!id(row.id)||(kind==='orders'?!validOrder(row):typeof row.fullName!=='string'||!row.fullName.trim())))throw Error('Dữ liệu không hợp lệ. Vui lòng tải lại.');

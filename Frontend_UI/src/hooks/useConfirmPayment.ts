@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import axiosClient from '../api/axiosClient';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useCartStore } from '../stores/useCartStore';
+import { forgetCheckoutOrder } from '../utils/checkoutAttempt';
 import { isConfirmedPayment, paymentErrorMessage, type ConfirmedPayment } from '../utils/paymentResult';
 
 export function useConfirmPayment(orderId: number, paymentToken: string, userId: number, authToken: string) {
@@ -26,6 +27,7 @@ export function useConfirmPayment(orderId: number, paymentToken: string, userId:
       if (!isConfirmedPayment(value, orderId)) throw new Error('Kết quả xác minh không khớp đơn hàng. Vui lòng kiểm tra đơn hàng của bạn.');
       // Do not erase items the customer changed while verification was pending.
       if (useCartStore.getState().items === current.cart) useCartStore.getState().clearCart();
+      forgetCheckoutOrder(userId, orderId);
       void queryClient.invalidateQueries({ queryKey: ['myOrders', userId] });
       setResult({ status: 'success', amount: value.amount });
     }).catch(cause => {

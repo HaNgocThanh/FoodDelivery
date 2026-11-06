@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {test} from 'node:test';
-import {adminOrderState,adminPayment,readAdminList} from '../src/utils/adminOrders.ts';
+import {adminOrderState,adminPayment,readAdminList,availableOrderStatuses,canAssignOrder} from '../src/utils/adminOrders.ts';
 test('Admin orders preserve numeric/string statuses and unknown values without inventing payment provider',()=>{assert.equal(adminOrderState('3').key,'Shipping');assert.equal(adminOrderState('Completed').value,4);assert.equal(adminOrderState('Other').label,'Other');assert.equal(adminPayment(2),'Trực tuyến');assert.equal(adminPayment('NewMethod'),'NewMethod');});
 test('Missing or malformed admin data cannot masquerade as empty orders or available shippers',()=>{assert.deepEqual(readAdminList([],'shippers'),[]);for(const data of [null,{},[{id:2,fullName:''}],[{id:0,fullName:'A'}]])assert.throws(()=>readAdminList(data,'shippers'));for(const data of [null,{},[{id:1,totalAmount:NaN,status:1,details:[]}],[{id:1,totalAmount:0,status:1}]])assert.throws(()=>readAdminList(data,'orders'));const rows=[{id:1,totalAmount:0,status:'Pending',details:[]}];assert.equal(readAdminList(rows,'orders'),rows);});
 test('Nested order details and displayed money fail recoverably before rendering, while optional fees remain optional',()=>{
@@ -9,4 +9,16 @@ test('Nested order details and displayed money fail recoverably before rendering
  for(const key of ['subTotal','discountAmount','shippingFee','toteDeposit','tipAmount','pointDiscount'])for(const bad of ['100',Infinity,NaN,-1])assert.throws(()=>readAdminList([{...order,[key]:bad}],'orders'));
  assert.throws(()=>readAdminList([{...order,subTotal:null}],'orders'));assert.throws(()=>readAdminList([{...order,recipientName:{}}],'orders'));
  assert.deepEqual(readAdminList([order],'orders'),[order]);assert.doesNotThrow(()=>readAdminList([{...order,pointDiscount:null,details:[{...detail,subtotal:undefined}]}],'orders'));
+});
+
+test('Order actions follow the payment and state workflow', () => {
+ const keys = order => availableOrderStatuses(order).map(state => state.key);
+ assert.deepEqual(keys({status:'Pending', paymentMethod:'COD'}), ['Approved','Cancelled']);
+ assert.deepEqual(keys({status:'Pending', paymentMethod:2}), ['Cancelled']);
+ assert.equal(canAssignOrder({status:'Approved', paymentMethod:'Online'}), false);
+ const paid = {status:'Approved', paymentMethod:'Online', onlinePaymentConfirmedAt:'2026-11-06T12:00:00Z'};
+ assert.equal(canAssignOrder(paid), true);
+ assert.deepEqual(keys(paid), []);
+ assert.deepEqual(keys({...paid, status:'Shipping', shipperId:4}), ['Completed']);
+ assert.deepEqual(keys({...paid, status:'Completed', shipperId:4}), []);
 });

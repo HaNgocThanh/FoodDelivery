@@ -16,6 +16,10 @@ public class Order
     public decimal TotalAmount { get; set; }
     public PaymentMethod PaymentMethod { get; set; }
     public OrderStatus Status { get; set; }
+    public DateTime? OnlinePaymentConfirmedAt { get; set; }
+    public DateTime? PaymentExpiresAt { get; set; }
+    public string? CheckoutRequestId { get; set; }
+    public string? CheckoutFingerprint { get; set; }
     public int? ShipperId { get; set; }
 
     public string? RecipientName { get; set; }

@@ -13,8 +13,8 @@ public class UserRepository : GenericRepository<AppUser>, IUserRepository
 
     public async Task<AppUser?> GetByIdWithLockAsync(int userId, CancellationToken ct = default)
     {
-        // Sử dụng LINQ query trong EF Core transaction (sẽ dịch ra SELECT ... FOR UPDATE khi transaction active).
-        // EF Core Oracle provider tự động xử lý concurrency token thông qua transaction isolation.
-        return await _dbSet.FirstOrDefaultAsync(u => u.Id == userId, ct);
+        var rows = await _dbSet.FromSqlInterpolated($"SELECT * FROM \"AppUsers\" WHERE \"Id\" = {userId} FOR UPDATE")
+            .AsTracking().ToListAsync(ct);
+        return rows.SingleOrDefault();
     }
 }

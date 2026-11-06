@@ -73,6 +73,7 @@ function createConnection() {
       if (method !== 'ReplyToClient') throw new Error('Thao tác ngoài phạm vi kiểm thử.');
       if (failChat) { failChat = false; throw new Error('Lỗi gửi mô phỏng.'); }
       receive?.('[Admin] Minh', text, id);
+      return 'accepted';
     },
     reconnect() {
       this.state = HubConnectionState.Reconnecting;

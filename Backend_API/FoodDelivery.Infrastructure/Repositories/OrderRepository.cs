@@ -12,6 +12,17 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
     {
     }
 
+    public Task<Order?> GetCheckoutOrderAsync(int userId, string checkoutId, CancellationToken ct) =>
+        _dbSet.AsNoTracking().Include(order => order.OrderDetails).ThenInclude(item => item.Product)
+            .SingleOrDefaultAsync(order => order.UserId == userId && order.CheckoutRequestId == checkoutId, ct);
+
+    public async Task<IReadOnlyList<int>> GetExpiredPaymentOrdersAsync(DateTime now, int take, CancellationToken ct) =>
+        await _dbSet.AsNoTracking()
+            .Where(order => order.Status == OrderStatus.Pending && order.PaymentMethod == PaymentMethod.Online
+                && order.OnlinePaymentConfirmedAt == null && order.PaymentExpiresAt <= now)
+            .OrderBy(order => order.PaymentExpiresAt).ThenBy(order => order.Id)
+            .Select(order => order.Id).Take(take).ToListAsync(ct);
+
     public async Task<Order?> GetOrderWithDetailsForUpdateAsync(int orderId, CancellationToken ct = default)
     {
         var rows = await _dbSet.FromSqlInterpolated($"SELECT * FROM \"Orders\" WHERE \"Id\" = {orderId} FOR UPDATE")
@@ -24,35 +35,17 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
 
     public async Task<bool> TryApproveOnlinePaymentAsync(int orderId, int userId, decimal amount, CancellationToken ct = default)
     {
-        var updated = await _dbSet.Where(o => o.Id == orderId && o.UserId == userId
-            && o.PaymentMethod == PaymentMethod.Online && o.Status == OrderStatus.Pending
-            && o.TotalAmount == amount)
-            .ExecuteUpdateAsync(setters => setters.SetProperty(o => o.Status, OrderStatus.Approved), ct);
+        // The deadline is stored as a UTC TIMESTAMP without a time zone.
+        var updated = await _context.Database.ExecuteSqlInterpolatedAsync($"""
+            UPDATE "Orders"
+            SET "Status" = {OrderStatus.Approved.ToString()}, "OnlinePaymentConfirmedAt" = SYS_EXTRACT_UTC(SYSTIMESTAMP)
+            WHERE "Id" = {orderId} AND "UserId" = {userId}
+              AND "PaymentMethod" = {PaymentMethod.Online.ToString()} AND "OnlinePaymentConfirmedAt" IS NULL
+              AND "Status" IN ({OrderStatus.Pending.ToString()}, {OrderStatus.Approved.ToString()})
+              AND "TotalAmount" = {amount}
+              AND ("PaymentExpiresAt" IS NULL OR "PaymentExpiresAt" > SYS_EXTRACT_UTC(SYSTIMESTAMP))
+            """, ct);
         return updated == 1;
-    }
-
-    public async Task<bool> AssignShipperAsync(int orderId, int shipperId, CancellationToken ct = default)
-    {
-        var order = await _dbSet.FirstOrDefaultAsync(o => o.Id == orderId, ct);
-        if (order == null) return false;
-
-        var shipperExists = await _context.AppUsers.AnyAsync(u => u.Id == shipperId, ct);
-        if (!shipperExists) return false;
-
-        order.ShipperId = shipperId;
-        order.Status = OrderStatus.Shipping;
-        _dbSet.Update(order);
-        return true;
-    }
-
-    public async Task<bool> UpdateOrderStatusAsync(int orderId, OrderStatus status, CancellationToken ct = default)
-    {
-        var order = await _dbSet.FirstOrDefaultAsync(o => o.Id == orderId, ct);
-        if (order == null) return false;
-
-        order.Status = status;
-        _dbSet.Update(order);
-        return true;
     }
 
     public async Task<List<Order>> GetUserOrdersAsync(int userId, CancellationToken ct = default)
@@ -71,6 +64,7 @@ public class OrderRepository : GenericRepository<Order>, IOrderRepository
         return await _dbSet
             .Include(o => o.OrderDetails!)
                 .ThenInclude(od => od.Product)
+            .AsNoTracking()
             .FirstOrDefaultAsync(o => o.Id == orderId, ct);
     }
 

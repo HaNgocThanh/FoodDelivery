@@ -1,5 +1,7 @@
 import { useMutation, useQueryClient, type QueryClient, type UseMutationOptions } from '@tanstack/react-query';
 import axiosClient from '../api/axiosClient';
+import { checkoutAttempt } from '../utils/checkoutAttempt';
+import { useAuthStore } from '../stores/useAuthStore';
 
 export interface OrderItemPayload {
   productId: number;
@@ -42,7 +44,9 @@ export interface OrderResponse {
   pointDiscount?: number | null;
   totalAmount: number;
   paymentMethod: string;
-  status: string;
+  status: string | number;
+  onlinePaymentConfirmedAt?: string | null;
+  paymentExpiresAt?: string | null;
   shipperId?: number | null;
   details: OrderDetailResponse[];
 }
@@ -59,7 +63,17 @@ export function createOrderMutationOptions(queryClient: QueryClient): UseMutatio
       ]);
     },
     mutationFn: async (payload: OrderRequestPayload) => {
-      const response = await axiosClient.post<OrderResponse, OrderResponse>('/api/orders', payload);
+      const auth = useAuthStore.getState();
+      const attempt = await checkoutAttempt(payload);
+      const current = useAuthStore.getState();
+      if (auth.token !== current.token || auth.user?.id !== current.user?.id ||
+          (current.user && current.user.id !== payload.userId)) {
+        throw new Error('Phiên làm việc đã thay đổi. Vui lòng mở lại trang thanh toán.');
+      }
+      const response = await axiosClient.post<OrderResponse, OrderResponse>('/api/orders', payload, {
+        headers: { 'Idempotency-Key': attempt.key },
+      });
+      attempt.rememberOrder(response.id);
       return response;
     },
   };

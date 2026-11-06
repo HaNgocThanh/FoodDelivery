@@ -9,6 +9,7 @@ import axiosClient from '../api/axiosClient';
 import type { UserProfile } from '../pages/ProfilePage';
 import { ProductPhoto } from './catalog/ProductCard';
 import { formatCurrency } from '../utils/formatCurrency';
+import { forgetCheckoutOrder } from '../utils/checkoutAttempt';
 import './CheckoutForm.css';
 
 interface ValidateResponse {
@@ -129,7 +130,7 @@ export function CheckoutForm() {
       const result = await axiosClient.post<{ payUrl: string }, { payUrl: string }>('/api/payments/mock-url', { orderId });
       if (!result?.payUrl) throw new Error('Missing payment URL');
       window.location.href = result.payUrl;
-    } catch { setLinkError('Chưa mở được trang thanh toán. Thử lại để tiếp tục với đơn hàng này.'); }
+    } catch (cause) { setLinkError(checkoutMessage(cause, 'Chưa mở được trang thanh toán cho đơn hàng này.')); }
     finally { linkLock.current = false; setLinkPending(false); }
   };
   const handleSubmitOrder = (event: FormEvent) => {
@@ -149,22 +150,41 @@ export function CheckoutForm() {
       tipAmount: currentTip, expectedTotalAmount: finalTotal, paymentMethod, couponCode: appliedPromotion?.code ?? null,
       usePoints, userPointsAvailable, items: cartItems.map(item => ({ productId: item.id, quantity: item.quantity })) }, {
       onSuccess: async data => {
-        if ((data.pointsUsed ?? 0) > 0) updateUser({ loyaltyPoints: Math.max(0, userPointsAvailable - (data.pointsUsed ?? 0)) });
-        if (paymentMethod === 2) await openOnlinePayment(data.id);
-        else clearCart();
+        const auth = useAuthStore.getState();
+        if (auth.user?.id !== user.id || auth.token !== token) return;
+        if (data.status === 'Cancelled' || data.status === 5) return;
+        if (paymentMethod === 2 && !data.onlinePaymentConfirmedAt) {
+          if (data.paymentExpiresAt && Date.parse(data.paymentExpiresAt) <= Date.now()) {
+            setLinkError('Đã hết thời gian thanh toán. Hãy kiểm tra trạng thái trong Đơn hàng của tôi.');
+            return;
+          }
+          await openOnlinePayment(data.id);
+        } else {
+          if (useCartStore.getState().items === cartItems) clearCart();
+          forgetCheckoutOrder(user.id, data.id);
+        }
       },
       onError: () => { submitLock.current = false; },
     });
   };
 
+  const cancelledOrder = order.data?.status === 'Cancelled' || order.data?.status === 5;
+  const confirmedPayment = !!order.data?.onlinePaymentConfirmedAt;
+  const paymentExpired = !!order.data?.paymentExpiresAt && Date.parse(order.data.paymentExpiresAt) <= Date.now();
   if (order.isSuccess && order.data) return <div className="checkout-page checkout-outcome">
-    <CheckCircle2 size={40} aria-hidden="true" /><h1>{submittedMethod === 1 ? 'Đặt hàng thành công' : 'Đơn hàng đã được tạo'}</h1>
-    <p role="status">{submittedMethod === 1 ? 'Thanh toán khi nhận hàng.' : 'Tiếp tục thanh toán trực tuyến thử nghiệm cho đơn này.'}</p>
+    <CheckCircle2 size={40} aria-hidden="true" /><h1>{cancelledOrder ? 'Đơn hàng đã hủy' : confirmedPayment ? 'Thanh toán đã xác nhận' : submittedMethod === 1 ? 'Đặt hàng thành công' : 'Đơn hàng đã được tạo'}</h1>
+    <p role="status">{cancelledOrder ? 'Bạn có thể quay lại giỏ để đặt đơn mới.' : confirmedPayment ? 'Xem trạng thái giao hàng trong Đơn hàng của tôi.' : submittedMethod === 1 ? 'Thanh toán khi nhận hàng.' : paymentExpired ? 'Đơn đã hết thời gian thanh toán.' : 'Tiếp tục thanh toán trực tuyến thử nghiệm cho đơn này.'}</p>
     <dl><div><dt>Mã đơn hàng</dt><dd>#{order.data.id}</dd></div><div><dt>Thời gian tạo</dt><dd>{new Date(order.data.orderDate).toLocaleString('vi-VN')}</dd></div>
       <div><dt>Người nhận</dt><dd>{recipientName} · {recipientPhone}</dd></div><div><dt>Địa chỉ</dt><dd>{deliveryAddress}</dd></div>
       <div className="checkout-total"><dt>Tổng thanh toán</dt><dd>{formatCurrency(order.data.totalAmount)}</dd></div></dl>
-    {submittedMethod === 2 && <><p role={linkError ? 'alert' : 'status'}>{linkError || (linkPending ? 'Đang mở trang thanh toán…' : 'Đơn hàng đang chờ thanh toán.')}</p>
+    {submittedMethod === 2 && !cancelledOrder && !confirmedPayment && !paymentExpired && <><p role={linkError ? 'alert' : 'status'}>{linkError || (linkPending ? 'Đang mở trang thanh toán…' : 'Đơn hàng đang chờ thanh toán.')}</p>
       <button type="button" className="checkout-primary" disabled={linkPending} onClick={() => void openOnlinePayment(order.data.id)}>{linkPending ? 'Đang kết nối…' : 'Tiếp tục thanh toán thử nghiệm'}</button></>}
+    {cancelledOrder && user && <button type="button" className="checkout-primary" onClick={() => {
+      if (!order.data) return;
+      forgetCheckoutOrder(user.id, order.data.id);
+      submitLock.current = false;
+      order.reset();
+    }}>Đặt lại từ giỏ</button>}
     <div className="checkout-outcome-actions"><Link to="/my-orders" className={submittedMethod === 1 ? 'checkout-primary' : 'checkout-secondary'}>Xem đơn hàng</Link><Link to="/products" className="checkout-secondary">Tiếp tục mua sắm</Link></div>
   </div>;
 

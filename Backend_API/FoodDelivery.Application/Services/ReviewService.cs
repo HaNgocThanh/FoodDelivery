@@ -34,7 +34,7 @@ public class ReviewService : IReviewService
         try
         {
             // Bước 1: Lấy Order kèm OrderDetails
-            var order = await _unitOfWork.Orders.GetOrderWithDetailsAsync(request.OrderId, ct)
+            var order = await _unitOfWork.Orders.GetOrderWithDetailsForUpdateAsync(request.OrderId, ct)
                 ?? throw new NotFoundException($"Đơn hàng #{request.OrderId} không tồn tại.");
 
             // Bước 2: Kiểm tra Order thuộc về User đang đăng nhập
@@ -46,7 +46,7 @@ public class ReviewService : IReviewService
             // Bước 3: Kiểm tra Order đã Completed chưa
             if (order.Status != OrderStatus.Completed)
             {
-                throw new InvalidOperationException("Chỉ có thể đánh giá đơn hàng đã hoàn tất.");
+                throw new BusinessRuleException("Chỉ có thể đánh giá đơn hàng đã hoàn tất.");
             }
 
             // Bước 4: Tìm OrderDetail tương ứng với ProductId
@@ -57,7 +57,7 @@ public class ReviewService : IReviewService
             // Bước 5: Kiểm tra đã đánh giá chưa (chống spam)
             if (orderDetail.IsReviewed)
             {
-                throw new InvalidOperationException("Sản phẩm này trong đơn hàng đã được đánh giá.");
+                throw new BusinessRuleException("Sản phẩm này trong đơn hàng đã được đánh giá.");
             }
 
             // Bước 6: Tạo Review
@@ -77,10 +77,10 @@ public class ReviewService : IReviewService
             orderDetail.IsReviewed = true;
 
             // Bước 8: Cộng 10 điểm LoyaltyPoints cho User
-            var user = await _unitOfWork.Users.GetByIdAsync(userId, ct)
+            var user = await _unitOfWork.Users.GetByIdWithLockAsync(userId, ct)
                 ?? throw new NotFoundException("Không tìm thấy người dùng.");
 
-            user.LoyaltyPoints += PointsPerReview;
+            user.LoyaltyPoints = checked(user.LoyaltyPoints + PointsPerReview);
 
             // Bước 9: Commit transaction
             await _unitOfWork.CommitTransactionAsync(ct);
@@ -97,7 +97,7 @@ public class ReviewService : IReviewService
         }
         catch
         {
-            await _unitOfWork.RollbackTransactionAsync(ct);
+            await _unitOfWork.RollbackTransactionAsync(CancellationToken.None);
             throw;
         }
     }

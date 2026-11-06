@@ -65,6 +65,8 @@ namespace FoodDelivery.Infrastructure.Data
                 entity.Property(u => u.Tier).HasConversion<string>().HasDefaultValue(MembershipTier.Standard);
                 entity.Property(u => u.ResetPasswordToken).HasMaxLength(100).IsRequired(false);
                 entity.Property(u => u.ResetPasswordExpiry).IsRequired(false);
+                entity.Property(u => u.ResetPasswordAttempts).HasDefaultValue(0);
+                entity.Property(u => u.SessionVersion).HasMaxLength(32);
                 entity.HasIndex(u => u.Email).IsUnique();
             });
 
@@ -100,6 +102,10 @@ namespace FoodDelivery.Infrastructure.Data
                 entity.Property(o => o.TipAmount).HasColumnType("decimal(18,2)").HasDefaultValue(0m);
                 entity.Property(o => o.PaymentMethod).HasConversion<string>(); // Lưu Enum dưới dạng String (COD, Online)
                 entity.Property(o => o.Status).HasConversion<string>();
+                entity.Property(o => o.CheckoutRequestId).HasMaxLength(64);
+                entity.Property(o => o.CheckoutFingerprint).HasMaxLength(64);
+                entity.HasIndex(o => o.CheckoutRequestId).IsUnique().HasFilter(null).HasDatabaseName("UX_Orders_CheckoutRequest");
+                entity.HasIndex(o => o.PaymentExpiresAt);
 
                 // Check constraint: TotalAmount >= 0
                 entity.ToTable(t => t.HasCheckConstraint("CK_Order_TotalAmount", "\"TotalAmount\" >= 0"));

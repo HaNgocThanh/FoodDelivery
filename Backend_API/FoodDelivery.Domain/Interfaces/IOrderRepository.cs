@@ -5,10 +5,10 @@ namespace FoodDelivery.Domain.Interfaces;
 
 public interface IOrderRepository : IGenericRepository<Order>
 {
+    Task<Order?> GetCheckoutOrderAsync(int userId, string checkoutId, CancellationToken ct);
+    Task<IReadOnlyList<int>> GetExpiredPaymentOrdersAsync(DateTime now, int take, CancellationToken ct);
     Task<Order?> GetOrderWithDetailsForUpdateAsync(int orderId, CancellationToken ct = default);
     Task<bool> TryApproveOnlinePaymentAsync(int orderId, int userId, decimal amount, CancellationToken ct = default);
-    Task<bool> AssignShipperAsync(int orderId, int shipperId, CancellationToken ct = default);
-    Task<bool> UpdateOrderStatusAsync(int orderId, OrderStatus status, CancellationToken ct = default);
     Task<List<Order>> GetUserOrdersAsync(int userId, CancellationToken ct = default);
     Task<Order?> GetOrderWithDetailsAsync(int orderId, CancellationToken ct = default);
 

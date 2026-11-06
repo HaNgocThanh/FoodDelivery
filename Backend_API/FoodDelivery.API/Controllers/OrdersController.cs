@@ -93,7 +93,7 @@ public class OrdersController : ControllerBase
                 Detail = ex.Message
             });
         }
-        catch (InvalidOperationException ex)
+        catch (BusinessRuleException ex)
         {
             return BadRequest(new ProblemDetails
             {
@@ -113,13 +113,18 @@ public class OrdersController : ControllerBase
     [ProducesResponseType(typeof(OrderResponseDTO), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> CreateOrder([FromBody] OrderRequestDTO request, CancellationToken ct)
+    public async Task<IActionResult> CreateOrder([FromBody] OrderRequestDTO request,
+        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
+        [FromServices] IWebHostEnvironment environment, CancellationToken ct)
     {
         if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var effectiveUserId))
             return Unauthorized();
 
+        if (!Guid.TryParseExact(idempotencyKey, "D", out var key) || key == Guid.Empty)
+            return Problem(statusCode: 400, detail: "Yêu cầu đặt hàng cần Idempotency-Key hợp lệ.");
+
         var effectiveRequest = request with { UserId = effectiveUserId };
-        var result = await _orderService.CreateOrderAsync(effectiveRequest, ct);
+        var result = await _orderService.CreateOrderAsync(effectiveRequest, ct, key, environment.IsDevelopment());
         return CreatedAtAction(nameof(GetOrderById), new { id = result.Id }, result);
     }
 
@@ -131,9 +136,13 @@ public class OrdersController : ControllerBase
     [Authorize]
     [ProducesResponseType(typeof(OrderResponseDTO), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
-    public IActionResult GetOrderById(int id)
+    public async Task<IActionResult> GetOrderById(int id, CancellationToken ct)
     {
-        return Ok();
+        if (!int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
+            return Unauthorized();
+
+        int? ownerId = User.IsInRole("Admin") ? null : userId;
+        return Ok(await _orderService.GetOrderByIdAsync(id, ownerId, ct));
     }
 
     /// <summary>

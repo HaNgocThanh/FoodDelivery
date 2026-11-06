@@ -76,3 +76,26 @@ test('A rejected order request does not mark the cached order list as successful
     client.clear();
   }
 });
+
+test('Retries keep the checkout key for the same purchase even when the quoted total changes', async () => {
+  const client = makeClient();
+  const adapter = axiosClient.defaults.adapter;
+  const keys = [];
+  axiosClient.defaults.adapter = async config => {
+    keys.push(config.headers.get('Idempotency-Key'));
+    if (keys.length === 1) throw new Error('Response lost');
+    return { data: { id: 50, userId: payload.userId }, status: 201, statusText: 'Created', headers: {}, config };
+  };
+  try {
+    const mutation = new MutationObserver(client, createOrderMutationOptions(client));
+    await assert.rejects(mutation.mutate(payload));
+    await mutation.mutate({ ...payload, expectedTotalAmount: 141000 });
+    await mutation.mutate({ ...payload, deliveryAddress: 'Different address' });
+    assert.match(keys[0], /^[0-9a-f-]{36}$/i);
+    assert.equal(keys[0], keys[1]);
+    assert.notEqual(keys[0], keys[2]);
+  } finally {
+    axiosClient.defaults.adapter = adapter;
+    client.clear();
+  }
+});

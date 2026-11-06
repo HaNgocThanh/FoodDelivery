@@ -81,7 +81,7 @@ public class UploadController : ControllerBase
             return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
             {
                 Title = "Upload thất bại",
-                Detail = ex.Message,
+                Detail = "Không thể tải ảnh lên. Vui lòng thử lại sau.",
                 Status = StatusCodes.Status500InternalServerError
             });
         }

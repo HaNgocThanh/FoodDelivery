@@ -88,74 +88,77 @@ public class ProductService : IProductService
 
     public async Task<ProductResponseDTO> UpdateProductAsync(int id, UpdateProductDTO dto, CancellationToken ct = default)
     {
-        var product = await _unitOfWork.Products.GetByIdAsync(id, ct);
-        if (product == null)
-        {
-            throw new NotFoundException($"Sản phẩm với ID {id} không tồn tại.");
-        }
-
         if (dto.Price <= 0) throw new ArgumentException("Giá sản phẩm phải lớn hơn 0.");
 
-        var category = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId, ct);
-
-        // ─── Cleanup ảnh cũ trên Cloudinary nếu Admin thay ảnh mới ───────────────
-        // So sánh ImagePublicId (chuẩn hơn URL vì URL có thể bị transform).
-        var oldPublicId = product.ImagePublicId;
-        var newPublicId = dto.ImagePublicId;
-        if (!string.IsNullOrWhiteSpace(oldPublicId)
-            && !string.Equals(oldPublicId, newPublicId, StringComparison.Ordinal))
+        await _unitOfWork.BeginTransactionAsync(ct);
+        Product product;
+        string? oldPublicId = null;
+        try
         {
-            await DeleteCloudinaryImageSafelyAsync(oldPublicId);
+            product = await GetLockedProductAsync(id, ct);
+            product.Name = dto.Name;
+            product.Description = dto.Description;
+            product.Price = dto.Price;
+            product.Origin = dto.Origin;
+            product.IsHot = dto.IsHot;
+            product.IsAvailable = dto.IsAvailable;
+
+            if (!string.IsNullOrWhiteSpace(dto.ImageUrl))
+                product.ImageUrl = dto.ImageUrl;
+            if (!string.IsNullOrWhiteSpace(dto.ImagePublicId) &&
+                !string.Equals(product.ImagePublicId, dto.ImagePublicId, StringComparison.Ordinal))
+            {
+                oldPublicId = product.ImagePublicId;
+                product.ImagePublicId = dto.ImagePublicId;
+            }
+
+            await _unitOfWork.CommitTransactionAsync(ct);
+        }
+        catch
+        {
+            await _unitOfWork.RollbackTransactionAsync(CancellationToken.None);
+            throw;
         }
 
-        product.Name = dto.Name;
-        product.Description = dto.Description;
-        product.Price = dto.Price;
-        product.Origin = dto.Origin;
-        product.IsHot = dto.IsHot;
-        product.IsAvailable = dto.IsAvailable;
+        if (!string.IsNullOrWhiteSpace(oldPublicId))
+            await DeleteCloudinaryImageSafelyAsync(oldPublicId);
 
-        if (!string.IsNullOrWhiteSpace(dto.ImageUrl))
-            product.ImageUrl = dto.ImageUrl;
-        if (!string.IsNullOrWhiteSpace(dto.ImagePublicId))
-            product.ImagePublicId = dto.ImagePublicId;
-
-        _unitOfWork.Products.Update(product);
-        await _unitOfWork.SaveChangesAsync(ct);
-
+        var category = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId, ct);
         var reviews = await _unitOfWork.Reviews.GetProductReviewsAsync(id, ct);
         var avgRating = reviews.Count > 0 ? Math.Round(reviews.Average(r => r.Rating), 1) : 0;
-        var reviewDtos = MapReviews(reviews);
-
-        return MapToResponse(product, category, avgRating, reviewDtos);
+        return MapToResponse(product, category, avgRating, MapReviews(reviews));
     }
 
     public async Task<ProductResponseDTO> RestockAsync(int productId, int additionalQuantity, CancellationToken ct = default)
     {
         if (additionalQuantity <= 0)
-        {
             throw new ArgumentException("Số lượng nhập kho phải lớn hơn 0.");
-        }
 
-        var product = await _unitOfWork.Products.GetByIdAsync(productId, ct);
-        if (product == null)
+        await _unitOfWork.BeginTransactionAsync(ct);
+        Product product;
+        try
         {
-            throw new NotFoundException($"Sản phẩm với ID {productId} không tồn tại.");
+            product = await GetLockedProductAsync(productId, ct);
+            if ((long)product.StockQuantity + additionalQuantity > int.MaxValue)
+                throw new ArgumentException("Tổng số lượng tồn kho vượt quá giới hạn.");
+
+            product.StockQuantity += additionalQuantity;
+            if (product.StockQuantity > 0) product.IsAvailable = true;
+            await _unitOfWork.CommitTransactionAsync(ct);
+        }
+        catch
+        {
+            await _unitOfWork.RollbackTransactionAsync(CancellationToken.None);
+            throw;
         }
 
         var category = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId, ct);
-
-        product.StockQuantity += additionalQuantity;
-        if (product.StockQuantity > 0)
-        {
-            product.IsAvailable = true;
-        }
-
-        _unitOfWork.Products.Update(product);
-        await _unitOfWork.SaveChangesAsync(ct);
-
         return MapToResponse(product, category, 0, Enumerable.Empty<ReviewResponseDTO>());
     }
+
+    private async Task<Product> GetLockedProductAsync(int id, CancellationToken ct) =>
+        await _unitOfWork.Products.GetByIdWithLockAsync(id, ct)
+            ?? throw new NotFoundException($"Sản phẩm với ID {id} không tồn tại.");
 
     public async Task<ReviewResponseDTO> CreateReviewAsync(int productId, int userId, CreateReviewDTO dto, CancellationToken ct = default)
     {
@@ -246,26 +249,24 @@ public class ProductService : IProductService
         return result;
     }
 
-    /// <summary>
-    /// Xóa sản phẩm khỏi DB. Trước khi xóa, gọi Cloudinary xóa ảnh (nếu có) nhưng
-    /// lỗi dọn rác KHÔNG chặn việc xóa DB — chỉ log lại.
-    /// </summary>
     public async Task DeleteProductAsync(int id, CancellationToken ct = default)
     {
-        var product = await _unitOfWork.Products.GetByIdAsync(id, ct);
-        if (product == null)
+        await _unitOfWork.BeginTransactionAsync(ct);
+        Product product;
+        try
         {
-            throw new NotFoundException($"Sản phẩm với ID {id} không tồn tại.");
+            product = await GetLockedProductAsync(id, ct);
+            _unitOfWork.Products.Delete(product);
+            await _unitOfWork.CommitTransactionAsync(ct);
+        }
+        catch
+        {
+            await _unitOfWork.RollbackTransactionAsync(CancellationToken.None);
+            throw;
         }
 
-        // Xóa ảnh trên Cloudinary trước (idempotent — lỗi không block DB cleanup)
         if (!string.IsNullOrWhiteSpace(product.ImagePublicId))
-        {
-            await DeleteCloudinaryImageSafelyAsync(product.ImagePublicId, throwOnError: false);
-        }
-
-        _unitOfWork.Products.Delete(product);
-        await _unitOfWork.SaveChangesAsync(ct);
+            await DeleteCloudinaryImageSafelyAsync(product.ImagePublicId);
     }
 
     // ─────────────── Helpers ───────────────

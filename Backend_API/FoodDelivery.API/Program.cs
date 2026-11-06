@@ -1,4 +1,7 @@
 using System.Text;
+using System.Threading.RateLimiting;
+using FoodDelivery.API;
+using FoodDelivery.API.Auth;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using FoodDelivery.API.Hubs;
@@ -15,6 +18,7 @@ using Mapster;
 using MapsterMapper;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -43,6 +47,15 @@ builder.Services.Configure<FormOptions>(options =>
 // 1. CONTROLLERS
 // =============================================
 builder.Services.AddControllers();
+builder.Services.AddProblemDetails(options =>
+{
+    options.CustomizeProblemDetails = context =>
+    {
+        context.ProblemDetails.Instance ??= context.HttpContext.Request.Path;
+        context.ProblemDetails.Extensions.TryAdd("traceId",
+            System.Diagnostics.Activity.Current?.Id ?? context.HttpContext.TraceIdentifier);
+    };
+});
 
 // =============================================
 // 2. SWAGGER / OPENAPI (Swashbuckle cho net8)
@@ -105,6 +118,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                     if (!string.IsNullOrEmpty(token)) context.Token = token;
                 }
                 return Task.CompletedTask;
+            },
+            OnTokenValidated = async context =>
+            {
+                var session = UserSessions.FromPrincipal(context.Principal);
+                var db = context.HttpContext.RequestServices.GetRequiredService<AppDbContext>();
+                if (session is null || !await UserSessions.IsCurrentAsync(db, session, context.HttpContext.RequestAborted))
+                    context.Fail("Session has expired.");
             }
         };
         options.TokenValidationParameters = new TokenValidationParameters
@@ -121,6 +141,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 builder.Services.AddAuthorization();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("auth", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.MapToIPv6().ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 30,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+        }));
+});
 
 // =============================================
 // 4. DATABASE – Oracle EF Core
@@ -136,10 +168,15 @@ builder.Services.AddDbContext<AppDbContext>(options => options.UseOracle(oracleC
 // =============================================
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<PasswordRecoveryService>();
+builder.Services.AddSingleton<PasswordRecoveryQueue>();
+builder.Services.AddHostedService(services => services.GetRequiredService<PasswordRecoveryQueue>());
+builder.Services.AddSingleton<UserSessions>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddHostedService<ExpiredPaymentOrdersWorker>();
 builder.Services.AddScoped<IReviewService, ReviewService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
 builder.Services.AddScoped<IStatisticsService, StatisticsService>();
@@ -200,7 +237,8 @@ builder.Services.AddCors(options =>
 // =============================================
 // 10. HEALTH CHECKS
 // =============================================
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks()
+    .AddCheck<OracleReadinessCheck>("oracle", tags: ["ready"], timeout: TimeSpan.FromSeconds(5));
 
 // =============================================
 // 10.1 SIGNALR — Realtime chat hub (Customer ↔ Admin)
@@ -255,13 +293,23 @@ app.UseGlobalExceptionMiddleware();
 app.UseHttpsRedirection();
 
 // CORS phải trước Authentication
+app.UseRouting();
 app.UseCors("ReactApp");
+app.UseWhen(context => context.Request.Path.StartsWithSegments("/api"), branch =>
+    branch.UseStatusCodePages(async status =>
+    {
+        var context = status.HttpContext;
+        await Results.Problem(statusCode: context.Response.StatusCode).ExecuteAsync(context);
+    }));
+app.UseRateLimiter();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
 // Health check endpoint
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health", new HealthCheckOptions { Predicate = _ => false });
+app.MapHealthChecks("/health/live", new HealthCheckOptions { Predicate = _ => false });
+app.MapHealthChecks("/health/ready", new HealthCheckOptions { Predicate = check => check.Tags.Contains("ready") });
 
 // Controllers
 app.MapControllers();

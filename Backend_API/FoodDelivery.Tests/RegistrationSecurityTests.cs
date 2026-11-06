@@ -6,9 +6,7 @@ using System.Text;
 using System.Text.Json;
 using FoodDelivery.API.Controllers;
 using FoodDelivery.Application.DTOs.Auth;
-using FoodDelivery.Application.Interfaces;
 using FoodDelivery.Domain.Entities;
-using FoodDelivery.Domain.Interfaces;
 using FoodDelivery.Infrastructure.Data;
 using FoodDelivery.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -16,7 +14,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using Moq;
 using Xunit;
 
 namespace FoodDelivery.Tests;
@@ -53,7 +50,7 @@ public class RegistrationSecurityTests
             .AddInterceptors(new NoExistingAccount()).Options;
         await using var context = new RegistrationContext(options);
         var controller = new AuthController(new AuthService(context, new TokenService(configuration)),
-            Mock.Of<IUnitOfWork>(), Mock.Of<IEmailService>());
+            null!, null!);
 
         var result = Assert.IsType<OkObjectResult>(await controller.Register(request, CancellationToken.None));
         var response = Assert.IsType<AuthResponseDTO>(result.Value);

@@ -11,5 +11,7 @@ public class UpdateUserByAdminDTO
     public string? Address2 { get; set; }
     public int LoyaltyPoints { get; set; }
     public MembershipTier Tier { get; set; }
+    public int? ExpectedLoyaltyPoints { get; set; }
+    public MembershipTier? ExpectedTier { get; set; }
     public string Role { get; set; } = "Customer";
 }

@@ -1,11 +1,13 @@
 using FoodDelivery.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace FoodDelivery.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize(Roles = "Admin")]
 public class ShippersController : ControllerBase
 {
     private readonly AppDbContext _context;
@@ -24,14 +26,9 @@ public class ShippersController : ControllerBase
     {
         var shippers = await _context.AppUsers
             .AsNoTracking()
-            .Where(u => u.Email.Contains("shipper"))
-            .Select(u => new
-            {
-                u.Id,
-                u.FullName,
-                u.PhoneNumber,
-                u.Email
-            })
+            .Where(u => u.Role == "Shipper")
+            .OrderBy(u => u.FullName).ThenBy(u => u.Id)
+            .Select(u => new { u.Id, u.FullName })
             .ToListAsync(ct);
 
         return Ok(shippers);

@@ -10,6 +10,9 @@ namespace FoodDelivery.Infrastructure.Services;
 
 public class TokenService : ITokenService
 {
+    public const string SessionClaim = "fd_session";
+    public const string InitialSessionVersion = "initial";
+
     private readonly IConfiguration _configuration;
 
     public TokenService(IConfiguration configuration)
@@ -33,7 +36,8 @@ public class TokenService : ITokenService
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.FullName ?? string.Empty),
             new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
-            new Claim(ClaimTypes.Role, user.Role ?? "Customer")
+            new Claim(ClaimTypes.Role, user.Role ?? "Customer"),
+            new Claim(SessionClaim, user.SessionVersion ?? InitialSessionVersion)
         };
 
         var expiresAt = DateTime.UtcNow.AddMinutes(expirationMinutes);

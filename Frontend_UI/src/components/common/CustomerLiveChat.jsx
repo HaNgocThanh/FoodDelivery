@@ -21,7 +21,7 @@ export function SupportChat({hubUrl='http://localhost:5156/supporthub',defaultSe
   const connection=createConnection(hubUrl);connectionRef.current=connection;
   const active=()=>!cancelled;
   const join=async()=>{if(nameRef.current)await connection.invoke('JoinCustomerGroup',nameRef.current);};
-  connection.on('ReceiveMessage',(name,text,id)=>{if(!active())return;setMessages(previous=>[...previous,receivedMessage(name,text,id)]);if(!openRef.current)setUnread(true);});
+  connection.on('ReceiveMessage',(name,text,id,kind)=>{if(!active())return;setMessages(previous=>[...previous,receivedMessage(name,text,id,kind)]);if(!openRef.current)setUnread(true);});
   connection.onreconnecting(()=>{if(active())setStatus('reconnecting');});
   connection.onreconnected(async()=>{if(!active())return;setStatus('reconnecting');try{await join();if(active()){setStatus('connected');setError('');}}catch{if(active()){setStatus('error');setError('Chưa khôi phục được phiên hỗ trợ. Kết nối lại để tiếp tục.');}}});
   connection.onclose(()=>{if(active())setStatus('disconnected');});
@@ -34,7 +34,7 @@ export function SupportChat({hubUrl='http://localhost:5156/supporthub',defaultSe
  const close=()=>{setOpen(false);launcher.current?.focus();};
  const saveName=async(event)=>{
   event.preventDefault();if(joinLock.current)return;
-  if(!isValidSenderName(senderName)){setNameError('Nhập tên có ít nhất một chữ hoặc số.');entry.current?.focus();return;}
+  if(!isValidSenderName(senderName)){setNameError('Nhập tên tối đa 80 ký tự, có ít nhất một chữ hoặc số.');entry.current?.focus();return;}
   const connection=connectionRef.current;if(status!=='connected'||!connection)return;
   joinLock.current=true;setJoining(true);setNameError('');const name=senderName.trim();
   try{await connection.invoke('JoinCustomerGroup',name);if(alive.current&&connectionRef.current===connection){nameRef.current=name;setNameConfirmed(true);setSenderName(name);storage.setItem(NAME_KEY,name);setError('');}}catch{if(alive.current)setNameError('Chưa bắt đầu được cuộc trò chuyện. Hãy thử lại.');}finally{joinLock.current=false;if(alive.current)setJoining(false);}
@@ -47,7 +47,14 @@ export function SupportChat({hubUrl='http://localhost:5156/supporthub',defaultSe
    setSending(true);setError('');nearEnd.current=true;
    setMessages(previous=>failed?previous.map(item=>item.id===message.id?{...item,state:'pending'}:item):[...previous,{...message,state:'pending'}]);
    if(!failed)setDraft('');
-   try{await connection.invoke('SendMessageToAdmin',text);if(alive.current&&connectionRef.current===connection)setMessages(previous=>previous.map(item=>item.id===message.id?{...item,state:'sent'}:item));}
+   try {
+    const result = await connection.invoke('SendMessageToAdmin', text);
+    if (!alive.current || connectionRef.current !== connection) return;
+    if (result !== 'accepted' && result !== 'unavailable') throw new Error('Phản hồi chat không hợp lệ.');
+    setMessages(previous => previous.map(item => item.id === message.id
+      ? { ...item, state: result === 'accepted' ? 'sent' : 'unavailable' } : item));
+    if (result === 'unavailable') setError('Chưa có nhân viên hỗ trợ trực tuyến. Bạn có thể gửi lại sau.');
+   }
    catch{if(alive.current&&connectionRef.current===connection){setMessages(previous=>previous.map(item=>item.id===message.id?{...item,state:'failed'}:item));setError('Tin nhắn chưa được xác nhận. Bạn có thể gửi lại.');}}
    finally{if(alive.current)setSending(false);}
   });
@@ -59,11 +66,11 @@ export function SupportChat({hubUrl='http://localhost:5156/supporthub',defaultSe
   {(status==='error'||status==='disconnected')&&<div className="support-connection"><p>Chưa kết nối được với hỗ trợ.</p><button type="button" onClick={()=>setRetry(value=>value+1)}>Kết nối lại</button></div>}
   <div className="support-log" ref={log} role="log" aria-label="Tin nhắn hỗ trợ" aria-live="polite" aria-relevant="additions text" tabIndex={0} onScroll={()=>{const element=log.current;nearEnd.current=element.scrollHeight-element.scrollTop-element.clientHeight<64;}}>
    {messages.length===0&&<div className="support-empty"><MessageCircle size={28} aria-hidden="true"/><p>Bạn cần hỗ trợ gì?</p><span>Gửi câu hỏi về sản phẩm hoặc đơn hàng.</span></div>}
-   {messages.map(message=>message.sender==='system'?<p className="support-system" key={message.id}>{message.text}</p>:<article key={message.id} className={`support-message${message.sender==='customer'?' support-mine':''}`}><p className="support-author">{message.sender==='customer'?'Bạn':message.senderName||'Hỗ trợ'}</p><p className="support-text">{message.text}</p><footer><time>{new Date(message.ts).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</time>{message.sender==='customer'&&<span>{message.state==='pending'?'Đang gửi…':message.state==='failed'?'Chưa xác nhận':'Đã gửi'}</span>}</footer>{message.state==='failed'&&<button type="button" className="support-resend" disabled={sending||status!=='connected'} onClick={event=>void send(event,message)}>Gửi lại</button>}</article>)}
+   {messages.map(message=>message.sender==='system'?<p className="support-system" key={message.id}>{message.text}</p>:<article key={message.id} className={`support-message${message.sender==='customer'?' support-mine':''}`}><p className="support-author">{message.sender==='customer'?'Bạn':message.senderName||'Hỗ trợ'}</p><p className="support-text">{message.text}</p><footer><time>{new Date(message.ts).toLocaleTimeString('vi-VN',{hour:'2-digit',minute:'2-digit'})}</time>{message.sender==='customer'&&<span>{message.state==='pending'?'Đang gửi…':message.state==='failed'?'Chưa xác nhận':message.state==='unavailable'?'Chưa gửi':'Đã chuyển tới hỗ trợ'}</span>}</footer>{(message.state==='failed'||message.state==='unavailable')&&<button type="button" className="support-resend" disabled={sending||status!=='connected'} onClick={event=>void send(event,message)}>Gửi lại</button>}</article>)}
   </div>
   {error&&<p className="support-error" role="alert">{error}</p>}
   <p className="support-note">Tin nhắn không được lưu sau khi tải lại trang.</p>
-  {!nameConfirmed?<form onSubmit={saveName} className="support-form"><label htmlFor="customer-name-input">Tên hiển thị</label><div className="support-compose"><input ref={entry} id="customer-name-input" value={senderName} onChange={event=>setSenderName(event.target.value)} autoComplete="name" aria-invalid={!!nameError} aria-describedby={nameError?'support-name-error':undefined} disabled={joining}/><button type="submit" disabled={status!=='connected'||joining}>{joining?'Đang mở…':'Bắt đầu'}</button></div>{nameError&&<p className="support-error" id="support-name-error" role="alert">{nameError}</p>}</form>:<form onSubmit={send} className="support-form"><label htmlFor="customer-chat-input">Tin nhắn</label><div className="support-compose"><input ref={entry} id="customer-chat-input" value={draft} onChange={event=>setDraft(event.target.value)} placeholder="Nhập tin nhắn…" autoComplete="off"/><button type="submit" className="support-send" disabled={!draft.trim()||status!=='connected'||sending} aria-label="Gửi tin nhắn">{sending?<Loader2 size={19} className="support-spin"/>:<Send size={19}/>}</button></div></form>}
+  {!nameConfirmed?<form onSubmit={saveName} className="support-form"><label htmlFor="customer-name-input">Tên hiển thị</label><div className="support-compose"><input ref={entry} id="customer-name-input" maxLength={80} value={senderName} onChange={event=>setSenderName(event.target.value)} autoComplete="name" aria-invalid={!!nameError} aria-describedby={nameError?'support-name-error':undefined} disabled={joining}/><button type="submit" disabled={status!=='connected'||joining}>{joining?'Đang mở…':'Bắt đầu'}</button></div>{nameError&&<p className="support-error" id="support-name-error" role="alert">{nameError}</p>}</form>:<form onSubmit={send} className="support-form"><label htmlFor="customer-chat-input">Tin nhắn</label><div className="support-compose"><input ref={entry} id="customer-chat-input" maxLength={2000} value={draft} onChange={event=>setDraft(event.target.value)} placeholder="Nhập tin nhắn…" autoComplete="off"/><button type="submit" className="support-send" disabled={!draft.trim()||status!=='connected'||sending} aria-label="Gửi tin nhắn">{sending?<Loader2 size={19} className="support-spin"/>:<Send size={19}/>}</button></div></form>}
  </section>}</>;
 }
 export default function CustomerLiveChat(props){

@@ -17,6 +17,8 @@ public class AppUser
 
     public string? ResetPasswordToken { get; set; }
     public DateTime? ResetPasswordExpiry { get; set; }
+    public int ResetPasswordAttempts { get; set; }
+    public string? SessionVersion { get; set; }
 
     // Navigation properties
     public ICollection<Order> UserOrders { get; set; } = new List<Order>();

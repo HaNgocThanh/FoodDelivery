@@ -25,14 +25,17 @@ public class OrderRepositoryTests
         Assert.Contains("\"TotalAmount\"", capture.Sql);
         Assert.Contains("\"PaymentMethod\"", capture.Sql);
         Assert.Contains("\"Status\"", capture.Sql);
-        Assert.Contains("Pending", capture.Sql);
-        Assert.Contains("Online", capture.Sql);
-        Assert.Contains("Approved", capture.Sql);
+        Assert.Contains("Pending", capture.Parameters);
+        Assert.Contains("\"OnlinePaymentConfirmedAt\"", capture.Sql);
+        Assert.Contains("Online", capture.Parameters);
+        Assert.Contains("Approved", capture.Parameters);
+        Assert.Contains("\"PaymentExpiresAt\" > SYS_EXTRACT_UTC(SYSTIMESTAMP)", capture.Sql);
     }
 
     private sealed class CaptureCommand : DbCommandInterceptor, IDbConnectionInterceptor
     {
         public string Sql { get; private set; } = "";
+        public object?[] Parameters { get; private set; } = [];
         public ValueTask<InterceptionResult> ConnectionOpeningAsync(DbConnection connection, ConnectionEventData eventData,
             InterceptionResult result, CancellationToken cancellationToken = default)
             => ValueTask.FromResult(InterceptionResult.Suppress());
@@ -41,6 +44,7 @@ public class OrderRepositoryTests
             InterceptionResult<int> result, CancellationToken cancellationToken = default)
         {
             Sql = command.CommandText;
+            Parameters = command.Parameters.Cast<DbParameter>().Select(parameter => parameter.Value).ToArray();
             return ValueTask.FromResult(InterceptionResult<int>.SuppressWithResult(1));
         }
     }

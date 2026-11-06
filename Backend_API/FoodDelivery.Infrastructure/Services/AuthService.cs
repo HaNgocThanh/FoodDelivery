@@ -5,11 +5,16 @@ using FoodDelivery.Application.Interfaces;
 using FoodDelivery.Domain.Entities;
 using FoodDelivery.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 
 namespace FoodDelivery.Infrastructure.Services;
 
 public class AuthService : IAuthService
 {
+    private static readonly PasswordHasher<AppUser> PasswordHasher = new(
+        Options.Create(new PasswordHasherOptions { IterationCount = 220_000 }));
+
     private readonly AppDbContext _context;
     private readonly ITokenService _tokenService;
 
@@ -26,13 +31,32 @@ public class AuthService : IAuthService
             throw new ArgumentException("Vui lòng nhập đầy đủ Email và Mật khẩu.");
         }
 
-        var normalizedEmail = dto.Email.Trim().ToLower();
-        var user = await _context.AppUsers
+        var normalizedEmail = dto.Email.Trim().ToLowerInvariant();
+        var user = await _context.AppUsers.AsNoTracking()
             .FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail, ct);
 
-        if (user == null || !VerifyPassword(dto.Password, user.PasswordHash))
+        var verification = VerifyPassword(dto.Password, user?.PasswordHash);
+        if (user == null || verification == PasswordVerificationResult.Failed)
         {
             throw new ArgumentException("Email hoặc mật khẩu không chính xác.");
+        }
+
+        if (verification == PasswordVerificationResult.SuccessRehashNeeded)
+        {
+            var oldHash = user.PasswordHash;
+            var sessionVersion = user.SessionVersion;
+            var upgradedHash = HashPassword(dto.Password);
+            var updated = await _context.AppUsers.Where(account => account.Id == user.Id
+                    && account.PasswordHash == oldHash && account.SessionVersion == sessionVersion)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(account => account.PasswordHash, upgradedHash), ct);
+
+            if (updated == 0)
+            {
+                user = await _context.AppUsers.AsNoTracking()
+                    .SingleOrDefaultAsync(account => account.Id == user.Id && account.SessionVersion == sessionVersion, ct);
+                if (user is null || VerifyPassword(dto.Password, user.PasswordHash) == PasswordVerificationResult.Failed)
+                    throw new ArgumentException("Email hoặc mật khẩu không chính xác.");
+            }
         }
 
         var (token, expiresAt) = _tokenService.GenerateToken(user);
@@ -54,7 +78,10 @@ public class AuthService : IAuthService
             throw new ArgumentException("Vui lòng điền đầy đủ Họ tên, Email và Mật khẩu.");
         }
 
-        var normalizedEmail = dto.Email.Trim().ToLower();
+        var normalizedEmail = dto.Email.Trim().ToLowerInvariant();
+        if (dto.Password.Length is < 6 or > 100)
+            throw new ArgumentException("Mật khẩu cần từ 6 đến 100 ký tự.");
+
         var existingUser = await _context.AppUsers
             .AnyAsync(u => u.Email.ToLower() == normalizedEmail, ct);
 
@@ -90,19 +117,26 @@ public class AuthService : IAuthService
         );
     }
 
-    public static string HashPassword(string password)
-    {
-        if (string.IsNullOrEmpty(password)) return string.Empty;
-        using var sha256 = SHA256.Create();
-        var bytes = Encoding.UTF8.GetBytes(password + "FoodDelivery_Salt_2026");
-        var hash = sha256.ComputeHash(bytes);
-        return Convert.ToBase64String(hash);
-    }
+    public static string HashPassword(string password) => PasswordHasher.HashPassword(new AppUser(), password);
 
-    public static bool VerifyPassword(string password, string? storedHash)
+    public static PasswordVerificationResult VerifyPassword(string password, string? storedHash)
     {
-        if (string.IsNullOrEmpty(storedHash)) return false;
-        var hash = HashPassword(password);
-        return hash == storedHash;
+        if (string.IsNullOrWhiteSpace(storedHash)) return PasswordVerificationResult.Failed;
+
+        try
+        {
+            var hashBytes = Convert.FromBase64String(storedHash);
+            // The old format is a 32-byte SHA-256 digest. Identity hashes include version and salt.
+            if (hashBytes.Length != 32)
+                return PasswordHasher.VerifyHashedPassword(new AppUser(), storedHash, password);
+
+            var legacy = SHA256.HashData(Encoding.UTF8.GetBytes(password + "FoodDelivery_Salt_2026"));
+            return CryptographicOperations.FixedTimeEquals(legacy, hashBytes)
+                ? PasswordVerificationResult.SuccessRehashNeeded : PasswordVerificationResult.Failed;
+        }
+        catch (FormatException)
+        {
+            return PasswordVerificationResult.Failed;
+        }
     }
 }

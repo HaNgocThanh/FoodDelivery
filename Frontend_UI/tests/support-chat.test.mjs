@@ -7,6 +7,7 @@ test('Support names accept Vietnamese text but reject empty/punctuation-only val
 });
 test('Support notices are classified by server identity without treating ordinary replies as system messages',()=>{
  assert.equal(receivedMessage('Hỗ trợ','hello','system').sender,'system');
+ assert.equal(receivedMessage('🔔 Lan','hello','id','admin').sender,'admin');
  assert.equal(receivedMessage('🛟 Hỗ trợ','hello','id').sender,'system');
  const reply=receivedMessage('[Admin] Lan','hello','id');assert.equal(reply.sender,'admin');assert.equal(reply.senderName,'Lan');
 });

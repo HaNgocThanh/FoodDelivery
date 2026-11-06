@@ -5,7 +5,7 @@ namespace FoodDelivery.Infrastructure.Settings;
 /// </summary>
 /// <remarks>
 /// Class POCO này được đăng ký với IOptions&lt;CloudinarySettings&gt; trong Program.cs.
-/// Validate cơ bản trong constructor (fail-fast) để đảm bảo credentials không bị thiếu.
+/// Cấu hình được kiểm tra khi thao tác ảnh cần tới Cloudinary.
 /// </remarks>
 public class CloudinarySettings
 {

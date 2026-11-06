@@ -64,11 +64,11 @@ export default function AdminLiveChat({ hubUrl, accessToken, active, createConne
     connection.onreconnecting(() => { if (!disposed) setStatus('reconnecting'); });
     connection.onreconnected(() => { if (!disposed) void subscribe(); });
     connection.onclose(() => { if (!disposed) setStatus('disconnected'); });
-    connection.on('ReceiveMessage', (name, text, id) => {
+    connection.on('ReceiveMessage', (name, text, id, kind) => {
       if (disposed || !id || id === 'system' || typeof text !== 'string') return;
       const senderName = typeof name === 'string' ? name : '';
-      const system = senderName === '🔔 Hệ thống' || senderName === '🛟 Hỗ trợ';
-      const admin = senderName.startsWith('[Admin] ');
+      const system = kind === 'system' || (kind == null && (senderName === '🔔 Hệ thống' || senderName === '🛟 Hỗ trợ'));
+      const admin = kind === 'admin' || (kind == null && senderName.startsWith('[Admin] '));
       const message = { id: ++messageId.current, senderName, text, at: Date.now(), system, admin };
       const isReading = selectedRef.current === id && !feed.current?.closest('[hidden]');
       setThreads(previous => {
@@ -136,7 +136,13 @@ export default function AdminLiveChat({ hubUrl, accessToken, active, createConne
     setSending(id);
     setErrors(previous => ({ ...previous, [id]: '' }));
     try {
-      await connection.invoke('ReplyToClient', id, text);
+      const result = await connection.invoke('ReplyToClient', id, text);
+      if (connectionRef.current !== connection) return;
+      if (result === 'unavailable') {
+        setErrors(previous => ({ ...previous, [id]: 'Khách đã rời phiên chat. Bản nháp vẫn được giữ.' }));
+        return;
+      }
+      if (result !== 'accepted') throw new Error('Phản hồi chat không hợp lệ.');
       setDrafts(previous => ({ ...previous, [id]: '' }));
     } catch {
       setErrors(previous => ({ ...previous, [id]: 'Chưa xác nhận gửi. Kiểm tra hội thoại trước khi thử lại.' }));
@@ -194,7 +200,7 @@ export default function AdminLiveChat({ hubUrl, accessToken, active, createConne
             {errors[selected] && <p className="as-error" role="alert">{errors[selected]}</p>}
             <label className="sr-only" htmlFor="as-chat-input">Tin nhắn trả lời</label>
             <div>
-              <input id="as-chat-input" value={draft} placeholder="Nhập tin nhắn" autoComplete="off"
+              <input id="as-chat-input" maxLength={2000} value={draft} placeholder="Nhập tin nhắn" autoComplete="off"
                 disabled={sending === selected} onChange={event => {
                   const value = event.target.value;
                   setDrafts(previous => ({ ...previous, [selected]: value }));

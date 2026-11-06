@@ -165,6 +165,7 @@ function UsersContent({ userId, token }: { userId: number; token: string }) {
       if (action.kind === 'edit') {
         await axiosClient.put(path, {
           ...draft, fullName: draft.fullName.trim(), email: draft.email.trim(), loyaltyPoints: points,
+          expectedLoyaltyPoints: action.user.loyaltyPoints, expectedTier: draftFor(action.user).tier,
         });
         guard();
         setNotice(`Đã lưu tài khoản #${action.user.id}.`);

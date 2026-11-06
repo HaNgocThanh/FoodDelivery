@@ -19,12 +19,21 @@ public class PromotionRepository : GenericRepository<Promotion>, IPromotionRepos
         return await _dbSet.FirstOrDefaultAsync(p => p.Code.ToUpper() == normalizedCode, ct);
     }
 
+    public async Task<Promotion?> GetByIdWithLockAsync(int id, CancellationToken ct = default)
+    {
+        var rows = await _dbSet.FromSqlInterpolated($"SELECT * FROM \"Promotions\" WHERE \"Id\" = {id} FOR UPDATE")
+            .AsTracking().ToListAsync(ct);
+        return rows.SingleOrDefault();
+    }
+
     public async Task<Promotion?> GetByCodeWithLockAsync(string code, CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(code)) return null;
 
         var normalizedCode = code.Trim().ToUpper();
-        // Sử dụng LINQ query an toàn trong EF Core transaction để tránh lỗi cú pháp subquery FOR UPDATE trong Oracle DB
-        return await _dbSet.FirstOrDefaultAsync(p => p.Code.ToUpper() == normalizedCode, ct);
+        var rows = await _dbSet.FromSqlInterpolated(
+                $"SELECT * FROM \"Promotions\" WHERE UPPER(\"Code\") = {normalizedCode} FOR UPDATE")
+            .AsTracking().ToListAsync(ct);
+        return rows.FirstOrDefault();
     }
 }

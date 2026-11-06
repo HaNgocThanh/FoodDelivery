@@ -2,7 +2,6 @@ using FoodDelivery.Domain.Entities;
 using FoodDelivery.Domain.Interfaces;
 using FoodDelivery.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
-using Oracle.ManagedDataAccess.Client;
 
 namespace FoodDelivery.Infrastructure.Repositories;
 
@@ -38,13 +37,12 @@ public class ProductRepository : GenericRepository<Product>, IProductRepository
 
     public async Task<Product?> GetByIdWithLockAsync(int productId, CancellationToken ct = default)
     {
-        // Oracle SELECT ... FOR UPDATE NOWAIT khóa dòng dữ liệu chống overselling
         var products = await _dbSet
-            .FromSqlRaw("SELECT * FROM \"Products\" WHERE \"Id\" = :p0 FOR UPDATE NOWAIT", productId)
+            .FromSqlInterpolated($"SELECT * FROM \"Products\" WHERE \"Id\" = {productId} FOR UPDATE")
             .AsTracking()
             .ToListAsync(ct);
 
-        return products.FirstOrDefault();
+        return products.SingleOrDefault();
     }
 
     public async Task<List<Product>> GetManyWithLockAsync(IEnumerable<int> productIds, CancellationToken ct = default)

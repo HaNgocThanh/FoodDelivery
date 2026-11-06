@@ -19,7 +19,7 @@ namespace FoodDelivery.Infrastructure.Services;
 /// </remarks>
 public class CloudinaryImageService : IImageService
 {
-    private readonly Cloudinary _cloudinary;
+    private readonly Lazy<Cloudinary> _cloudinary;
     private readonly CloudinarySettings _settings;
     private readonly ILogger<CloudinaryImageService> _logger;
 
@@ -42,24 +42,14 @@ public class CloudinaryImageService : IImageService
         _settings = options.Value;
         _logger = logger;
 
-        // Validate cấu hình fail-fast (sẽ throw ngay khi DI resolve nếu thiếu config)
+        _cloudinary = new Lazy<Cloudinary>(CreateClient);
+    }
+
+    private Cloudinary CreateClient()
+    {
         _settings.Validate();
-
-        // Khởi tạo Cloudinary client. Account là record bất biến, an toàn khi share.
-        var account = new Account(
-            _settings.CloudName,
-            _settings.ApiKey,
-            _settings.ApiSecret);
-
-        _cloudinary = new Cloudinary(account)
-        {
-            Api = { Secure = true } // Luôn trả về HTTPS URL
-        };
-
-        _logger.LogInformation(
-            "Cloudinary client đã khởi tạo cho cloud '{CloudName}', folder mặc định: '{Folder}'",
-            _settings.CloudName,
-            _settings.DefaultFolder);
+        var account = new Account(_settings.CloudName, _settings.ApiKey, _settings.ApiSecret);
+        return new Cloudinary(account) { Api = { Secure = true } };
     }
 
     public async Task<ImageUploadResponseDTO> UploadImageAsync(IFormFile file)
@@ -140,7 +130,7 @@ public class CloudinaryImageService : IImageService
                 file.FileName,
                 file.Length / 1024d);
 
-            var uploadResult = await _cloudinary.UploadAsync(uploadParams);
+            var uploadResult = await _cloudinary.Value.UploadAsync(uploadParams);
 
             if (uploadResult.Error != null)
             {
@@ -195,7 +185,7 @@ public class CloudinaryImageService : IImageService
 
         try
         {
-            var result = await _cloudinary.DestroyAsync(deleteParams);
+            var result = await _cloudinary.Value.DestroyAsync(deleteParams);
             var success = result.Result == "ok" || result.Result == "not found";
 
             if (success)

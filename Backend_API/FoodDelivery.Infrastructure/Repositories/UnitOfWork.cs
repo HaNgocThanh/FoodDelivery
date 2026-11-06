@@ -1,4 +1,7 @@
 using FoodDelivery.Domain.Interfaces;
+using FoodDelivery.Domain.Exceptions;
+using Microsoft.EntityFrameworkCore;
+using Oracle.ManagedDataAccess.Client;
 using FoodDelivery.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore.Storage;
 
@@ -55,9 +58,15 @@ public class UnitOfWork : IUnitOfWork
                 await _currentTransaction.CommitAsync(ct);
             }
         }
+        catch (DbUpdateException error) when (error.InnerException is OracleException { Number: 1 } duplicate
+            && duplicate.Message.Contains("UX_Orders_CheckoutRequest", StringComparison.OrdinalIgnoreCase))
+        {
+            await RollbackTransactionAsync(CancellationToken.None);
+            throw new DuplicateCheckoutException(error);
+        }
         catch
         {
-            await RollbackTransactionAsync(ct);
+            await RollbackTransactionAsync(CancellationToken.None);
             throw;
         }
         finally

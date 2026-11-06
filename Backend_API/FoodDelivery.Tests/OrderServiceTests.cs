@@ -66,7 +66,7 @@ public class OrderServiceTests
     [Fact]
     public async Task ChangedPrice_RollsBackAndDoesNotSaveOrder()
     {
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.CreateOrderAsync(Request(100000)));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => _service.CreateOrderAsync(Request(100000)));
         _orders.Verify(x => x.AddAsync(It.IsAny<Order>(), It.IsAny<CancellationToken>()), Times.Never);
         _uow.Verify(x => x.RollbackTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
         _uow.Verify(x => x.CommitTransactionAsync(It.IsAny<CancellationToken>()), Times.Never);
@@ -116,7 +116,7 @@ public class OrderServiceTests
     public async Task PaymentUrl_RejectsIneligibleOrders(PaymentMethod method, OrderStatus status)
     {
         _orders.Setup(x => x.GetByIdAsync(50, It.IsAny<CancellationToken>())).ReturnsAsync(new Order { Id = 50, UserId = 1, PaymentMethod = method, Status = status });
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.GetPaymentAmountAsync(50, 1));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => _service.GetPaymentAmountAsync(50, 1));
     }
 
     [Fact]
@@ -133,14 +133,14 @@ public class OrderServiceTests
     public async Task ConfirmPayment_DoesNotRegressOrderState(OrderStatus status)
     {
         _orders.Setup(x => x.GetByIdAsync(50, It.IsAny<CancellationToken>())).ReturnsAsync(new Order { Id = 50, UserId = 1, PaymentMethod = PaymentMethod.Online, Status = status, TotalAmount = 140000 });
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.ConfirmMockPaymentAsync(50, 1, 140000));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => _service.ConfirmMockPaymentAsync(50, 1, 140000));
         _orders.Verify(x => x.Update(It.IsAny<Order>()), Times.Never);
     }
 
     [Fact]
     public async Task ConfirmPayment_AlreadyApprovedIsIdempotent()
     {
-        _orders.Setup(x => x.GetByIdAsync(50, It.IsAny<CancellationToken>())).ReturnsAsync(new Order { Id = 50, UserId = 1, PaymentMethod = PaymentMethod.Online, Status = OrderStatus.Approved, TotalAmount = 140000 });
+        _orders.Setup(x => x.GetByIdAsync(50, It.IsAny<CancellationToken>())).ReturnsAsync(new Order { Id = 50, UserId = 1, PaymentMethod = PaymentMethod.Online, Status = OrderStatus.Approved, OnlinePaymentConfirmedAt = DateTime.UtcNow, TotalAmount = 140000 });
         await _service.ConfirmMockPaymentAsync(50, 1, 140000);
         _orders.Verify(x => x.Update(It.IsAny<Order>()), Times.Never);
     }
@@ -150,7 +150,7 @@ public class OrderServiceTests
     {
         _orders.Setup(x => x.GetOrderWithDetailsForUpdateAsync(50, It.IsAny<CancellationToken>()))
             .ReturnsAsync(new Order { Id = 50, UserId = 1, Status = OrderStatus.Approved });
-        await Assert.ThrowsAsync<InvalidOperationException>(() => _service.CancelUserOrderAsync(50, 1));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => _service.CancelUserOrderAsync(50, 1));
         _orders.Verify(x => x.Update(It.IsAny<Order>()), Times.Never);
         _uow.Verify(x => x.RollbackTransactionAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
@@ -162,4 +162,78 @@ public class OrderServiceTests
         await _service.ConfirmMockPaymentAsync(50, 1, 140000);
         _orders.Verify(x => x.GetByIdAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Never);
     }
+
+    [Fact]
+    public async Task AdminCancellationRestoresStockCouponAndPointsOnlyOnce()
+    {
+        _product.StockQuantity = 0;
+        _product.IsAvailable = false;
+        var order = new Order
+        {
+            Id = 50, UserId = 1, PaymentMethod = PaymentMethod.COD, Status = OrderStatus.Approved,
+            PromotionId = 12, PointsUsed = 10,
+            OrderDetails = [new OrderDetail { ProductId = 7, Quantity = 2 }]
+        };
+        var coupon = new Promotion { Id = 12, CurrentUsage = 1 };
+        LockOrder(order);
+        _promotions.Setup(x => x.GetByIdWithLockAsync(12, It.IsAny<CancellationToken>())).ReturnsAsync(coupon);
+
+        Assert.True(await _service.UpdateOrderStatusAsync(50, OrderStatus.Cancelled));
+        Assert.True(await _service.CancelUserOrderAsync(50, 1));
+
+        Assert.Equal(OrderStatus.Cancelled, order.Status);
+        Assert.Equal(2, _product.StockQuantity);
+        Assert.True(_product.IsAvailable);
+        Assert.Equal(0, coupon.CurrentUsage);
+        Assert.Equal(110, _user.LoyaltyPoints);
+        _promotions.Verify(x => x.GetByIdWithLockAsync(12, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task OnlineOrderCannotAdvanceUntilPaymentIsRecorded()
+    {
+        var order = new Order { Id = 50, UserId = 1, PaymentMethod = PaymentMethod.Online, Status = OrderStatus.Pending };
+        LockOrder(order);
+        await Assert.ThrowsAsync<BusinessRuleException>(() => _service.UpdateOrderStatusAsync(50, OrderStatus.Approved));
+
+        order.Status = OrderStatus.Approved; // Older records may have been approved manually.
+        await Assert.ThrowsAsync<BusinessRuleException>(() => _service.AssignShipperAsync(50, 9));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => _service.UpdateOrderStatusAsync(50, OrderStatus.Cancelled));
+
+        order.OnlinePaymentConfirmedAt = DateTime.UtcNow;
+        _users.Setup(x => x.GetByIdWithLockAsync(9, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new AppUser { Id = 9, Role = "Shipper" });
+        Assert.True(await _service.AssignShipperAsync(50, 9));
+        Assert.Equal(OrderStatus.Shipping, order.Status);
+        Assert.Equal(9, order.ShipperId);
+    }
+
+    [Fact]
+    public async Task CannotAssignCustomerAsShipper()
+    {
+        var order = new Order { Id = 50, PaymentMethod = PaymentMethod.COD, Status = OrderStatus.Approved };
+        LockOrder(order);
+        await Assert.ThrowsAsync<NotFoundException>(() => _service.AssignShipperAsync(50, 1));
+        Assert.Null(order.ShipperId);
+        Assert.Equal(OrderStatus.Approved, order.Status);
+    }
+
+    [Fact]
+    public async Task CompletionAwardsPointsOnceAndOrderCannotBeReopened()
+    {
+        var order = new Order
+        {
+            Id = 50, UserId = 1, PaymentMethod = PaymentMethod.COD,
+            Status = OrderStatus.Shipping, ShipperId = 9, TotalAmount = 120000
+        };
+        LockOrder(order);
+        Assert.True(await _service.UpdateOrderStatusAsync(50, OrderStatus.Completed));
+        Assert.True(await _service.UpdateOrderStatusAsync(50, OrderStatus.Completed));
+        await Assert.ThrowsAsync<BusinessRuleException>(() => _service.UpdateOrderStatusAsync(50, OrderStatus.Approved));
+        Assert.Equal(112, _user.LoyaltyPoints);
+    }
+
+    private void LockOrder(Order order) =>
+        _orders.Setup(x => x.GetOrderWithDetailsForUpdateAsync(order.Id, It.IsAny<CancellationToken>())).ReturnsAsync(order);
+
 }
