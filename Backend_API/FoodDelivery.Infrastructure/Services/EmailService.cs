@@ -21,8 +21,11 @@ public class EmailService : IEmailService
         var emailSettings = _configuration.GetSection("EmailSettings");
         var host = emailSettings["Host"] ?? "smtp.gmail.com";
         var port = int.Parse(emailSettings["Port"] ?? "587");
-        var fromEmail = emailSettings["Email"] ?? "hangocthanh1906@gmail.com";
-        var password = emailSettings["Password"] ?? "cwsw gbvk dace sgua";
+        var fromEmail = emailSettings["Email"];
+        var password = emailSettings["Password"];
+
+        if (string.IsNullOrWhiteSpace(fromEmail) || string.IsNullOrWhiteSpace(password))
+            throw new InvalidOperationException("EmailSettings:Email and EmailSettings:Password are required to send email.");
 
         var emailMessage = new MimeMessage();
         emailMessage.From.Add(new MailboxAddress("FoodDelivery", fromEmail));

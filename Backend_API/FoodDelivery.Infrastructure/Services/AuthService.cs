@@ -71,7 +71,7 @@ public class AuthService : IAuthService
             Address1 = dto.Address1?.Trim() ?? string.Empty,
             Address2 = dto.Address2?.Trim(),
             PasswordHash = HashPassword(dto.Password),
-            Role = string.IsNullOrWhiteSpace(dto.Role) ? "Customer" : dto.Role,
+            Role = "Customer",
             LoyaltyPoints = 0
         };
 

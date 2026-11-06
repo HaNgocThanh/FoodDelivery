@@ -13,7 +13,6 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
     public AppDbContext CreateDbContext(string[] args)
     {
         // Tự chọn connection string dev từ appsettings.json của API project.
-        // Nếu không tìm thấy, fallback chuỗi cứng để CLI vẫn generate migration được.
         var configuration = new ConfigurationBuilder()
             .SetBasePath(Path.Combine(Directory.GetCurrentDirectory(), "..", "FoodDelivery.API"))
             .AddJsonFile("appsettings.json", optional: false)
@@ -21,8 +20,10 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
             .AddEnvironmentVariables()
             .Build();
 
-        var connectionString = configuration.GetConnectionString("OracleConnection")
-            ?? "User Id=system;Password=oracle;Data Source=localhost:1521/XEPDB1;";
+        var connectionString = configuration.GetConnectionString("OracleConnection");
+
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new InvalidOperationException("ConnectionStrings:OracleConnection is required.");
 
         var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>()
             .UseOracle(connectionString);

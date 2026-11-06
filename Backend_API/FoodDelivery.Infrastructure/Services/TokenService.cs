@@ -20,7 +20,7 @@ public class TokenService : ITokenService
     public (string token, DateTime expiresAt) GenerateToken(AppUser user)
     {
         var secretKey = _configuration["Jwt:SecretKey"]
-            ?? "FoodDelivery_SuperSecret_Key_MinLength32Chars!!";
+            ?? throw new InvalidOperationException("Jwt:SecretKey is required.");
         var issuer = _configuration["Jwt:Issuer"] ?? "fooddelivery-api";
         var audience = _configuration["Jwt:Audience"] ?? "fooddelivery-client";
         var expirationMinutes = double.TryParse(_configuration["Jwt:ExpirationMinutes"], out var exp) ? exp : 1440;

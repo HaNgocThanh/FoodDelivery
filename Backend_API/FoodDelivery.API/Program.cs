@@ -87,8 +87,9 @@ builder.Services.AddSwaggerGen(c =>
 // 3. JWT AUTHENTICATION
 // =============================================
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-var secretKey = jwtSettings["SecretKey"]
-    ?? throw new InvalidOperationException("JWT SecretKey chưa được cấu hình");
+var secretKey = jwtSettings["SecretKey"];
+if (string.IsNullOrWhiteSpace(secretKey) || Encoding.UTF8.GetByteCount(secretKey) < 32)
+    throw new InvalidOperationException("Jwt:SecretKey must be configured with at least 32 UTF-8 bytes.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -124,12 +125,11 @@ builder.Services.AddAuthorization();
 // =============================================
 // 4. DATABASE – Oracle EF Core
 // =============================================
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseOracle(builder.Configuration.GetConnectionString("OracleConnection")));
-// builder.Services.AddDbContext<AppDbContext>(options =>
-//     options.UseOracle(
-//         builder.Configuration.GetConnectionString("OracleDb"),
-//         oracleOptions => oracleOptions.UseOracleSQLCompatibility("19")));
+var oracleConnection = builder.Configuration.GetConnectionString("OracleConnection");
+if (string.IsNullOrWhiteSpace(oracleConnection))
+    throw new InvalidOperationException("ConnectionStrings:OracleConnection is required.");
+
+builder.Services.AddDbContext<AppDbContext>(options => options.UseOracle(oracleConnection));
 
 // =============================================
 // 5. DEPENDENCY INJECTION – Application Services
@@ -222,22 +222,15 @@ if (!string.IsNullOrWhiteSpace(keyPath))
 
 var app = builder.Build();
 
-// Seed dữ liệu ban đầu khi ứng dụng khởi động
-using (var scope = app.Services.CreateScope())
+if (app.Environment.IsDevelopment() && app.Configuration.GetValue<bool>("DemoSeed:Enabled"))
 {
-    var services = scope.ServiceProvider;
-    try
-    {
-        var context = services.GetRequiredService<AppDbContext>();
-        await DbInitializer.SeedDataAsync(context);
-        Console.WriteLine("==================================================");
-        Console.WriteLine("✅ SEED DỮ LIỆU BAN ĐẦU VÀO ORACLE DB THÀNH CÔNG!");
-        Console.WriteLine("==================================================");
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"❌ LỖI SEED DATA: {ex.Message}");
-    }
+    var demoPassword = app.Configuration["DemoSeed:Password"];
+    if (string.IsNullOrWhiteSpace(demoPassword) || demoPassword.Length < 16)
+        throw new InvalidOperationException("DemoSeed:Password must be configured with at least 16 characters.");
+
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await DbInitializer.SeedDemoDataAsync(context, demoPassword);
 }
 
 // =============================================

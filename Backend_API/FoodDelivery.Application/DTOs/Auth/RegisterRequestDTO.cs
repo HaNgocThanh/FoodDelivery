@@ -6,6 +6,5 @@ public record RegisterRequestDTO(
     string Password,
     string PhoneNumber,
     string Address1,
-    string? Address2,
-    string Role = "Customer"
+    string? Address2
 );

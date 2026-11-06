@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using FoodDelivery.Infrastructure.Data;
 
-var conn = "Data Source=(DESCRIPTION=(ADDRESS=(PROTOCOL=TCP)(HOST=localhost)(PORT=1522))(CONNECT_DATA=(SERVICE_NAME=FREE)));User Id=FOODDELIVERY;Password=123;";
+var conn = Environment.GetEnvironmentVariable("ConnectionStrings__OracleConnection");
+if (string.IsNullOrWhiteSpace(conn))
+    throw new InvalidOperationException("ConnectionStrings__OracleConnection is required.");
 
 var options = new DbContextOptionsBuilder<AppDbContext>()
     .UseOracle(conn)

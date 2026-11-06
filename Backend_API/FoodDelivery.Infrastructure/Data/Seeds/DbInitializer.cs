@@ -7,24 +7,11 @@ namespace FoodDelivery.Infrastructure.Data.Seeds;
 
 public static class DbInitializer
 {
-    public static async Task SeedDataAsync(AppDbContext context)
+    public static async Task SeedDemoDataAsync(AppDbContext context, string password)
     {
-        // 1. Cập nhật PasswordHash và Role cho các user đã tồn tại sẵn trong DB nhưng chưa có mật khẩu
-        var uninitializedUsers = await context.AppUsers.Where(u => string.IsNullOrEmpty(u.PasswordHash)).ToListAsync();
-        if (uninitializedUsers.Any())
-        {
-            foreach (var user in uninitializedUsers)
-            {
-                user.PasswordHash = AuthService.HashPassword("Password123!");
-                if (string.IsNullOrEmpty(user.Role))
-                {
-                    user.Role = user.Email.Contains("admin") ? "Admin" : (user.Email.Contains("shipper") ? "Shipper" : "Customer");
-                }
-            }
-            await context.SaveChangesAsync();
-        }
+        var passwordHash = AuthService.HashPassword(password);
 
-        // 2. Seed Admin Account nếu chưa có
+        // 1. Seed Admin Account nếu chưa có
         if (!await context.AppUsers.AnyAsync(u => u.Email == "admin@fooddelivery.com"))
         {
             await context.AppUsers.AddAsync(new AppUser
@@ -32,7 +19,7 @@ public static class DbInitializer
                 FullName = "Quản Trị Viên (Admin)",
                 PhoneNumber = "0900000000",
                 Email = "admin@fooddelivery.com",
-                PasswordHash = AuthService.HashPassword("Password123!"),
+                PasswordHash = passwordHash,
                 Role = "Admin",
                 Address1 = "Trụ sở chính FoodDelivery",
                 LoyaltyPoints = 9999
@@ -40,7 +27,7 @@ public static class DbInitializer
             await context.SaveChangesAsync();
         }
 
-        // 3. Seed Customer Account nếu chưa có
+        // 2. Seed Customer Account nếu chưa có
         if (!await context.AppUsers.AnyAsync(u => u.Email == "nguyenvana@gmail.com"))
         {
             await context.AppUsers.AddAsync(new AppUser
@@ -48,7 +35,7 @@ public static class DbInitializer
                 FullName = "Nguyễn Văn A (Khách hàng)",
                 PhoneNumber = "0901234567",
                 Email = "nguyenvana@gmail.com",
-                PasswordHash = AuthService.HashPassword("Password123!"),
+                PasswordHash = passwordHash,
                 Role = "Customer",
                 Address1 = "123 Nguyễn Huệ, Quận 1, TP.HCM",
                 Address2 = "Phòng 502, Tòa nhà Bitexco",
@@ -57,7 +44,7 @@ public static class DbInitializer
             await context.SaveChangesAsync();
         }
 
-        // 4. Seed Shippers nếu chưa có
+        // 3. Seed Shippers nếu chưa có
         if (!await context.AppUsers.AnyAsync(u => u.Email == "shipper1@fooddelivery.com"))
         {
             await context.AppUsers.AddAsync(new AppUser
@@ -65,7 +52,7 @@ public static class DbInitializer
                 FullName = "Lê Văn Nam (Đội 1 - Q1)",
                 PhoneNumber = "0981111222",
                 Email = "shipper1@fooddelivery.com",
-                PasswordHash = AuthService.HashPassword("Password123!"),
+                PasswordHash = passwordHash,
                 Role = "Shipper",
                 Address1 = "Trạm giao nhận Q1",
                 LoyaltyPoints = 0
@@ -79,7 +66,7 @@ public static class DbInitializer
                 FullName = "Trần Văn Bình (Đội 2 - Q3)",
                 PhoneNumber = "0982222333",
                 Email = "shipper2@fooddelivery.com",
-                PasswordHash = AuthService.HashPassword("Password123!"),
+                PasswordHash = passwordHash,
                 Role = "Shipper",
                 Address1 = "Trạm giao nhận Q3",
                 LoyaltyPoints = 0
@@ -93,7 +80,7 @@ public static class DbInitializer
                 FullName = "Phạm Văn Cường (Đội 3 - Bình Thạnh)",
                 PhoneNumber = "0983333444",
                 Email = "shipper3@fooddelivery.com",
-                PasswordHash = AuthService.HashPassword("Password123!"),
+                PasswordHash = passwordHash,
                 Role = "Shipper",
                 Address1 = "Trạm giao nhận Bình Thạnh",
                 LoyaltyPoints = 0
@@ -101,7 +88,7 @@ public static class DbInitializer
         }
         await context.SaveChangesAsync();
 
-        // 5. Seed Category (Thực phẩm tươi sống) nếu chưa có
+        // 4. Seed Category (Thực phẩm tươi sống) nếu chưa có
         if (!await context.Categories.AnyAsync())
         {
             var category = new Category
@@ -113,7 +100,7 @@ public static class DbInitializer
             await context.SaveChangesAsync();
         }
 
-        // 6. Seed Products nếu chưa có
+        // 5. Seed Products nếu chưa có
         if (!await context.Products.AnyAsync())
         {
             var category = await context.Categories.FirstAsync();
@@ -146,7 +133,7 @@ public static class DbInitializer
             await context.SaveChangesAsync();
         }
 
-        // 7. Seed Promotions nếu chưa có
+        // 6. Seed Promotions nếu chưa có
         if (!await context.Promotions.AnyAsync())
         {
             var promotions = new List<Promotion>
